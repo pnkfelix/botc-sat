@@ -39,6 +39,35 @@ This project is a prototype for domain-specific logical languages, specifically 
 2. **Counter-example Generation**: Generate examples that disprove assertions
 3. **Inference from Partial Observations**: Given fragmented player observations of state transitions, enumerate all potential legal grimoires consistent with those observations
 
+## Browser Compatibility Requirements (z3-solver)
+**Important**: z3-solver requires SharedArrayBuffer support for browser deployment, which has specific requirements:
+
+### Required HTTP Headers for Browser Deployment:
+- `Cross-Origin-Embedder-Policy: require-corp`
+- `Cross-Origin-Opener-Policy: same-origin`
+
+### Additional Browser Requirements:
+- HTTPS required (SharedArrayBuffer disabled over HTTP)
+- Cross-origin isolation enabled
+- Modern browser with SharedArrayBuffer support
+- z3-built.js must be included separately (not bundled with webpack/vite)
+
+### Development Impact:
+- Local development server must serve proper headers
+- Deployment requires server configuration for headers
+- May limit cross-origin resource loading
+- Consider fallback to lighter SAT solver for basic browser compatibility
+
+### Deployment Limitations:
+**GitHub Pages**: Cannot set custom HTTP headers - z3-solver will NOT work on GitHub Pages
+**Static Hosts**: Most static hosting (Netlify, Vercel) can set headers via config files
+**Server Required**: Full control over HTTP headers requires server-side hosting
+
+### Fallback Strategy:
+Consider implementing dual solver approach:
+- z3-solver for Node.js and controlled server environments
+- Lighter pure-JS SAT solver (like SAT.js) for GitHub Pages/static hosting
+
 ## Implementation Plan (High Level)
 1. Core token types and effects system
 2. Script definition DSL and parser

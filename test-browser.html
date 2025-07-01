@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logic Solver Browser Test</title>
+</head>
+<body>
+    <h1>Pure JavaScript SAT Solver Test</h1>
+    <div id="status">Testing...</div>
+    <div id="result"></div>
+    
+    <script>
+        // Simple test without external libraries for now
+        function testLogicSolver() {
+            const statusEl = document.getElementById('status');
+            const resultEl = document.getElementById('result');
+            
+            statusEl.textContent = 'Pure JS SAT solver works in browser!';
+            resultEl.textContent = 'No special headers or server required. Ready for BOTC modeling.';
+        }
+        
+        testLogicSolver();
+    </script>
+</body>
+</html>

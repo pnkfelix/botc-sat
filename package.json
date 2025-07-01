@@ -15,5 +15,8 @@
     "@types/node": "^24.0.8",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "logic-solver": "^2.0.1"
   }
 }
