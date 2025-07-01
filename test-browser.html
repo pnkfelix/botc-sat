@@ -3,24 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logic Solver Browser Test</title>
+    <title>JSMiniSolvers Browser Test</title>
 </head>
 <body>
-    <h1>Pure JavaScript SAT Solver Test</h1>
+    <h1>JSMiniSolvers SAT Solver Test</h1>
     <div id="status">Testing...</div>
     <div id="result"></div>
     
+    <script src="./vendor/minisolvers.js"></script>
+    
     <script>
-        // Simple test without external libraries for now
-        function testLogicSolver() {
+        function testJSMiniSolvers() {
             const statusEl = document.getElementById('status');
             const resultEl = document.getElementById('result');
             
-            statusEl.textContent = 'Pure JS SAT solver works in browser!';
-            resultEl.textContent = 'No special headers or server required. Ready for BOTC modeling.';
+            try {
+                statusEl.textContent = 'Testing JSMiniSolvers in browser...';
+                
+                // Check if minisolvers is available
+                if (typeof minisolvers === 'undefined') {
+                    throw new Error('JSMiniSolvers not loaded');
+                }
+                
+                // Create solver and test basic constraints
+                // Formula: (x1 OR x2) AND (NOT x1) AND (NOT x3)
+                // This should be satisfiable with x1=false, x2=true, x3=false
+                const solver = new minisolvers.MinisatSolver();
+                
+                // Add variables (MiniSat uses 1-based indexing)
+                solver.new_var(); // x1
+                solver.new_var(); // x2  
+                solver.new_var(); // x3
+                
+                // Add clauses: [[1,2], [-1], [-3]]
+                solver.add_clause([1, 2]);  // x1 OR x2
+                solver.add_clause([-1]);    // NOT x1
+                solver.add_clause([-3]);    // NOT x3
+                
+                const isSat = solver.solve();
+                
+                if (isSat) {
+                    const model = solver.get_model();
+                    statusEl.textContent = 'SUCCESS: JSMiniSolvers working in browser!';
+                    
+                    let modelStr = '';
+                    for (let i = 0; i < model.length; i++) {
+                        modelStr += `x${i+1}=${model[i]} `;
+                    }
+                    
+                    resultEl.innerHTML = `
+                        <strong>SAT Solver Results:</strong><br>
+                        Satisfiable: ${isSat}<br>
+                        Model: ${modelStr}<br>
+                        <strong>Formula tested:</strong> (x1 ∨ x2) ∧ (¬x1) ∧ (¬x3)<br>
+                        <em>Pure JavaScript MiniSat, MIT licensed, browser compatible!</em>
+                    `;
+                } else {
+                    statusEl.textContent = 'JSMiniSolvers working but formula unsatisfiable';
+                    resultEl.innerHTML = `
+                        <strong>SAT Solver Results:</strong><br>
+                        Satisfiable: false<br>
+                        <em>The test formula was unsatisfiable</em>
+                    `;
+                }
+                
+            } catch (error) {
+                statusEl.textContent = 'Error testing JSMiniSolvers:';
+                resultEl.textContent = error.message;
+                console.error('JSMiniSolvers test failed:', error);
+            }
         }
         
-        testLogicSolver();
+        // Test when page loads
+        testJSMiniSolvers();
     </script>
 </body>
 </html>

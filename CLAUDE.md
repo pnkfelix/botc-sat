@@ -30,6 +30,32 @@ This project is a prototype for domain-specific logical languages, specifically 
 - Prefer editing existing files over creating new ones unless necessary
 - Never create documentation files unless explicitly requested
 
+## Lessons Learned About Preferred Workflow
+Based on development sessions, these patterns lead to better outcomes:
+
+### Avoid Mocking Critical Dependencies
+- **Don't mock SAT solvers or other core functionality** - leads to interface divergence
+- **Test with real implementations** - prevents false confidence in compatibility
+- **Unified interface across environments** - Node.js and browser should use same underlying solver
+
+### Licensing and Dependency Management
+- **Check licenses before adopting libraries** - GPL/AGPL can be too restrictive
+- **Prefer MIT/BSD/Apache** - for maximum flexibility in prototype and production use
+- **Vendor third-party code properly** - track sources, versions, and licenses in vendor/README.md
+- **Don't assume npm availability** - be prepared to vendor when packages aren't on npm
+
+### Browser Compatibility Approach
+- **Avoid complex deployment requirements** - SharedArrayBuffer, special headers limit deployment options
+- **Test browser compatibility early** - don't build on assumptions about what "should work"
+- **Prioritize GitHub Pages compatibility** - static hosting is simpler than server configuration
+- **UMD patterns work well** - Universal Module Definition libraries work in both Node.js and browser
+
+### Code Quality and Validation
+- **Address TypeScript warnings immediately** - unused variables indicate incomplete implementation
+- **Test the same scenarios in both environments** - ensures true compatibility
+- **Use setTimeout as antipattern indicator** - proper event handling is preferred
+- **Verify actual functionality** - browser tests should show real results, not placeholder messages
+
 ## Build Commands
 - `npm run build` - Compile TypeScript
 - `npm run dev` - Run with ts-node for development
@@ -39,34 +65,22 @@ This project is a prototype for domain-specific logical languages, specifically 
 2. **Counter-example Generation**: Generate examples that disprove assertions
 3. **Inference from Partial Observations**: Given fragmented player observations of state transitions, enumerate all potential legal grimoires consistent with those observations
 
-## Browser Compatibility Requirements (z3-solver)
-**Important**: z3-solver requires SharedArrayBuffer support for browser deployment, which has specific requirements:
+## SAT Solver: JSMiniSolvers
+**Current Solution**: JSMiniSolvers (vendored) provides industrial-strength SAT solving
 
-### Required HTTP Headers for Browser Deployment:
-- `Cross-Origin-Embedder-Policy: require-corp`
-- `Cross-Origin-Opener-Policy: same-origin`
+### Key Benefits:
+- **MIT License** - No restrictions on use or distribution
+- **Universal Compatibility** - Works in both Node.js and browsers via UMD pattern
+- **No Special Requirements** - No SharedArrayBuffer, special headers, or HTTPS needed
+- **GitHub Pages Compatible** - Can deploy anywhere static hosting is available
+- **Industrial Strength** - Based on proven MiniSat algorithm
+- **Small Footprint** - Single 307KB JavaScript file
 
-### Additional Browser Requirements:
-- HTTPS required (SharedArrayBuffer disabled over HTTP)
-- Cross-origin isolation enabled
-- Modern browser with SharedArrayBuffer support
-- z3-built.js must be included separately (not bundled with webpack/vite)
-
-### Development Impact:
-- Local development server must serve proper headers
-- Deployment requires server configuration for headers
-- May limit cross-origin resource loading
-- Consider fallback to lighter SAT solver for basic browser compatibility
-
-### Deployment Limitations:
-**GitHub Pages**: Cannot set custom HTTP headers - z3-solver will NOT work on GitHub Pages
-**Static Hosts**: Most static hosting (Netlify, Vercel) can set headers via config files
-**Server Required**: Full control over HTTP headers requires server-side hosting
-
-### Fallback Strategy:
-Consider implementing dual solver approach:
-- z3-solver for Node.js and controlled server environments
-- Lighter pure-JS SAT solver (like SAT.js) for GitHub Pages/static hosting
+### Implementation:
+- **Vendored Location**: `vendor/minisolvers.js`
+- **Node.js**: Loaded via `require('../vendor/minisolvers.js')`
+- **Browser**: Loaded via `<script src="./vendor/minisolvers.js"></script>`
+- **Unified Interface**: Same `SATSolver` class works in both environments
 
 ## Implementation Plan (High Level)
 1. Core token types and effects system
