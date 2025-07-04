@@ -65,11 +65,14 @@ npm install
 # Run development server (Node.js)
 npm run dev
 
-# Compile TypeScript
+# Compile TypeScript for Node.js
 npm run build
 
+# Compile TypeScript for browser (UMD modules)
+npm run build:browser
+
 # Test browser compatibility
-# Open test-browser.html or test-typescript-browser.html in a browser
+# Open test-browser.html in a browser
 ```
 
 ## Project Status

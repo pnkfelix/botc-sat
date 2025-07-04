@@ -3,59 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BOTC DSL Browser Test</title>
+    <title>BOTC DSL - True TypeScript Browser Test</title>
 </head>
 <body>
-    <h1>BOTC DSL - Unified Test Suite</h1>
+    <h1>BOTC DSL - Actual TypeScript Running in Browser</h1>
     <div id="status">Testing...</div>
     <div id="result"></div>
     
     <!-- Load JSMiniSolvers -->
     <script src="./vendor/minisolvers.js"></script>
     
-    <!-- Load browser-compatible solver -->
-    <script src="./src/browser-solver.js"></script>
+    <!-- Create module system shim for UMD -->
+    <script>
+        window.exports = {};
+        window.module = { exports: window.exports };
+        window.require = function(name) {
+            if (name === '../vendor/minisolvers.js') {
+                return minisolvers;
+            }
+            if (name === './solver') {
+                return window.solverModule || {};
+            }
+            return {};
+        };
+    </script>
     
-    <!-- Load shared test suite -->
-    <script src="./src/shared-tests.js"></script>
+    <!-- Load compiled TypeScript (UMD format) -->
+    <script src="./dist/browser/solver.js"></script>
+    <script>
+        // Store solver module for cross-references
+        window.solverModule = window.exports;
+        window.exports = {}; // Reset for next module
+    </script>
+    <script src="./dist/browser/advanced-tests.js"></script>
+    <script>
+        window.advancedTestsModule = window.exports;
+    </script>
     
     <script>
-        async function runBrowserTests() {
+        async function runTypeScriptInBrowser() {
             const statusEl = document.getElementById('status');
             const resultEl = document.getElementById('result');
             
             try {
-                statusEl.textContent = 'Running unified test suite...';
-                console.log("=== BOTC DSL Browser Tests ===");
+                statusEl.textContent = 'Running TypeScript code in browser...';
+                console.log("=== TypeScript in Browser Test ===");
                 
-                // Run the same tests as Node.js using our browser-compatible solver
-                const results = await runSharedSATSolverTests(BrowserSATSolver);
+                // Access the compiled TypeScript modules
+                const SATSolver = window.solverModule?.SATSolver || (function() {
+                    throw new Error("TypeScript SATSolver not available");
+                })();
                 
-                statusEl.textContent = 'SUCCESS: Unified test suite completed!';
+                const runAdvancedSATTests = window.advancedTestsModule?.runAdvancedSATTests || (function() {
+                    throw new Error("TypeScript tests not available");
+                })();
+                
+                // Run the advanced TypeScript tests (same as Node.js)
+                console.log("Running TypeScript tests...");
+                const advancedResults = await runAdvancedSATTests();
+                
+                statusEl.textContent = 'SUCCESS: TypeScript code running in browser!';
                 resultEl.innerHTML = `
-                    <h3>Test 1: Simple Constraints</h3>
-                    <strong>Input:</strong> ['x=true', 'y=false']<br>
-                    <strong>Satisfiable:</strong> ${results.test1.satisfiable}<br>
-                    <strong>Model:</strong> ${JSON.stringify(results.test1.model)}<br>
+                    <h3>🎯 Actual TypeScript Code Running in Browser!</h3>
                     
-                    <h3>Test 2: Complex Formula</h3>
-                    <strong>Formula:</strong> (x1 ∨ x2) ∧ (¬x1) ∧ (¬x3)<br>
-                    <strong>Input:</strong> ['x1=false', 'x2=true', 'x3=false']<br>
-                    <strong>Satisfiable:</strong> ${results.test2.satisfiable}<br>
-                    <strong>Model:</strong> ${JSON.stringify(results.test2.model)}<br>
-                    <strong>Interpretation:</strong> x1=${results.test2.model?.x1 ? "true" : "false"}, x2=${results.test2.model?.x2 ? "true" : "false"}, x3=${results.test2.model?.x3 ? "true" : "false"}<br>
+                    <h4>TypeScript Test Results</h4>
+                    <strong>Summary:</strong> ${advancedResults.summary}<br>
+                    <strong>Test Details:</strong><br>
+                    ${advancedResults.results.map(r => 
+                        `• ${r.test}: satisfiable=${r.result.satisfiable}, model=${JSON.stringify(r.result.model || 'none')}`
+                    ).join('<br>')}<br>
                     
-                    <br><em>✅ Same code running in browser and Node.js - true unified testing!</em>
+                    <br><em>✅ Same TypeScript SATSolver and test code running in Node.js and browser!</em><br>
+                    <em>💡 Run <code>npm run dev</code> to see identical results in Node.js</em>
                 `;
                 
             } catch (error) {
-                statusEl.textContent = 'Error running tests:';
-                resultEl.textContent = error.message;
-                console.error('Test suite failed:', error);
+                statusEl.textContent = 'Error running TypeScript:';
+                resultEl.innerHTML = `
+                    <strong>Error:</strong> ${error.message}<br>
+                    <em>This means the UMD compilation didn't work as expected.</em>
+                `;
+                console.error('TypeScript browser test failed:', error);
             }
         }
         
-        runBrowserTests();
+        runTypeScriptInBrowser();
     </script>
 </body>
 </html>

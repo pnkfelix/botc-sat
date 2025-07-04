@@ -57,8 +57,14 @@ Based on development sessions, these patterns lead to better outcomes:
 - **Verify actual functionality** - browser tests should show real results, not placeholder messages
 
 ## Build Commands
-- `npm run build` - Compile TypeScript
+- `npm run build` - Compile TypeScript for Node.js
+- `npm run build:browser` - Compile TypeScript to UMD for browser
 - `npm run dev` - Run with ts-node for development
+
+## Testing
+- **Node.js**: `npm run dev` runs TypeScript directly
+- **Browser**: Open `test-browser.html` in browser to run same code
+- **Unified Testing**: Same TypeScript code (`src/advanced-tests.ts`) runs in both environments
 
 ## SAT Solver Integration Use Cases
 1. **Legality Checking**: Verify if a logical expression/game state is valid
