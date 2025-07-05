@@ -80,6 +80,19 @@ Based on development sessions, these patterns lead to better outcomes:
 - **For large files near size limit** - read first half then second half instead of using offset/limit
 - **Files within 2x of 256KB limit** - split reading approach is more efficient than small chunks
 
+### SAT Solver Integration Learnings
+- **Incremental solving works** - JSMiniSolvers allows adding clauses after solve() for blocking patterns
+- **VSIDS bias is real** - Variable State Independent Decaying Sum creates systematic bias toward lower-numbered variables
+- **Variable indirection is the solution** - Create slot variables that inherit bias, then randomly map to actual roles
+- **Blocking clauses enable variety** - Can generate multiple diverse solutions by excluding previous ones
+- **Performance is acceptable** - ~50K clauses compile reasonably fast, incremental solving is efficient
+
+### Solution Variety Generation Patterns
+- **Bias analysis essential** - Always test for systematic patterns in generated solutions
+- **Web search for domain expertise** - Research SAT solver heuristics revealed root cause of bias
+- **Elegant solutions exist** - Variable indirection avoids expensive recompilation while solving bias
+- **Incremental development** - Start with simple blocking, identify bias, design targeted solution
+
 ## Build Commands
 - `npm run build` - Compile TypeScript for Node.js
 - `npm run build:browser` - Compile TypeScript to UMD for browser

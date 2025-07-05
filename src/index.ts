@@ -7,6 +7,7 @@ import { BagLegalityValidator } from './bag-compiler';
 import { SATSolver } from './solver';
 import { testSolutionExploration } from './solution-exploration-test';
 import { testSolutionPatterns } from './solution-pattern-test';
+import { testBOTCBias, testConstrainedBias } from './bias-analysis-test';
 
 console.log("Hello BOTC DSL!");
 
@@ -34,6 +35,10 @@ export async function main() {
     
     // Test solution generation patterns
     await testSolutionPatterns();
+    
+    // Test BOTC bias in variety generation
+    await testBOTCBias();
+    await testConstrainedBias();
     
     // Test bag legality validation
     await testBagLegality();

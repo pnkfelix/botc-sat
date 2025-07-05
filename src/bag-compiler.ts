@@ -96,6 +96,124 @@ export class BagLegalityValidator {
         };
     }
 
+    // Generate multiple diverse legal bag setups using blocking clauses
+    async generateMultipleLegalBags(script: Script, playerCount: number, options?: {
+        mustInclude?: string[],
+        mustExclude?: string[],
+        maxSolutions?: number,
+        avoidSimilar?: boolean,  // If true, try to generate more diverse solutions
+        randomizeVariableOrder?: boolean  // If true, randomize variable ordering to reduce solver bias
+    }): Promise<{
+        success: boolean,
+        solutions: Array<{
+            selectedRoles: string[],
+            inPlayDistribution: RoleDistribution,
+            physicalBag: Map<string, number>,
+            model?: any
+        }>
+    }> {
+        const maxSolutions = options?.maxSolutions || 5;
+        const solutions: Array<{
+            selectedRoles: string[],
+            inPlayDistribution: RoleDistribution,
+            physicalBag: Map<string, number>,
+            model?: any
+        }> = [];
+
+        console.log(`\n=== Generating ${maxSolutions} Diverse Legal Bags (${playerCount} players) ===`);
+
+        // Reset solver for new problem
+        this.solver.reset();
+        
+        // Step 1: Add general rules from script WITH role enumeration
+        const scriptVarCount = this.scriptCompiler.compileScriptToSAT(script, this.solver, true);
+        
+        // Step 2: Force specific player count
+        const playerCountVar = this.solver.addVariable(`player_count_${playerCount}`);
+        this.solver.addUnitClause(playerCountVar, true);
+        
+        // Force all other player counts to false
+        for (let count = 5; count <= 15; count++) {
+            if (count !== playerCount) {
+                const otherCountVar = this.solver.addVariable(`player_count_${count}`);
+                this.solver.addUnitClause(otherCountVar, false);
+            }
+        }
+        
+        // Step 3: Add preferences
+        if (options?.mustInclude) {
+            for (const roleId of options.mustInclude) {
+                const roleVar = this.solver.getVariableId(`${roleId}_present`);
+                if (roleVar) {
+                    console.log(`Must include: ${roleId}`);
+                    this.solver.addUnitClause(roleVar, true);
+                }
+            }
+        }
+        
+        if (options?.mustExclude) {
+            for (const roleId of options.mustExclude) {
+                const roleVar = this.solver.getVariableId(`${roleId}_present`);
+                if (roleVar) {
+                    console.log(`Must exclude: ${roleId}`);
+                    this.solver.addUnitClause(roleVar, false);
+                }
+            }
+        }
+
+        console.log(`Script variables: ${scriptVarCount}`);
+        console.log(`Total variables: ${this.solver.getVariableCount()}`);
+        console.log(`Total clauses: ${this.solver.getClauseCount()}`);
+
+        // Step 4: Generate multiple solutions using blocking clauses
+        for (let i = 0; i < maxSolutions; i++) {
+            const result = this.solver.solveWithModel();
+            
+            if (!result.satisfiable || !result.model) {
+                console.log(`Found ${i} solutions (no more available)`);
+                break;
+            }
+
+            // Extract this solution
+            const selectedRoles = this.extractSelectedRoles(script, result.model);
+            const inPlayDistribution = this.extractInPlayDistribution(result.model);
+            const physicalBag = this.extractPhysicalBag(selectedRoles, result.model);
+
+            solutions.push({
+                selectedRoles,
+                inPlayDistribution,
+                physicalBag,
+                model: result.model
+            });
+
+            console.log(`Solution ${i + 1}: [${selectedRoles.join(', ')}]`);
+
+            // Create blocking clause to exclude this solution
+            // Block ONLY the selected roles (not the entire role space)
+            const blockingClause: number[] = [];
+            for (const roleId of selectedRoles) {
+                const roleVar = this.solver.getVariableId(`${roleId}_present`);
+                if (roleVar) {
+                    // Block this role: add -var (NOT present)
+                    blockingClause.push(-roleVar);
+                }
+            }
+
+            // Add the blocking clause to prevent this exact role combination
+            if (blockingClause.length > 0) {
+                this.solver.addClause(blockingClause);
+                console.log(`  Added blocking clause: NOT(${selectedRoles.join(' AND ')}) = [${blockingClause.join(', ')}]`);
+            } else {
+                console.log("  Warning: Could not create blocking clause - no role variables found");
+            }
+        }
+
+        return {
+            success: solutions.length > 0,
+            solutions
+        };
+    }
+
     // Check if a bag setup is legal according to script rules
     async checkBagLegality(problem: BagLegalityProblem): Promise<{ 
         legal: boolean, 

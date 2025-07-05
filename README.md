@@ -77,12 +77,13 @@ npm run build:browser
 
 ## Project Status
 
-**Current Phase**: Foundation Complete
+**Current Phase**: Solution Variety Generation
 - ✅ SAT solver integration (JSMiniSolvers)
 - ✅ Unified Node.js and browser compatibility
-- ✅ Basic constraint modeling interface
-- 🚧 BOTC-specific rule modeling (next phase)
-- 🚧 DSL syntax design
-- 🚧 Game state representation
+- ✅ BOTC-specific rule modeling (Baron, Drunk working)
+- ✅ Bag legality validation and generation
+- ✅ Solution variety generation (with bias mitigation in progress)
+- 🚧 Variable indirection for unbiased role selection
+- 🚧 Advanced preference-based generation
 
 This is a prototype/experimental project focused on exploring the feasibility of formal logical approaches to complex game rule modeling.
