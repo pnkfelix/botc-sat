@@ -258,6 +258,82 @@ async function testGenerativeSetup() {
         console.log("❌ Failed to generate 7-player setup with Drunk");
         console.log("This might be expected if no solution exists without Baron");
     }
+    
+    // Test: Must exclude washerwoman (common role)
+    console.log("\n--- Testing mustExclude: washerwoman (8 players) ---");
+    const excludeWasherwomanResult = await validator.generateLegalBag(troubleBrewing, 8, {
+        mustExclude: ['washerwoman']
+    });
+    
+    if (excludeWasherwomanResult.success) {
+        console.log("✅ Generated setup excluding washerwoman!");
+        console.log("Selected roles:", excludeWasherwomanResult.selectedRoles);
+        console.log("Washerwoman excluded?", !excludeWasherwomanResult.selectedRoles?.includes('washerwoman') ? "YES ✅" : "NO ❌");
+        
+        // Verify the setup
+        const washerwomanVerification = await validator.checkBagLegality({
+            script: troubleBrewing,
+            playerCount: 8,
+            selectedRoles: excludeWasherwomanResult.selectedRoles!,
+            inPlayDistribution: excludeWasherwomanResult.inPlayDistribution!,
+            physicalBag: excludeWasherwomanResult.physicalBag!
+        });
+        console.log("Verification:", washerwomanVerification.legal ? "VALID ✅" : "INVALID ❌");
+    } else {
+        console.log("❌ Failed to generate setup excluding washerwoman");
+    }
+    
+    // Test: Must include drunk AND must exclude butler (7 players)
+    console.log("\n--- Testing mustInclude: drunk + mustExclude: butler (7 players) ---");
+    const drunkExcludeButlerResult = await validator.generateLegalBag(troubleBrewing, 7, {
+        mustInclude: ['drunk'],
+        mustExclude: ['butler']
+    });
+    
+    if (drunkExcludeButlerResult.success) {
+        console.log("✅ Generated 7-player setup with Drunk but excluding Butler!");
+        console.log("Selected roles:", drunkExcludeButlerResult.selectedRoles);
+        console.log("Drunk included?", drunkExcludeButlerResult.selectedRoles?.includes('drunk') ? "YES ✅" : "NO ❌");
+        console.log("Butler excluded?", !drunkExcludeButlerResult.selectedRoles?.includes('butler') ? "YES ✅" : "NO ❌");
+        console.log("Baron included?", drunkExcludeButlerResult.selectedRoles?.includes('baron') ? "YES ✅" : "NO ❌");
+        
+        // Verify the setup
+        const drunkButlerVerification = await validator.checkBagLegality({
+            script: troubleBrewing,
+            playerCount: 7,
+            selectedRoles: drunkExcludeButlerResult.selectedRoles!,
+            inPlayDistribution: drunkExcludeButlerResult.inPlayDistribution!,
+            physicalBag: drunkExcludeButlerResult.physicalBag!
+        });
+        console.log("Verification:", drunkButlerVerification.legal ? "VALID ✅" : "INVALID ❌");
+    } else {
+        console.log("❌ Failed to generate setup with Drunk excluding Butler");
+    }
+    
+    // Test: Must exclude imp (should be UNSAT - no other demons in Trouble Brewing)
+    console.log("\n--- Testing mustExclude: imp (should be UNSAT) ---");
+    const excludeImpResult = await validator.generateLegalBag(troubleBrewing, 7, {
+        mustExclude: ['imp']
+    });
+    
+    if (excludeImpResult.success) {
+        console.log("❌ UNEXPECTED: Generated setup excluding imp!");
+        console.log("Selected roles:", excludeImpResult.selectedRoles);
+        console.log("This should not be possible - imp is the only demon in Trouble Brewing");
+        
+        // Verify anyway for debugging
+        const impVerification = await validator.checkBagLegality({
+            script: troubleBrewing,
+            playerCount: 7,
+            selectedRoles: excludeImpResult.selectedRoles!,
+            inPlayDistribution: excludeImpResult.inPlayDistribution!,
+            physicalBag: excludeImpResult.physicalBag!
+        });
+        console.log("Verification:", impVerification.legal ? "VALID ✅" : "INVALID ❌");
+    } else {
+        console.log("✅ Correctly failed to generate setup excluding imp");
+        console.log("(As expected - imp is the only demon in Trouble Brewing)");
+    }
 }
 
 async function testSATConstraintParsing() {
