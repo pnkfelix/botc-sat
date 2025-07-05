@@ -69,6 +69,67 @@ async function testBagLegality() {
     
     const result2 = await validator.checkBagLegality(problem2);
     console.log("Result:", result2.legal ? "LEGAL" : "ILLEGAL");
+    
+    // Test 3: Legal Drunk setup - physical bag has extra Townsfolk token
+    console.log("\n--- Test 3: Legal Drunk setup - physical bag mismatch ---");
+    const problem3 = {
+        script: troubleBrewing,
+        playerCount: 7,
+        selectedRoles: ['chef', 'empath', 'investigator', 'recluse', 'drunk', 'baron', 'imp'],
+        inPlayDistribution: { Townsfolk: 3, Outsider: 2, Minion: 1, Demon: 1 }, // Baron effect: base 5,0 -> 3,2
+        physicalBag: new Map([
+            ['chef', 1], ['empath', 1], ['investigator', 1], // 3 townsfolk tokens
+            ['washerwoman', 1], // Extra townsfolk token (instead of drunk token) = 4 total townsfolk  
+            ['recluse', 1], // 1 outsider token (recluse stays in bag)
+            // Note: no 'drunk' token in physical bag - it's been substituted with 'washerwoman'
+            ['baron', 1],   // 1 minion
+            ['imp', 1]      // 1 demon
+            // Physical counts: 4 townsfolk, 1 outsider, 1 minion, 1 demon
+        ])
+    };
+    
+    const result3 = await validator.checkBagLegality(problem3);
+    console.log("Result:", result3.legal ? "LEGAL" : "ILLEGAL");
+    
+    // Test 4: Illegal Drunk setup - physical bag doesn't account for substitution 
+    console.log("\n--- Test 4: Illegal Drunk setup - no token substitution ---");
+    const problem4 = {
+        script: troubleBrewing,
+        playerCount: 7,
+        selectedRoles: ['chef', 'empath', 'investigator', 'recluse', 'drunk', 'baron', 'imp'],
+        inPlayDistribution: { Townsfolk: 3, Outsider: 2, Minion: 1, Demon: 1 }, // Baron effect: base 5,0 -> 3,2
+        physicalBag: new Map([
+            ['chef', 1], ['empath', 1], ['investigator', 1], // 3 townsfolk tokens
+            ['recluse', 1], ['drunk', 1], // Wrong! Drunk token should NOT be in physical bag
+            ['baron', 1],   // 1 minion
+            ['imp', 1]      // 1 demon
+            // Physical counts: 3 townsfolk, 2 outsider, 1 minion, 1 demon - wrong, should be 4,1,1,1
+        ])
+    };
+    
+    const result4 = await validator.checkBagLegality(problem4);
+    console.log("Result:", result4.legal ? "LEGAL" : "ILLEGAL");
+    
+    // Test 5: Simple Drunk test - 6 players
+    console.log("\n--- Test 5: Simple Drunk test (6 players) ---");
+    console.log("Base 6p: 3 townsfolk, 1 outsider, 1 minion, 1 demon");
+    console.log("With Drunk: in-play has 1 outsider, physical bag should have extra townsfolk");
+    const problem5 = {
+        script: troubleBrewing,
+        playerCount: 6,
+        selectedRoles: ['chef', 'empath', 'investigator', 'drunk', 'poisoner', 'imp'],
+        inPlayDistribution: { Townsfolk: 3, Outsider: 1, Minion: 1, Demon: 1 }, // Drunk counts as outsider in-play
+        physicalBag: new Map([
+            ['chef', 1], ['empath', 1], ['investigator', 1], ['washerwoman', 1], // 4 townsfolk tokens (extra one)
+            // No drunk token in physical bag - it's been substituted
+            ['poisoner', 1],   // 1 minion
+            ['imp', 1]         // 1 demon
+            // Physical counts: 4 townsfolk, 0 outsider, 1 minion, 1 demon
+        ])
+    };
+    
+    const result5 = await validator.checkBagLegality(problem5);
+    console.log("Result:", result5.legal ? "LEGAL" : "ILLEGAL");
 }
 
 async function testSATConstraintParsing() {

@@ -35,9 +35,11 @@ const drunk: Role = {
     type: 'Outsider',
     englishText: 'You do not know you are the Drunk. You think you are a Townsfolk character, but you are not.',
     constraints: [
-        // Drunk creates a mismatch between in-play and physical bag
-        // For now, we'll handle this as no count modification
-        // TODO: Add physical bag substitution logic later
+        {
+            type: 'physical_bag_substitution',
+            fromType: 'outsider',  // Drunk token is replaced
+            toType: 'townsfolk'    // With a Townsfolk token in physical bag
+        }
     ],
     edition: 'Trouble Brewing',
     complexity: 2

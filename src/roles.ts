@@ -65,6 +65,10 @@ export interface Role {
         type: 'count_modification';
         target: string;
         delta: number;
+    } | {
+        type: 'physical_bag_substitution';
+        fromType: string;  // Role type that decreases in physical bag
+        toType: string;    // Role type that increases in physical bag
     }>;
     
     // For later: ongoing abilities during gameplay

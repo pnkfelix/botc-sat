@@ -18,7 +18,10 @@ export class ScriptToSATCompiler {
         // 2. Encode role-specific modifications from DSL
         this.encodeRoleModifications(script, solver);
         
-        // 3. Encode consistency relationships
+        // 3. Encode physical bag substitutions
+        this.encodePhysicalBagSubstitutions(script, solver);
+        
+        // 4. Encode consistency relationships
         this.encodeConsistencyRules(solver);
         
         const scriptVarCount = solver.getVariableCount() - initialVarCount;
@@ -165,6 +168,115 @@ export class ScriptToSATCompiler {
         }
     }
     
+    private encodePhysicalBagSubstitutions(script: Script, solver: SATSolver): void {
+        // Handle roles that create mismatches between in-play and physical bag
+        const countTypes = ['townsfolk', 'outsider', 'minion', 'demon'];
+        
+        for (const countType of countTypes) {
+            this.encodePhysicalBagChain(script, countType, solver);
+        }
+    }
+    
+    private encodePhysicalBagChain(script: Script, countType: string, solver: SATSolver): void {
+        // Find roles that affect physical bag for this count type
+        const substitutionRoles: Array<{roleIndex: number, roleId: string, fromType: string, toType: string}> = [];
+        
+        for (let roleIndex = 0; roleIndex < script.roleIds.length; roleIndex++) {
+            const roleId = script.roleIds[roleIndex];
+            const role = getRole(roleId);
+            if (role && role.constraints) {
+                for (const constraint of role.constraints) {
+                    if (constraint.type === 'physical_bag_substitution' && 
+                        (constraint.fromType === countType || constraint.toType === countType)) {
+                        substitutionRoles.push({ 
+                            roleIndex, 
+                            roleId, 
+                            fromType: constraint.fromType, 
+                            toType: constraint.toType 
+                        });
+                    }
+                }
+            }
+        }
+        
+        if (substitutionRoles.length === 0) {
+            // No substitutions for this count type, so physical = final
+            this.encodePhysicalEqualsInPlay(countType, solver);
+            return;
+        }
+        
+        // Create substitution chain: final -> after_substitution_role_X -> physical
+        let prevPrefix = `final_${countType}`;
+        
+        for (const { roleIndex, roleId, fromType, toType } of substitutionRoles) {
+            const currentPrefix = `after_substitution_role_${roleIndex}_${countType}`;
+            this.encodePhysicalSubstitution(prevPrefix, currentPrefix, roleId, countType, fromType, toType, solver);
+            prevPrefix = currentPrefix;
+        }
+        
+        // Final step: last substitution -> physical
+        this.encodePhysicalFinalStep(prevPrefix, `physical_${countType}`, solver);
+    }
+    
+    private encodePhysicalSubstitution(prevPrefix: string, currentPrefix: string, roleId: string, countType: string, fromType: string, toType: string, solver: SATSolver): void {
+        const roleVar = solver.addVariable(`${roleId}_present`);
+        
+        // For reasonable count ranges (0-15)
+        for (let count = 0; count <= 15; count++) {
+            const prevVar = solver.addVariable(`${prevPrefix}_${count}`);
+            const currentVar = solver.addVariable(`${currentPrefix}_${count}`);
+            
+            if (countType === fromType) {
+                // This count type decreases by 1 in physical bag when role is present
+                const decreasedVar = solver.addVariable(`${currentPrefix}_${count - 1}`);
+                
+                // Role present: prevPrefix_count => currentPrefix_(count-1)
+                if (count > 0) {
+                    solver.addClause([-roleVar, -prevVar, decreasedVar]);
+                }
+                
+                // Role not present: prevPrefix_count => currentPrefix_count
+                solver.addClause([roleVar, -prevVar, currentVar]);
+                
+            } else if (countType === toType) {
+                // This count type increases by 1 in physical bag when role is present
+                const increasedVar = solver.addVariable(`${currentPrefix}_${count + 1}`);
+                
+                // Role present: prevPrefix_count => currentPrefix_(count+1)
+                if (count < 15) {
+                    solver.addClause([-roleVar, -prevVar, increasedVar]);
+                }
+                
+                // Role not present: prevPrefix_count => currentPrefix_count
+                solver.addClause([roleVar, -prevVar, currentVar]);
+            }
+        }
+    }
+    
+    private encodePhysicalEqualsInPlay(countType: string, solver: SATSolver): void {
+        // If no substitutions: physical_X = final_X
+        for (let count = 0; count <= 15; count++) {
+            const finalVar = solver.addVariable(`final_${countType}_${count}`);
+            const physicalVar = solver.addVariable(`physical_${countType}_${count}`);
+            
+            // final_X <=> physical_X (both directions)
+            solver.addClause([-finalVar, physicalVar]);   // final => physical
+            solver.addClause([finalVar, -physicalVar]);   // physical => final
+        }
+    }
+    
+    private encodePhysicalFinalStep(prevPrefix: string, physicalPrefix: string, solver: SATSolver): void {
+        // Final mapping: prevPrefix_X => physicalPrefix_X
+        for (let count = 0; count <= 15; count++) {
+            const prevVar = solver.addVariable(`${prevPrefix}_${count}`);
+            const physicalVar = solver.addVariable(`${physicalPrefix}_${count}`);
+            
+            // prevPrefix_X <=> physicalPrefix_X
+            solver.addClause([-prevVar, physicalVar]);
+            solver.addClause([prevVar, -physicalVar]);
+        }
+    }
+
     private encodeConsistencyRules(solver: SATSolver): void {
         // Add constraints ensuring exactly one count is true for each type
         const countTypes = ['townsfolk', 'outsider', 'minion', 'demon'];
