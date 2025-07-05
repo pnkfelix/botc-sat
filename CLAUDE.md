@@ -56,6 +56,23 @@ Based on development sessions, these patterns lead to better outcomes:
 - **Use setTimeout as antipattern indicator** - proper event handling is preferred
 - **Verify actual functionality** - browser tests should show real results, not placeholder messages
 
+### Testing and Validation Workflow
+- **Test assumptions explicitly** - don't assume existing code works as described
+- **Write tests that actually test the claimed functionality** - avoid misleading test descriptions
+- **Isolate and verify component behavior** - test individual pieces before building on them
+- **Use branches for experimental work** - keep main branch stable for foundational features
+- **Document findings in research/ directory** - capture insights and decision rationale for future reference
+
+### Problem Investigation Approach
+- **Question initial hypotheses** - if something seems wrong, investigate rather than assume
+- **Create minimal test cases** - isolate the specific behavior being tested
+- **Verify actual vs. expected behavior** - don't rely on high-level descriptions
+- **Capture both successful patterns and false paths** - document what didn't work and why
+
+### File Reading Strategy
+- **For large files near size limit** - read first half then second half instead of using offset/limit
+- **Files within 2x of 256KB limit** - split reading approach is more efficient than small chunks
+
 ## Build Commands
 - `npm run build` - Compile TypeScript for Node.js
 - `npm run build:browser` - Compile TypeScript to UMD for browser

@@ -1,4 +1,4 @@
-// JSMiniSolvers integration for both Node.js and browser
+// Thin typed wrapper around JSMiniSolvers CNF interface
 declare const minisolvers: any; // Global available in browser
 
 // Try to require JSMiniSolvers for Node.js
@@ -9,104 +9,173 @@ try {
     // Will use global minisolvers in browser
 }
 
+export interface SATResult {
+    satisfiable: boolean;
+    model?: Record<string, boolean>;
+}
+
+/**
+ * Thin typed wrapper around JSMiniSolvers.
+ * Exposes CNF interface directly with variable name mapping.
+ * 
+ * Usage:
+ *   const solver = new SATSolver();
+ *   const x = solver.addVariable('baron_present');
+ *   const y = solver.addVariable('outsider_count_2');
+ *   solver.addClause([x]);        // baron_present = true
+ *   solver.addClause([-x, y]);    // baron_present => outsider_count_2  
+ *   const result = solver.solve();
+ */
 export class SATSolver {
     private variableMap: Map<string, number> = new Map();
+    private reverseMap: Map<number, string> = new Map();
     private nextVarId: number = 1;
+    private solver: any = null;
+    private solved: boolean = false;
 
     constructor() {
-        // JSMiniSolvers will be available globally in browser
-        // In Node.js, we'd need to require it or use a different approach
+        this.initializeSolver();
     }
 
-    async solve(constraints: string[]): Promise<{ satisfiable: boolean; model?: any }> {
-        console.log("Solving constraints:", constraints);
-        
-        // Get JSMiniSolvers from either Node.js require or browser global
+    private initializeSolver(): void {
         const solvers = nodeJSMiniSolvers || (typeof minisolvers !== 'undefined' ? minisolvers : null);
         
-        if (solvers) {
-            return this.solveWithJSMiniSolvers(constraints, solvers);
-        } else {
+        if (!solvers) {
             throw new Error("JSMiniSolvers not available in this environment");
         }
+        
+        this.solver = new solvers.MinisatSolver();
     }
 
-    private solveWithJSMiniSolvers(constraints: string[], solvers: any): { satisfiable: boolean; model?: any } {
-        const solver = new solvers.MinisatSolver();
-        
-        // Convert our string constraints to CNF clauses for MiniSat
-        const clauses = this.convertConstraintsToCNF(constraints);
-        
-        // Add variables to solver
-        for (let i = 1; i <= this.nextVarId - 1; i++) {
-            solver.new_var();
+    /**
+     * Add a new variable and return its ID.
+     * Variables are 1-indexed (JSMiniSolvers convention).
+     */
+    addVariable(name: string): number {
+        if (this.variableMap.has(name)) {
+            return this.variableMap.get(name)!;
         }
         
-        // Add clauses to solver
-        for (const clause of clauses) {
-            solver.add_clause(clause);
-        }
+        const varId = this.nextVarId++;
+        this.variableMap.set(name, varId);
+        this.reverseMap.set(varId, name);
         
-        const isSat = solver.solve();
+        // Create variable in underlying solver
+        this.solver.new_var();
         
-        if (isSat) {
-            const rawModel = solver.get_model();
-            // Convert back to our variable names
-            const model: Record<string, boolean> = {};
-            for (const [varName, varId] of this.variableMap.entries()) {
-                model[varName] = rawModel[varId - 1]; // MiniSat uses 1-based, array is 0-based
-            }
-            return { satisfiable: true, model };
-        } else {
-            return { satisfiable: false };
-        }
+        return varId;
     }
 
-
-    private parseConstraint(constraint: string): { variable: string; value: boolean } | null {
-        // Basic constraint parsing
-        // Format: "variable=true" or "variable=false"
-        if (constraint.includes('=')) {
-            const [variable, value] = constraint.split('=').map(s => s.trim());
-            return { variable, value: value === 'true' };
-        }
-        return null;
+    /**
+     * Get variable ID for existing variable (undefined if not found).
+     */
+    getVariableId(name: string): number | undefined {
+        return this.variableMap.get(name);
     }
 
-    private getVariableId(variable: string): number {
-        if (!this.variableMap.has(variable)) {
-            this.variableMap.set(variable, this.nextVarId++);
-        }
-        return this.variableMap.get(variable)!;
+    /**
+     * Get variable name for ID (undefined if not found).
+     */
+    getVariableName(id: number): string | undefined {
+        return this.reverseMap.get(id);
     }
 
-    private convertConstraintsToCNF(constraints: string[]): number[][] {
-        // Convert our simple "variable=true/false" constraints to CNF clauses
-        const clauses: number[][] = [];
+    /**
+     * Add a CNF clause to the solver.
+     * 
+     * @param literals Array of variable IDs (positive = true, negative = false)
+     *                 Example: [1, -2] means "var1 OR NOT var2"
+     */
+    addClause(literals: number[]): void {
+        if (this.solved) {
+            throw new Error("Cannot add clauses after solve() has been called. Create a new solver instance.");
+        }
         
-        for (const constraint of constraints) {
-            const parsed = this.parseConstraint(constraint);
-            if (parsed) {
-                const varId = this.getVariableId(parsed.variable);
-                // Create a unit clause: [varId] for true, [-varId] for false
-                clauses.push([parsed.value ? varId : -varId]);
+        // Validate all variables exist
+        for (const lit of literals) {
+            const varId = Math.abs(lit);
+            if (varId === 0 || varId >= this.nextVarId) {
+                throw new Error(`Invalid variable ID: ${varId}. Use addVariable() first.`);
             }
         }
         
-        return clauses;
+        this.solver.add_clause(literals);
     }
 
-    async checkLegality(gameState: any): Promise<boolean> {
-        // This method will check if a game state is legal according to BOTC rules
-        // Placeholder implementation
-        const constraints = this.generateConstraintsFromGameState(gameState);
-        const result = await this.solve(constraints);
-        return result.satisfiable;
+    /**
+     * Add a unit clause (single literal).
+     * Convenience method for common case.
+     */
+    addUnitClause(variableId: number, value: boolean): void {
+        this.addClause([value ? variableId : -variableId]);
     }
 
-    private generateConstraintsFromGameState(_gameState: any): string[] {
-        // Convert BOTC game state to SAT constraints
-        // This is where the BOTC rule logic will be implemented
-        return [];
+    /**
+     * Solve the current set of clauses.
+     * @returns true if satisfiable, false if unsatisfiable
+     */
+    solve(): boolean {
+        const result = this.solver.solve();
+        this.solved = true;
+        return result === 1;
+    }
+
+    /**
+     * Get the satisfying model (if solve() returned true).
+     * @returns Object mapping variable names to boolean values, or null if unsatisfiable
+     */
+    getModel(): Record<string, boolean> | null {
+        if (!this.solved) {
+            throw new Error("Must call solve() first");
+        }
+        
+        const rawModel = this.solver.get_model();
+        if (!rawModel) {
+            return null;
+        }
+        
+        const model: Record<string, boolean> = {};
+        for (const [varName, varId] of this.variableMap.entries()) {
+            // JSMiniSolvers uses 0-based array but 1-based variable IDs
+            model[varName] = Boolean(rawModel[varId - 1]);
+        }
+        
+        return model;
+    }
+
+    /**
+     * Complete solve operation returning both satisfiability and model.
+     */
+    solveWithModel(): SATResult {
+        const satisfiable = this.solve();
+        return {
+            satisfiable,
+            model: satisfiable ? this.getModel() || undefined : undefined
+        };
+    }
+
+    /**
+     * Get number of variables created.
+     */
+    getVariableCount(): number {
+        return this.nextVarId - 1;
+    }
+
+    /**
+     * Get all variable names.
+     */
+    getVariableNames(): string[] {
+        return Array.from(this.variableMap.keys());
+    }
+
+    /**
+     * Reset solver state (creates new solver instance).
+     */
+    reset(): void {
+        this.variableMap.clear();
+        this.reverseMap.clear();
+        this.nextVarId = 1;
+        this.solved = false;
+        this.initializeSolver();
     }
 }
