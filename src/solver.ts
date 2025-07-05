@@ -32,6 +32,7 @@ export class SATSolver {
     private nextVarId: number = 1;
     private solver: any = null;
     private solved: boolean = false;
+    private clauseCount: number = 0;
 
     constructor() {
         this.initializeSolver();
@@ -100,6 +101,7 @@ export class SATSolver {
         }
         
         this.solver.add_clause(literals);
+        this.clauseCount++;
     }
 
     /**
@@ -162,6 +164,13 @@ export class SATSolver {
     }
 
     /**
+     * Get number of clauses added.
+     */
+    getClauseCount(): number {
+        return this.clauseCount;
+    }
+
+    /**
      * Get all variable names.
      */
     getVariableNames(): string[] {
@@ -176,6 +185,7 @@ export class SATSolver {
         this.reverseMap.clear();
         this.nextVarId = 1;
         this.solved = false;
+        this.clauseCount = 0;
         this.initializeSolver();
     }
 }

@@ -26,6 +26,9 @@ export async function main() {
     // Test bag legality validation
     await testBagLegality();
     
+    // Test generative setup  
+    await testGenerativeSetup();
+    
     console.log("\n✅ Ready for BOTC modeling!");
 }
 
@@ -130,6 +133,127 @@ async function testBagLegality() {
     
     const result5 = await validator.checkBagLegality(problem5);
     console.log("Result:", result5.legal ? "LEGAL" : "ILLEGAL");
+}
+
+async function testGenerativeSetup() {
+    console.log("\n=== Testing Generative Setup (SAT solver picks a legal setup) ===");
+    
+    const validator = new BagLegalityValidator();
+    
+    // Test bag generation for 8 players
+    const result = await validator.generateLegalBag(troubleBrewing, 8);
+    
+    if (result.success) {
+        console.log("✅ SAT solver generated a legal setup!");
+        
+        console.log("\n--- Generated Setup ---");
+        console.log("Selected roles:", result.selectedRoles);
+        console.log("In-play distribution:", result.inPlayDistribution);
+        
+        console.log("\n--- Physical Bag ---");
+        if (result.physicalBag) {
+            for (const [roleId, count] of result.physicalBag) {
+                console.log(`${roleId}: ${count}`);
+            }
+        }
+        
+        // Verify the generated setup by validating it
+        console.log("\n--- Verifying Generated Setup ---");
+        const verification = await validator.checkBagLegality({
+            script: troubleBrewing,
+            playerCount: 8,
+            selectedRoles: result.selectedRoles!,
+            inPlayDistribution: result.inPlayDistribution!,
+            physicalBag: result.physicalBag!
+        });
+        
+        console.log("Verification result:", verification.legal ? "VALID ✅" : "INVALID ❌");
+        
+    } else {
+        console.log("❌ Failed to generate legal setup - constraints may be unsatisfiable!");
+    }
+    
+    // Test generation with preferences
+    console.log("\n" + "=".repeat(60));
+    console.log("Testing preference-based generation...");
+    
+    // Test: Must include Drunk
+    console.log("\n--- Generating with Drunk (forces Baron for 8 players) ---");
+    const drunkResult = await validator.generateLegalBag(troubleBrewing, 8, {
+        mustInclude: ['drunk']
+    });
+    
+    if (drunkResult.success) {
+        console.log("✅ Generated setup with Drunk!");
+        console.log("Selected roles:", drunkResult.selectedRoles);
+        console.log("In-play distribution:", drunkResult.inPlayDistribution);
+        
+        // Verify the setup
+        const drunkVerification = await validator.checkBagLegality({
+            script: troubleBrewing,
+            playerCount: 8,
+            selectedRoles: drunkResult.selectedRoles!,
+            inPlayDistribution: drunkResult.inPlayDistribution!,
+            physicalBag: drunkResult.physicalBag!
+        });
+        console.log("Verification:", drunkVerification.legal ? "VALID ✅" : "INVALID ❌");
+    } else {
+        console.log("❌ Failed to generate setup with Drunk");
+    }
+    
+    // Test: Must include Baron
+    console.log("\n--- Generating with Baron (modifies base distribution) ---");
+    const baronResult = await validator.generateLegalBag(troubleBrewing, 7, {
+        mustInclude: ['baron']
+    });
+    
+    if (baronResult.success) {
+        console.log("✅ Generated setup with Baron!");
+        console.log("Selected roles:", baronResult.selectedRoles);
+        console.log("In-play distribution:", baronResult.inPlayDistribution);
+        
+        // Verify the setup
+        const baronVerification = await validator.checkBagLegality({
+            script: troubleBrewing,
+            playerCount: 7,
+            selectedRoles: baronResult.selectedRoles!,
+            inPlayDistribution: baronResult.inPlayDistribution!,
+            physicalBag: baronResult.physicalBag!
+        });
+        console.log("Verification:", baronVerification.legal ? "VALID ✅" : "INVALID ❌");
+    } else {
+        console.log("❌ Failed to generate setup with Baron");
+    }
+    
+    // Test: 7-player base game (should be easy)
+    console.log("\n--- Generating basic 7-player setup ---");
+    const basic7Result = await validator.generateLegalBag(troubleBrewing, 7);
+    
+    if (basic7Result.success) {
+        console.log("✅ Generated basic 7-player setup!");
+        console.log("Selected roles:", basic7Result.selectedRoles);
+        console.log("In-play distribution:", basic7Result.inPlayDistribution);
+        console.log("Expected: 5 Townsfolk, 0 Outsiders, 1 Minion, 1 Demon");
+    } else {
+        console.log("❌ Failed to generate basic 7-player setup");
+    }
+    
+    // Test: 7-player with Drunk (should force Baron to create outsider slots)
+    console.log("\n--- Generating 7-player with Drunk (should infer Baron needed) ---");
+    const drunk7Result = await validator.generateLegalBag(troubleBrewing, 7, {
+        mustInclude: ['drunk']
+    });
+    
+    if (drunk7Result.success) {
+        console.log("✅ Generated 7-player setup with Drunk!");
+        console.log("Selected roles:", drunk7Result.selectedRoles);
+        console.log("In-play distribution:", drunk7Result.inPlayDistribution);
+        console.log("Expected: Baron should be included to create outsider slots");
+        console.log("Baron included?", drunk7Result.selectedRoles?.includes('baron') ? "YES ✅" : "NO ❌");
+    } else {
+        console.log("❌ Failed to generate 7-player setup with Drunk");
+        console.log("This might be expected if no solution exists without Baron");
+    }
 }
 
 async function testSATConstraintParsing() {

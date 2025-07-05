@@ -7,7 +7,7 @@ export class ScriptToSATCompiler {
     
     // Generate SAT constraints that encode all the rules from a script
     // These are conditional rules that apply when certain roles are present
-    compileScriptToSAT(script: Script, solver: SATSolver): number {
+    compileScriptToSAT(script: Script, solver: SATSolver, includeRoleEnumeration: boolean = false): number {
         const initialVarCount = solver.getVariableCount();
         
         console.log(`Compiling script ${script.name} to SAT constraints...`);
@@ -21,7 +21,12 @@ export class ScriptToSATCompiler {
         // 3. Encode physical bag substitutions
         this.encodePhysicalBagSubstitutions(script, solver);
         
-        // 4. Encode consistency relationships
+        // 4. Encode role enumeration constraints (for generation mode)
+        if (includeRoleEnumeration) {
+            this.encodeRoleEnumerationConstraints(script, solver);
+        }
+        
+        // 5. Encode consistency relationships
         this.encodeConsistencyRules(solver);
         
         const scriptVarCount = solver.getVariableCount() - initialVarCount;
@@ -275,6 +280,235 @@ export class ScriptToSATCompiler {
             solver.addClause([-prevVar, physicalVar]);
             solver.addClause([prevVar, -physicalVar]);
         }
+    }
+
+    private encodeRoleEnumerationConstraints(script: Script, solver: SATSolver): void {
+        console.log("Adding role enumeration constraints for bag generation...");
+        
+        // For each player count, enforce exactly that many roles are present
+        for (let playerCount = 5; playerCount <= 15; playerCount++) {
+            this.encodePlayerCountRoleSelection(script, playerCount, solver);
+        }
+        
+        // For each player count and type, enforce role type counts match final counts
+        for (let playerCount = 5; playerCount <= 15; playerCount++) {
+            this.encodeRoleTypeMatching(script, playerCount, solver);
+        }
+    }
+    
+    private encodePlayerCountRoleSelection(script: Script, playerCount: number, solver: SATSolver): void {
+        // If player_count_N = true, then exactly N roles must be present
+        const playerCountVar = solver.addVariable(`player_count_${playerCount}`);
+        const roleVars: number[] = [];
+        
+        // Collect all role present variables
+        for (const roleId of script.roleIds) {
+            const roleVar = solver.addVariable(`${roleId}_present`);
+            roleVars.push(roleVar);
+        }
+        
+        // Encode: player_count_N => exactly N roles present
+        this.encodeConditionalExactlyN([playerCountVar], roleVars, playerCount, solver);
+    }
+    
+    private encodeRoleTypeMatching(script: Script, playerCount: number, solver: SATSolver): void {
+        const playerCountVar = solver.addVariable(`player_count_${playerCount}`);
+        const roleTypes = ['Townsfolk', 'Outsider', 'Minion', 'Demon'];
+        
+        for (const roleType of roleTypes) {
+            // Get roles of this type
+            const rolesOfType: string[] = [];
+            for (const roleId of script.roleIds) {
+                const role = getRole(roleId);
+                if (role && role.type === roleType) {
+                    rolesOfType.push(roleId);
+                }
+            }
+            
+            if (rolesOfType.length === 0) continue;
+            
+            // For each possible count (0-15), enforce matching
+            for (let count = 0; count <= 15; count++) {
+                const finalCountVar = solver.addVariable(`final_${roleType.toLowerCase()}_${count}`);
+                const roleVars = rolesOfType.map(roleId => solver.addVariable(`${roleId}_present`));
+                
+                // If player_count_N AND final_type_count = K, then exactly K roles of type must be present
+                const conditionVars = [playerCountVar, finalCountVar];
+                this.encodeConditionalExactlyN(conditionVars, roleVars, count, solver);
+            }
+        }
+    }
+    
+    private encodeConditionalExactlyN(conditionVars: number[], targetVars: number[], n: number, solver: SATSolver): void {
+        // Encode: (condition1 AND condition2 AND ...) => exactly N of targetVars are true
+        // Using sequential counter encoding for efficiency
+        
+        if (targetVars.length < n) {
+            // Impossible case: need more roles than available
+            // Add contradiction: NOT (condition1 AND condition2 AND ...)
+            const negatedConditions = conditionVars.map(v => -v);
+            solver.addClause(negatedConditions);
+            return;
+        }
+        
+        if (targetVars.length === 0 || n === 0) {
+            if (n === 0) {
+                // All target vars must be false when conditions hold
+                for (const targetVar of targetVars) {
+                    const clause = [...conditionVars.map(v => -v), -targetVar];
+                    solver.addClause(clause);
+                }
+            } else {
+                // n > 0 but no target vars - contradiction
+                const negatedConditions = conditionVars.map(v => -v);
+                solver.addClause(negatedConditions);
+            }
+            return;
+        }
+        
+        // Use sequential counter encoding
+        this.encodeConditionalSequentialCounter(conditionVars, targetVars, n, solver);
+    }
+    
+    private encodeConditionalSequentialCounter(conditionVars: number[], targetVars: number[], n: number, solver: SATSolver): void {
+        // Sequential counter encoding: create auxiliary variables s[i][j]
+        // s[i][j] = "among first i target variables, at least j are true"
+        // Much more efficient than combinatorial encoding: O(m*n) vs O(C(m,n))
+        
+        const m = targetVars.length;
+        
+        // Create auxiliary variables s[i][j] for i=1..m, j=1..min(i,n+1)
+        // We need n+1 to distinguish between "exactly n" and "more than n"
+        const maxJ = Math.min(m, n + 1);
+        const auxVars: number[][] = [];
+        
+        for (let i = 1; i <= m; i++) {
+            auxVars[i] = [];
+            for (let j = 1; j <= Math.min(i, maxJ); j++) {
+                auxVars[i][j] = solver.addVariable(`seq_${i}_${j}_${Date.now()}_${Math.random()}`);
+            }
+        }
+        
+        // Base case: s[1][1] <=> targetVars[0]
+        if (auxVars[1] && auxVars[1][1]) {
+            solver.addClause([-targetVars[0], auxVars[1][1]]);  // target[0] => s[1][1]
+            solver.addClause([targetVars[0], -auxVars[1][1]]);  // s[1][1] => target[0]
+        }
+        
+        // Recursive cases: s[i][j] represents counting logic
+        for (let i = 2; i <= m; i++) {
+            const target_i = targetVars[i - 1]; // targetVars is 0-indexed
+            
+            for (let j = 1; j <= Math.min(i, maxJ); j++) {
+                const s_i_j = auxVars[i][j];
+                
+                if (j === 1) {
+                    // s[i][1]: at least 1 among first i variables
+                    // s[i][1] <=> s[i-1][1] OR target[i-1]
+                    const s_prev_1 = i > 1 && auxVars[i-1] ? auxVars[i-1][1] : null;
+                    
+                    if (s_prev_1) {
+                        // s[i][1] => s[i-1][1] OR target[i-1]
+                        solver.addClause([-s_i_j, s_prev_1, target_i]);
+                        // (s[i-1][1] OR target[i-1]) => s[i][1]
+                        solver.addClause([s_i_j, -s_prev_1]);
+                        solver.addClause([s_i_j, -target_i]);
+                    } else {
+                        // i=1 case, s[1][1] <=> target[0] (handled above)
+                        solver.addClause([-s_i_j, target_i]);
+                        solver.addClause([s_i_j, -target_i]);
+                    }
+                } else {
+                    // s[i][j]: at least j among first i variables (j > 1)
+                    // s[i][j] <=> s[i-1][j] OR (s[i-1][j-1] AND target[i-1])
+                    const s_prev_j = auxVars[i-1] ? auxVars[i-1][j] : null;
+                    const s_prev_j_minus_1 = auxVars[i-1] ? auxVars[i-1][j-1] : null;
+                    
+                    if (s_prev_j && s_prev_j_minus_1) {
+                        // s[i][j] => s[i-1][j] OR (s[i-1][j-1] AND target[i-1])
+                        solver.addClause([-s_i_j, s_prev_j, s_prev_j_minus_1]);
+                        solver.addClause([-s_i_j, s_prev_j, target_i]);
+                        
+                        // (s[i-1][j] OR (s[i-1][j-1] AND target[i-1])) => s[i][j]
+                        solver.addClause([s_i_j, -s_prev_j]);
+                        solver.addClause([s_i_j, -s_prev_j_minus_1, -target_i]);
+                    } else if (s_prev_j_minus_1) {
+                        // No s[i-1][j], so s[i][j] <=> (s[i-1][j-1] AND target[i-1])
+                        solver.addClause([-s_i_j, s_prev_j_minus_1]);
+                        solver.addClause([-s_i_j, target_i]);
+                        solver.addClause([s_i_j, -s_prev_j_minus_1, -target_i]);
+                    }
+                }
+            }
+        }
+        
+        // Final constraints: conditions => exactly n target variables true
+        // This means: s[m][n] = true AND (if n < m) s[m][n+1] = false
+        
+        const s_m_n = auxVars[m] ? auxVars[m][n] : null;
+        const s_m_n_plus_1 = auxVars[m] && n + 1 <= maxJ ? auxVars[m][n + 1] : null;
+        
+        if (s_m_n) {
+            // conditions => s[m][n] (at least n)
+            const atLeastClause = [...conditionVars.map(v => -v), s_m_n];
+            solver.addClause(atLeastClause);
+        }
+        
+        if (s_m_n_plus_1) {
+            // conditions => NOT s[m][n+1] (at most n)
+            const atMostClause = [...conditionVars.map(v => -v), -s_m_n_plus_1];
+            solver.addClause(atMostClause);
+        } else if (n < m) {
+            // If we don't have s[m][n+1], we need another way to enforce "at most n"
+            // Fall back to simpler encoding for this edge case
+            this.encodeSimpleAtMostN(conditionVars, targetVars, n, solver);
+        }
+    }
+    
+    private encodeSimpleAtMostN(conditionVars: number[], targetVars: number[], n: number, solver: SATSolver): void {
+        // Simple at-most-n encoding: for any (n+1) variables, at least one must be false
+        // Only used as fallback when sequential counter doesn't cover the range
+        
+        if (n >= targetVars.length) return; // Always satisfied
+        
+        const combinations = this.generateCombinations(targetVars, n + 1);
+        for (const combo of combinations) {
+            // conditions => NOT (all n+1 variables true)
+            const clause = [...conditionVars.map(v => -v), ...combo.map(v => -v)];
+            solver.addClause(clause);
+        }
+    }
+    
+    private generateCombinations(vars: number[], k: number): number[][] {
+        if (k === 0) return [[]];
+        if (k > vars.length) return [];
+        if (k === vars.length) return [vars.slice()];
+        
+        const result: number[][] = [];
+        
+        // Use iterative approach to avoid deep recursion
+        const indices = Array.from({ length: k }, (_, i) => i);
+        
+        while (true) {
+            // Add current combination
+            result.push(indices.map(i => vars[i]));
+            
+            // Find rightmost index that can be incremented
+            let i = k - 1;
+            while (i >= 0 && indices[i] === vars.length - k + i) {
+                i--;
+            }
+            
+            if (i < 0) break; // All combinations generated
+            
+            // Increment index and reset following indices
+            indices[i]++;
+            for (let j = i + 1; j < k; j++) {
+                indices[j] = indices[j - 1] + 1;
+            }
+        }
+        
+        return result;
     }
 
     private encodeConsistencyRules(solver: SATSolver): void {

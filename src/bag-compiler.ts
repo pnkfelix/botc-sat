@@ -23,6 +23,79 @@ export class BagLegalityValidator {
         this.scriptCompiler = new ScriptToSATCompiler();
     }
     
+    // Generate a legal bag setup for given script and player count
+    async generateLegalBag(script: Script, playerCount: number, preferences?: {
+        mustInclude?: string[],
+        mustExclude?: string[]
+    }): Promise<{
+        success: boolean,
+        selectedRoles?: string[],
+        inPlayDistribution?: RoleDistribution,
+        physicalBag?: Map<string, number>,
+        model?: any
+    }> {
+        // Reset solver for new problem
+        this.solver.reset();
+        
+        console.log(`\n=== Generating Legal Bag (${playerCount} players) ===`);
+        
+        // Step 1: Add general rules from script WITH role enumeration
+        const scriptVarCount = this.scriptCompiler.compileScriptToSAT(script, this.solver, true);
+        
+        // Step 2: Force specific player count
+        const playerCountVar = this.solver.addVariable(`player_count_${playerCount}`);
+        this.solver.addUnitClause(playerCountVar, true);
+        
+        // Force all other player counts to false
+        for (let count = 5; count <= 15; count++) {
+            if (count !== playerCount) {
+                const otherPlayerCountVar = this.solver.addVariable(`player_count_${count}`);
+                this.solver.addUnitClause(otherPlayerCountVar, false);
+            }
+        }
+        
+        // Apply preferences
+        if (preferences?.mustInclude) {
+            console.log(`Must include: ${preferences.mustInclude.join(', ')}`);
+            for (const roleId of preferences.mustInclude) {
+                const roleVar = this.solver.addVariable(`${roleId}_present`);
+                this.solver.addUnitClause(roleVar, true);
+            }
+        }
+        
+        if (preferences?.mustExclude) {
+            console.log(`Must exclude: ${preferences.mustExclude.join(', ')}`);
+            for (const roleId of preferences.mustExclude) {
+                const roleVar = this.solver.addVariable(`${roleId}_present`);
+                this.solver.addUnitClause(roleVar, false);
+            }
+        }
+        
+        console.log(`Script variables: ${scriptVarCount}`);
+        console.log(`Total variables: ${this.solver.getVariableCount()}`);
+        console.log(`Total clauses: ${this.solver.getClauseCount()}`);
+        
+        // Step 3: Solve
+        const result = this.solver.solveWithModel();
+        
+        if (!result.satisfiable || !result.model) {
+            return { success: false };
+        }
+        
+        // Step 4: Extract the generated setup
+        const selectedRoles = this.extractSelectedRoles(script, result.model);
+        const inPlayDistribution = this.extractInPlayDistribution(result.model);
+        const physicalBag = this.extractPhysicalBag(selectedRoles, result.model);
+        
+        return {
+            success: true,
+            selectedRoles,
+            inPlayDistribution,
+            physicalBag,
+            model: result.model
+        };
+    }
+
     // Check if a bag setup is legal according to script rules
     async checkBagLegality(problem: BagLegalityProblem): Promise<{ 
         legal: boolean, 
@@ -40,6 +113,7 @@ export class BagLegalityValidator {
         console.log(`Script variables: ${scriptVarCount}`);
         console.log(`Bag variables: ${bagVarCount}`);
         console.log(`Total variables: ${this.solver.getVariableCount()}`);
+        console.log(`Total clauses: ${this.solver.getClauseCount()}`);
         
         // Step 3: Solve
         const result = this.solver.solveWithModel();
@@ -120,5 +194,164 @@ export class BagLegalityValidator {
         }
         
         return counts;
+    }
+    
+    private extractSelectedRoles(script: Script, model: Record<string, boolean>): string[] {
+        const selectedRoles: string[] = [];
+        
+        for (const roleId of script.roleIds) {
+            if (model[`${roleId}_present`] === true) {
+                selectedRoles.push(roleId);
+            }
+        }
+        
+        return selectedRoles;
+    }
+    
+    private extractInPlayDistribution(model: Record<string, boolean>): RoleDistribution {
+        const distribution: RoleDistribution = {
+            Townsfolk: 0,
+            Outsider: 0,
+            Minion: 0,
+            Demon: 0
+        };
+        
+        const typeKeys = ['townsfolk', 'outsider', 'minion', 'demon'] as const;
+        const typeMapping = {
+            townsfolk: 'Townsfolk',
+            outsider: 'Outsider', 
+            minion: 'Minion',
+            demon: 'Demon'
+        } as const;
+        
+        for (const typeKey of typeKeys) {
+            for (let count = 0; count <= 15; count++) {
+                if (model[`final_${typeKey}_${count}`] === true) {
+                    distribution[typeMapping[typeKey]] = count;
+                    break;
+                }
+            }
+        }
+        
+        return distribution;
+    }
+    
+    private extractPhysicalBag(selectedRoles: string[], model: Record<string, boolean>): Map<string, number> {
+        // Extract physical bag from SAT model to handle substitutions correctly
+        const physicalCounts = this.extractPhysicalCounts(model);
+        
+        // Generate actual tokens that match the physical counts
+        return this.generatePhysicalTokens(selectedRoles, physicalCounts, model);
+    }
+    
+    private extractPhysicalCounts(model: Record<string, boolean>): RoleDistribution {
+        const counts: RoleDistribution = {
+            Townsfolk: 0,
+            Outsider: 0,
+            Minion: 0,
+            Demon: 0
+        };
+        
+        const typeKeys = ['townsfolk', 'outsider', 'minion', 'demon'] as const;
+        const typeMapping = {
+            townsfolk: 'Townsfolk',
+            outsider: 'Outsider', 
+            minion: 'Minion',
+            demon: 'Demon'
+        } as const;
+        
+        for (const typeKey of typeKeys) {
+            for (let count = 0; count <= 15; count++) {
+                if (model[`physical_${typeKey}_${count}`] === true) {
+                    counts[typeMapping[typeKey]] = count;
+                    break;
+                }
+            }
+        }
+        
+        return counts;
+    }
+    
+    private generatePhysicalTokens(selectedRoles: string[], physicalCounts: RoleDistribution, model: Record<string, boolean>): Map<string, number> {
+        const physicalBag = new Map<string, number>();
+        const { getRole } = require('./roles');
+        
+        // Check which roles cause physical bag substitutions
+        const hasDrunk = selectedRoles.includes('drunk') && model['drunk_present'] === true;
+        
+        // Start with basic role tokens
+        const rolesByType: Record<string, string[]> = {
+            Townsfolk: [],
+            Outsider: [],
+            Minion: [],
+            Demon: []
+        };
+        
+        // Categorize selected roles by type
+        for (const roleId of selectedRoles) {
+            const role = getRole(roleId);
+            if (role) {
+                rolesByType[role.type].push(roleId);
+            }
+        }
+        
+        // Generate tokens for each type to match physical counts
+        for (const [typeName, count] of Object.entries(physicalCounts)) {
+            const rolesOfType = rolesByType[typeName];
+            
+            if (typeName === 'Outsider' && hasDrunk) {
+                // Special case: Drunk is in-play as outsider but not in physical bag
+                const nonDrunkOutsiders = rolesOfType.filter(r => r !== 'drunk');
+                
+                // Add non-drunk outsiders first
+                for (const roleId of nonDrunkOutsiders) {
+                    physicalBag.set(roleId, 1);
+                }
+                
+                // Note: physical outsider count should be less than in-play outsider count
+                // The difference should be compensated by extra townsfolk tokens
+                
+            } else if (typeName === 'Townsfolk' && hasDrunk) {
+                // Special case: Extra townsfolk token(s) due to drunk substitution
+                let tokensPlaced = 0;
+                
+                // Add all townsfolk roles first
+                for (const roleId of rolesOfType) {
+                    physicalBag.set(roleId, 1);
+                    tokensPlaced++;
+                }
+                
+                // Add extra townsfolk tokens if needed
+                while (tokensPlaced < count) {
+                    // Find a townsfolk role not in the game to use as substitute token
+                    const allTownsfolk = ['washerwoman', 'librarian', 'investigator', 'chef', 'empath', 
+                                        'fortune_teller', 'undertaker', 'monk', 'ravenkeeper', 'virgin', 
+                                        'slayer', 'soldier', 'mayor'];
+                    
+                    const extraToken = allTownsfolk.find(role => !selectedRoles.includes(role));
+                    if (extraToken) {
+                        physicalBag.set(extraToken, (physicalBag.get(extraToken) || 0) + 1);
+                        tokensPlaced++;
+                    } else {
+                        // Fallback: duplicate an existing townsfolk token
+                        const existingTownsfolk = rolesOfType[0];
+                        if (existingTownsfolk) {
+                            physicalBag.set(existingTownsfolk, (physicalBag.get(existingTownsfolk) || 0) + 1);
+                            tokensPlaced++;
+                        } else {
+                            break; // Safety break
+                        }
+                    }
+                }
+                
+            } else {
+                // Normal case: add tokens for all roles of this type
+                for (const roleId of rolesOfType) {
+                    physicalBag.set(roleId, 1);
+                }
+            }
+        }
+        
+        return physicalBag;
     }
 }
