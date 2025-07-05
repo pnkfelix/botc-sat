@@ -109,12 +109,52 @@
 - [ ] Improve CNF clause generation efficiency
 - [ ] Add unit tests for individual constraint types
 
-## Long-term Goals
+## Strategic Development Directions
 
-- [ ] Support other BOTC editions (Sects & Violets, Bad Moon Rising)
-- [ ] Add gameplay state transition validation (beyond just setup)
+### Direction A: Multi-Script Support
+**Goal**: Validate DSL generality across BOTC editions
+**Priority**: Medium | **Risk**: Medium | **Effort**: High
+
+- [ ] Implement Sects & Violets script and role definitions
+- [ ] Implement Bad Moon Rising script and role definitions  
+- [ ] Test constraint system with different role mechanics (Madness, etc.)
+- [ ] Validate that current architecture scales to other editions
+- [ ] Document any DSL extensions needed for new mechanics
+
+**Value**: Proves system generality, enables broader BOTC support
+**Risk**: May discover fundamental limitations requiring architecture changes
+
+### Direction B: Grimoire Validation  
+**Goal**: Move from setup validation to gameplay state validation
+**Priority**: High | **Risk**: High | **Effort**: Very High
+
+- [ ] Design grimoire state representation (player assignments, deaths, etc.)
+- [ ] Model legal state transitions during gameplay
+- [ ] Implement day/night phase validation
+- [ ] Add ability validation (when/how abilities can be used)
+- [ ] Test complex interaction scenarios (multiple abilities affecting same target)
+
+**Value**: Unlocks full BOTC rule validation, highest practical impact
+**Risk**: Significantly more complex problem domain than setup validation
+
+### Direction C: Solution Space Exploration
+**Goal**: Add randomization and variety to generated setups
+**Priority**: Medium | **Risk**: Low-Medium | **Effort**: Medium
+
+- [ ] Research SAT solver capabilities for multiple solutions
+- [ ] Implement solution enumeration or randomization techniques
+- [ ] Add "variety modes" (prefer different roles than last N games)
+- [ ] Explore weighted preferences (slight bias toward/against certain roles)
+- [ ] Performance test multiple solution generation
+
+**Value**: Immediate practical improvement, makes system more game-ready
+**Risk**: Well-defined problem with known algorithmic approaches
+
+## Long-term Integration Goals
+
 - [ ] Integration with actual BOTC game applications
 - [ ] Web UI for interactive bag generation and validation
+- [ ] Mobile app integration for storyteller tools
 
 ---
 

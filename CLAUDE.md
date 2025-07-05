@@ -30,6 +30,13 @@ This project is a prototype for domain-specific logical languages, specifically 
 - Prefer editing existing files over creating new ones unless necessary
 - Never create documentation files unless explicitly requested
 
+### Git Workflow Requirements
+- **Always commit working code changes** before starting unrelated tasks
+- After implementing and verifying functionality with passing tests, commit the work
+- Commits don't need to be immediate, but must happen before switching to different tasks
+- Use descriptive commit messages that explain the "why" not just the "what"
+- Include the standard footer for Claude-generated commits
+
 ## Lessons Learned About Preferred Workflow
 Based on development sessions, these patterns lead to better outcomes:
 

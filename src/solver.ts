@@ -88,9 +88,8 @@ export class SATSolver {
      *                 Example: [1, -2] means "var1 OR NOT var2"
      */
     addClause(literals: number[]): void {
-        if (this.solved) {
-            throw new Error("Cannot add clauses after solve() has been called. Create a new solver instance.");
-        }
+        // Allow adding clauses after solving for incremental SAT solving
+        // This enables blocking clauses for solution enumeration
         
         // Validate all variables exist
         for (const lit of literals) {

@@ -5,6 +5,8 @@ import { registerTroubleBrewing } from './trouble-brewing-roles';
 import { troubleBrewing } from './scripts';
 import { BagLegalityValidator } from './bag-compiler';
 import { SATSolver } from './solver';
+import { testSolutionExploration } from './solution-exploration-test';
+import { testSolutionPatterns } from './solution-pattern-test';
 
 console.log("Hello BOTC DSL!");
 
@@ -26,6 +28,12 @@ export async function main() {
     
     // Test SAT solver constraint parsing
     await testSATConstraintParsing();
+    
+    // Test solution space exploration capabilities
+    await testSolutionExploration();
+    
+    // Test solution generation patterns
+    await testSolutionPatterns();
     
     // Test bag legality validation
     await testBagLegality();
