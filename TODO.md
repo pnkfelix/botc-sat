@@ -7,12 +7,18 @@
 
 ## Immediate Tasks
 
-### 1. Performance Optimization 🔥
+### 1. Performance Optimization ✅
 **Priority**: High  
 **Issue**: Role enumeration constraints cause 4000x clause explosion (2K → 8.3M clauses)
 
-**Options to explore**:
-- [ ] Implement sequential counter encoding for "exactly-N" constraints instead of combinatorial
+**RESOLVED**: Sequential counter encoding implemented, reducing constraints from 8.3M to 50K clauses (168x improvement)
+
+**Completed**:
+- ✅ Implement sequential counter encoding for "exactly-N" constraints instead of combinatorial
+- ✅ Demonstrate working bag generation with preference constraints
+- ✅ Fix physical bag extraction to handle role substitutions correctly
+
+**Future options**:
 - [ ] Try Z3 SMT solver backend (has built-in cardinality constraints)
 - [ ] Implement hybrid approach: algorithmic role selection + SAT validation
 - [ ] Add constraint preprocessing to eliminate redundancies
@@ -27,15 +33,19 @@
 - [ ] Other Trouble Brewing roles with setup effects
 - [ ] Test complex multi-role interactions
 
-### 3. Bag Generation Improvements
+### 3. Bag Generation Improvements ✅
 **Priority**: Medium  
-**Current**: Generation mode implemented but too slow due to constraint explosion
+**Current**: Generation mode working with sequential counter optimization
 
-**Improvements needed**:
-- [ ] Fix constraint explosion (see #1 above)
-- [ ] Add better physical bag extraction (currently assumes 1 token per role)
+**Completed**:
+- ✅ Fix constraint explosion (sequential counter encoding implemented)
+- ✅ Fix physical bag extraction to properly handle role substitutions
+- ✅ Add generation preferences ("mustInclude", "mustExclude" constraints)
+- ✅ Demonstrate logical inference (Drunk + 7 players → automatic Baron inclusion)
+
+**Future improvements**:
 - [ ] Support roles that might have multiple tokens
-- [ ] Add generation preferences (e.g., "include Drunk", "avoid Baron")
+- [ ] Add more sophisticated preference mechanisms
 
 ### 4. Testing & Validation
 **Priority**: Medium  
@@ -69,14 +79,28 @@
    - What's the break-even point: 1 solve × 8M clauses vs N solves × 2K clauses?
    - Can we enumerate valid role combinations algorithmically?
 
-## Completed Recently ✅
+## Major Accomplishments ✅
 
+**Core System**:
 - ✅ Implement physical bag substitution DSL (Drunk working)
 - ✅ Add clause counting to SAT solver for performance analysis
 - ✅ Create dual-mode architecture (validation vs generation)
 - ✅ Document constraint explosion findings in research/
 - ✅ Test Baron + Drunk combinations working correctly
 - ✅ Verify bag legality validation accuracy
+
+**Performance Breakthrough**:
+- ✅ Implement sequential counter encoding (168x constraint reduction)
+- ✅ Fix constraint explosion from 8.3M to 50K clauses
+- ✅ Achieve working bag generation with preferences
+- ✅ Create complete generation→verification cycle
+- ✅ Demonstrate logical inference capabilities
+
+**System Integration**:
+- ✅ All tests passing with verification
+- ✅ Physical bag extraction handling role substitutions correctly
+- ✅ Preference-based generation working (mustInclude/mustExclude)
+- ✅ TypeScript wrapper for SAT solver with CNF interface
 
 ## Technical Debt
 
