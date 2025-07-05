@@ -10,35 +10,35 @@ const baron: Role = {
     name: 'Baron',
     type: 'Minion',
     englishText: 'There are extra Outsiders in play. [+2 Outsiders]',
-    bagConstraints: [{
-        description: 'Baron adds 2 Outsiders and removes 2 Townsfolk from setup',
-        type: 'count_modification',
-        countMod: {
-            triggerRole: 'baron',
-            bagDelta: { Outsider: 2, Townsfolk: -2 },
-            playDelta: { Outsider: 2, Townsfolk: -2 }
+    constraints: [
+        {
+            type: 'count_modification',
+            target: 'townsfolk',
+            delta: -2
+        },
+        {
+            type: 'count_modification', 
+            target: 'outsider',
+            delta: 2
         }
-    }],
+    ],
     edition: 'Trouble Brewing',
     complexity: 1
 };
 
 // Drunk: "You do not know you are the Drunk. You think you are a Townsfolk character, but you are not."
-// Setup: Physical bag has Townsfolk token, but player is actually Outsider
+// Setup: Physical bag has Townsfolk token, but player is actually Outsider  
+// Note: Drunk doesn't affect in-play distribution, just physical bag tokens
 const drunk: Role = {
     id: 'drunk',
     name: 'Drunk',
     type: 'Outsider',
     englishText: 'You do not know you are the Drunk. You think you are a Townsfolk character, but you are not.',
-    bagConstraints: [{
-        description: 'Drunk draws a Townsfolk token but is actually an Outsider',
-        type: 'role_substitution',
-        substitution: {
-            triggerRole: 'drunk',
-            tokenType: 'Townsfolk',
-            actualType: 'Outsider'
-        }
-    }],
+    constraints: [
+        // Drunk creates a mismatch between in-play and physical bag
+        // For now, we'll handle this as no count modification
+        // TODO: Add physical bag substitution logic later
+    ],
     edition: 'Trouble Brewing',
     complexity: 2
 };
@@ -51,7 +51,7 @@ const simpleRoles: Role[] = [
         name: 'Washerwoman',
         type: 'Townsfolk',
         englishText: 'You start knowing that 1 of 2 players is a particular Townsfolk.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -60,7 +60,7 @@ const simpleRoles: Role[] = [
         name: 'Librarian', 
         type: 'Townsfolk',
         englishText: 'You start knowing that 1 of 2 players is a particular Outsider, or that zero Outsiders are in play.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -69,7 +69,7 @@ const simpleRoles: Role[] = [
         name: 'Investigator',
         type: 'Townsfolk', 
         englishText: 'You start knowing that 1 of 2 players is a particular Minion.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -78,7 +78,7 @@ const simpleRoles: Role[] = [
         name: 'Chef',
         type: 'Townsfolk',
         englishText: 'You start knowing how many pairs of evil players there are.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -87,7 +87,7 @@ const simpleRoles: Role[] = [
         name: 'Empath',
         type: 'Townsfolk',
         englishText: 'Each night, you learn how many of your 2 alive neighbours are evil.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -96,7 +96,7 @@ const simpleRoles: Role[] = [
         name: 'Fortune Teller',
         type: 'Townsfolk',
         englishText: 'Each night, choose 2 players: you learn if either is a Demon. There is a good player that registers as a Demon to you.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -105,7 +105,7 @@ const simpleRoles: Role[] = [
         name: 'Undertaker',
         type: 'Townsfolk',
         englishText: 'Each night*, you learn which character died by execution today.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -114,7 +114,7 @@ const simpleRoles: Role[] = [
         name: 'Monk',
         type: 'Townsfolk',
         englishText: 'Each night*, choose a player (not yourself): they are safe from the Demon tonight.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -123,7 +123,7 @@ const simpleRoles: Role[] = [
         name: 'Ravenkeeper',
         type: 'Townsfolk',
         englishText: 'If you die at night, you are woken to choose a player: you learn their character.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -132,7 +132,7 @@ const simpleRoles: Role[] = [
         name: 'Virgin',
         type: 'Townsfolk',
         englishText: 'The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -141,7 +141,7 @@ const simpleRoles: Role[] = [
         name: 'Slayer',
         type: 'Townsfolk',
         englishText: 'Once per game, during the day, publicly choose a player: if they are the Demon, they die.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -150,7 +150,7 @@ const simpleRoles: Role[] = [
         name: 'Soldier',
         type: 'Townsfolk',
         englishText: 'You are safe from the Demon.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -159,7 +159,7 @@ const simpleRoles: Role[] = [
         name: 'Mayor',
         type: 'Townsfolk',
         englishText: 'If only 3 players live & no execution occurs, your team wins. If you die at night, another player might die instead.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 2
     },
@@ -170,7 +170,7 @@ const simpleRoles: Role[] = [
         name: 'Butler',
         type: 'Outsider',
         englishText: 'Each night, choose a player (not yourself): tomorrow, you may only vote if they are voting too.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -179,7 +179,7 @@ const simpleRoles: Role[] = [
         name: 'Recluse',
         type: 'Outsider',
         englishText: 'You might register as evil & as a Minion or Demon, even if dead.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -188,7 +188,7 @@ const simpleRoles: Role[] = [
         name: 'Saint',
         type: 'Outsider',
         englishText: 'If you die by execution, your team loses.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -199,7 +199,7 @@ const simpleRoles: Role[] = [
         name: 'Poisoner',
         type: 'Minion',
         englishText: 'Each night, choose a player: they are poisoned tonight and tomorrow day.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -208,7 +208,7 @@ const simpleRoles: Role[] = [
         name: 'Spy',
         type: 'Minion',
         englishText: 'Each night, you see the Grimoire. You might register as good & as a Townsfolk or Outsider, even if dead.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 2
     },
@@ -217,7 +217,7 @@ const simpleRoles: Role[] = [
         name: 'Scarlet Woman',
         type: 'Minion',
         englishText: 'If there are 5 or more players alive & the Demon dies, you become the Demon.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 2
     },
@@ -228,7 +228,7 @@ const simpleRoles: Role[] = [
         name: 'Imp',
         type: 'Demon',
         englishText: 'Each night*, choose a player: they die. If you kill yourself this way, a Minion becomes the Imp.',
-        bagConstraints: [],
+        constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
     }

@@ -58,7 +58,14 @@ export interface Role {
     englishText: string;
     
     // Constraints this role imposes on bag/setup legality
-    bagConstraints: BagConstraint[];
+    bagConstraints?: BagConstraint[];
+    
+    // Simple constraint format for script compiler
+    constraints?: Array<{
+        type: 'count_modification';
+        target: string;
+        delta: number;
+    }>;
     
     // For later: ongoing abilities during gameplay
     ongoingAbilities?: string[]; // DSL expressions for ongoing effects
