@@ -17,6 +17,11 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Analysis results (large files)
+constraint-analysis-*.json
+*-analysis.log
+multi-player-analysis.log
+
 # Runtime data
 pids
 *.pid
