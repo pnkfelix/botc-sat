@@ -164,17 +164,21 @@
 - [ ] Implement "avoid recent" mode (prefer different roles than last N games)
 - [ ] Advanced variety metrics and analysis tools
 
-**🔍 IDENTIFIED ISSUES**:
-- [ ] **Multi-Player Count Baron Analysis**: Comprehensive analysis across player counts 7-12
-  - Apply both seed sets ([0,999] and random-seeds.json) to player counts 7, 9, 10, 11, 12
-  - Compare Baron appearance patterns across different player counts
-  - Identify which player counts favor Baron vs base distributions
-  - Look for correlations between player count, role selection, and seed patterns
-  - **Current findings**: Baron appears in 85% of 7-player games but 0% of 8-player games (without variable indirection)
-- [ ] **Role Type Bias Analysis**: Extend bias analysis to study variation within role types
-  - Compare Townsfolk vs Outsider vs Minion vs Demon selection patterns
-  - Analyze baron vs non-baron scenario differences
-  - Create role-type breakdown in bias analysis reports
+**✅ MAJOR BREAKTHROUGH - SOLUTION SPACE TOPOLOGY MAPPED**:
+- ✅ **Constraint Matrix Analysis**: Systematic exploration of solution space via role pair constraints
+  - **Scope**: 2,520 trials across all role pairs and player counts 7-12
+  - **Success Rate**: 99.4% (2,504/2,520 successful trials)
+  - **Performance**: 177s total runtime (70.2ms per trial)
+  - **Key Discovery**: Baron appearance follows predictable mathematical patterns:
+    - **7 players**: 23.1% Baron frequency (HIGH)
+    - **8 players**: 4.8% Baron frequency (low)
+    - **9 players**: 3.8% Baron frequency (low)  
+    - **10 players**: 23.1% Baron frequency (HIGH)
+    - **11 players**: 4.8% Baron frequency (low)
+    - **12 players**: 3.8% Baron frequency (low)
+  - **Pattern**: Baron frequency correlates with base distribution requirements
+  - **Role Hierarchy**: Systematic analysis of all role frequencies (Baron rarest at 10.5%, Scarlet Woman most common at 49.2%)
+  - **Documented**: Complete analysis in `research/constraint-matrix-analysis.md`
 - [ ] **Test Coverage Gap**: Variable indirection system not exercised by existing tests
   - **Option A**: Create new test suite that exercises same scenarios with `useVariableIndirection: true`
   - **Option B**: Make variable indirection always-on by default (use identity permutation or seed=0 when determinism needed)
@@ -233,6 +237,12 @@ npm run build:browser
 - `random-seeds.json` - 1000 pre-generated random seeds for deterministic testing
 - `bias-comparison-analysis.md` - Documented findings from seed pattern comparison
 
+**Solution Space Exploration**:
+- `src/constraint-matrix-analysis.ts` - Systematic constraint-based solution space exploration
+- `constraint-matrix-full-analysis.log` - Complete log of 2,520 constraint trials
+- `constraint-analysis-2025-07-06T20-36-21-237Z.json` - Raw results data
+
 **Research & Documentation**:
 - `research/constraint-explosion-analysis.md` - Performance findings
 - `research/sat-solver-investigation.md` - SAT solver evaluation results
+- `research/constraint-matrix-analysis.md` - Solution space topology findings and Baron frequency patterns

@@ -7,7 +7,7 @@ async function demonstrateSeedConfigurations() {
     // Test 1: Sequential seeds (original behavior)
     console.log('1️⃣ Testing sequential seeds (0-99 for quick demo)...\n');
     try {
-        await firstSolutionAnalysis({
+        await firstSolutionAnalysis(8, {
             type: 'sequential',
             startSeed: 0,
             endSeed: 99
@@ -26,7 +26,7 @@ async function demonstrateSeedConfigurations() {
         const seedData = JSON.parse(await fs.readFile('../random-seeds.json', 'utf-8'));
         const first100RandomSeeds = seedData.seeds.slice(0, 100);
         
-        await firstSolutionAnalysis({
+        await firstSolutionAnalysis(8, {
             type: 'array',
             seeds: first100RandomSeeds
         });
@@ -39,7 +39,7 @@ async function demonstrateSeedConfigurations() {
     // Test 3: Custom seed array
     console.log('3️⃣ Testing custom seed array (hand-picked seeds)...\n');
     try {
-        await firstSolutionAnalysis({
+        await firstSolutionAnalysis(8, {
             type: 'array',
             seeds: [42, 123, 456, 789, 1000, 2000, 3000, 4000, 5000, 9999]
         });

@@ -18,7 +18,7 @@ async function compareSeedPatterns() {
     console.log('=' .repeat(50));
     
     const startTime1 = Date.now();
-    await firstSolutionAnalysis({
+    await firstSolutionAnalysis(8, {
         type: 'sequential',
         startSeed: 0,
         endSeed: 99
@@ -33,7 +33,7 @@ async function compareSeedPatterns() {
     console.log('=' .repeat(50));
     
     const startTime2 = Date.now();
-    await firstSolutionAnalysis({
+    await firstSolutionAnalysis(8, {
         type: 'array',
         seeds: first100RandomSeeds
     });

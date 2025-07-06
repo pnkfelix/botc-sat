@@ -1,12 +1,11 @@
 // Comprehensive analysis across multiple player counts using both seed sets
 import { firstSolutionAnalysis } from './first-solution-analysis';
-import { promises as fs } from 'fs';
 
 async function multiPlayerCountAnalysis() {
     console.log('🎯 Multi-Player Count Analysis: Baron and Role Patterns\n');
     console.log('Testing player counts 7, 8, 9, 10, 11, 12 with both seed sets\n');
     
-    const playerCounts = [7, 8, 9, 10, 11, 12];
+    const playerCounts = [7]; // Start with just 7-player for testing
     const results: Array<{
         playerCount: number,
         seedType: 'sequential' | 'random',
@@ -150,43 +149,114 @@ async function analyzePlayerCountWithSeeds(config: {
     endSeed?: number,
     filePath?: string
 }) {
-    // This is a simplified version that focuses on the key metrics
-    // In a real implementation, this would use firstSolutionAnalysis but capture the results
-    
     console.log(`Analyzing ${config.playerCount} players with ${config.seedType} seeds...`);
     
-    // For now, return mock data - in reality this would run the full analysis
-    // and parse the results to extract the key statistics
-    const mockResult = {
-        playerCount: config.playerCount,
-        seedType: config.seedType as 'sequential' | 'random',
-        baronFrequency: config.playerCount === 7 ? 85.0 : (config.playerCount === 8 ? 0.0 : Math.random() * 100),
-        drunkFrequency: config.playerCount === 7 ? 65.0 : (config.playerCount === 8 ? 45.0 : Math.random() * 100),
-        distributionPatterns: new Map([
-            ['T=5,O=0,M=1,D=1', config.playerCount === 7 ? 15 : 85],
-            ['T=3,O=2,M=1,D=1', config.playerCount === 7 ? 85 : 15]
-        ]),
-        totalSolutions: 1000
+    // Configure the seed analysis based on the requested type
+    let seedConfig;
+    if (config.seedType === 'sequential' && config.startSeed !== undefined && config.endSeed !== undefined) {
+        seedConfig = {
+            type: 'sequential' as const,
+            startSeed: config.startSeed,
+            endSeed: config.endSeed
+        };
+    } else if (config.seedType === 'random' && config.filePath) {
+        seedConfig = {
+            type: 'random' as const,
+            filePath: config.filePath
+        };
+    } else {
+        throw new Error(`Invalid configuration for ${config.seedType} analysis`);
+    }
+    
+    // Capture console output to parse results
+    const originalLog = console.log;
+    let capturedOutput: string[] = [];
+    console.log = (...args) => {
+        capturedOutput.push(args.join(' '));
+        originalLog(...args); // Still show the output
     };
     
-    console.log(`  Baron: ${mockResult.baronFrequency.toFixed(1)}%, Drunk: ${mockResult.drunkFrequency.toFixed(1)}%`);
-    
-    return mockResult;
+    try {
+        // Run the actual analysis
+        await firstSolutionAnalysis(config.playerCount, seedConfig);
+        
+        // Restore console.log
+        console.log = originalLog;
+        
+        // Parse the captured output to extract statistics
+        const stats = parseAnalysisOutput(capturedOutput);
+        
+        return {
+            playerCount: config.playerCount,
+            seedType: config.seedType as 'sequential' | 'random',
+            baronFrequency: stats.baronFrequency,
+            drunkFrequency: stats.drunkFrequency,
+            distributionPatterns: stats.distributionPatterns,
+            totalSolutions: stats.totalSolutions
+        };
+        
+    } catch (error) {
+        // Restore console.log in case of error
+        console.log = originalLog;
+        throw error;
+    }
 }
 
-// Note: This is a framework - the actual implementation would need to:
-// 1. Integrate with firstSolutionAnalysis to run real tests
-// 2. Parse the output to extract statistics  
-// 3. Handle the large amount of data efficiently
-// 4. Save intermediate results to avoid re-running long analyses
+function parseAnalysisOutput(output: string[]): {
+    baronFrequency: number,
+    drunkFrequency: number,
+    distributionPatterns: Map<string, number>,
+    totalSolutions: number
+} {
+    // Find lines with role frequencies
+    let baronFrequency = 0;
+    let drunkFrequency = 0;
+    let totalSolutions = 0;
+    const distributionPatterns = new Map<string, number>();
+    
+    for (const line of output) {
+        // Look for role frequency lines like "  baron: 850 / 1000 (85.0%)"
+        const baronMatch = line.match(/baron:\s+(\d+)\s+\/\s+(\d+)\s+\((\d+\.?\d*)%\)/);
+        if (baronMatch) {
+            baronFrequency = parseFloat(baronMatch[3]);
+            totalSolutions = parseInt(baronMatch[2]);
+        }
+        
+        const drunkMatch = line.match(/drunk:\s+(\d+)\s+\/\s+(\d+)\s+\((\d+\.?\d*)%\)/);
+        if (drunkMatch) {
+            drunkFrequency = parseFloat(drunkMatch[3]);
+        }
+        
+        // Look for distribution pattern lines like "  T=5,O=0,M=1,D=1: 150 / 1000 (15.0%)"
+        const distributionMatch = line.match(/(T=\d+,O=\d+,M=\d+,D=\d+):\s+(\d+)\s+\/\s+\d+\s+\((\d+\.?\d*)%\)/);
+        if (distributionMatch) {
+            const pattern = distributionMatch[1];
+            const count = parseInt(distributionMatch[2]);
+            distributionPatterns.set(pattern, count);
+        }
+    }
+    
+    return {
+        baronFrequency,
+        drunkFrequency,
+        distributionPatterns,
+        totalSolutions
+    };
+}
 
-console.log('🚧 Multi-Player Count Analysis Framework');
-console.log('This is a template for the comprehensive analysis you requested.');
-console.log('To implement fully, we need to:');
-console.log('1. Integrate with firstSolutionAnalysis for real data');
-console.log('2. Add result parsing and aggregation');
-console.log('3. Handle the computational load of 6 × 2 × 1000 = 12,000 solutions');
-console.log('');
-console.log('Would you like me to implement the full version or start with a subset?');
+// Main execution
+async function main() {
+    try {
+        await multiPlayerCountAnalysis();
+    } catch (error) {
+        console.error('❌ Analysis failed:', error);
+        process.exit(1);
+    }
+}
+
+// Run the analysis if this file is executed directly
+if (require.main === module) {
+    main();
+}
 
 export { multiPlayerCountAnalysis };

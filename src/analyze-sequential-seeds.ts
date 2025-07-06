@@ -4,7 +4,7 @@ import { firstSolutionAnalysis } from './first-solution-analysis';
 async function analyzeSequentialSeeds() {
     console.log('🔢 Running Sequential Seed Analysis (0-999)\n');
     
-    await firstSolutionAnalysis({
+    await firstSolutionAnalysis(8, {
         type: 'sequential',
         startSeed: 0,
         endSeed: 999

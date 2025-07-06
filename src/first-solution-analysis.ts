@@ -13,15 +13,14 @@ interface SeedConfig {
     filePath?: string;          // For type 'random' - path to JSON file
 }
 
-async function firstSolutionAnalysis(seedConfig: SeedConfig) {
-    console.log('=== First Solution Analysis Across Seeds ===\n');
+async function firstSolutionAnalysis(playerCount: number, seedConfig: SeedConfig) {
+    console.log(`=== First Solution Analysis Across Seeds (${playerCount} players) ===\n`);
     
     // CRITICAL: Register roles first!
     registerTroubleBrewing();
     console.log('✅ Registered Trouble Brewing roles\n');
     
     const script = troubleBrewing;
-    const playerCount = 8;
     
     // Parse seed configuration
     let seeds: number[] = [];
@@ -227,7 +226,7 @@ async function generateFirstSolutionWithSeed(script: any, playerCount: number, s
 
 // Example usage functions
 async function runSequentialAnalysis() {
-    await firstSolutionAnalysis({
+    await firstSolutionAnalysis(8, {
         type: 'sequential',
         startSeed: 0,
         endSeed: 999
@@ -235,14 +234,14 @@ async function runSequentialAnalysis() {
 }
 
 async function runRandomSeedAnalysis() {
-    await firstSolutionAnalysis({
+    await firstSolutionAnalysis(8, {
         type: 'random',
         filePath: '../random-seeds.json'
     });
 }
 
 async function runCustomSeedAnalysis() {
-    await firstSolutionAnalysis({
+    await firstSolutionAnalysis(8, {
         type: 'array',
         seeds: [42, 123, 456, 789, 1000, 2000, 3000, 4000, 5000, 9999]
     });
