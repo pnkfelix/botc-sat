@@ -80,6 +80,14 @@ Based on development sessions, these patterns lead to better outcomes:
 - **For large files near size limit** - read first half then second half instead of using offset/limit
 - **Files within 2x of 256KB limit** - split reading approach is more efficient than small chunks
 
+### Dealing with Minified/Unreadable Code
+- **Problem**: Minified vendor code (like minisolvers.js) exceeds size limits and is unreadable
+- **Solution**: Use `npx js-beautify` to create readable versions for analysis
+- **Pattern**: Create `vendor/filename-readable.js` alongside original minified files
+- **Benefits**: Enables Claude Code tool analysis of vendored dependencies
+- **Example**: `npx js-beautify vendor/minisolvers.js > vendor/minisolvers-readable.js`
+- **Keep both versions**: Original for production, readable for development analysis
+
 ### SAT Solver Integration Learnings
 - **Incremental solving works** - JSMiniSolvers allows adding clauses after solve() for blocking patterns
 - **VSIDS bias is real** - Variable State Independent Decaying Sum creates systematic bias toward lower-numbered variables
