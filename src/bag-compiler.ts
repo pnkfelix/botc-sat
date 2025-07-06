@@ -103,7 +103,8 @@ export class BagLegalityValidator {
         maxSolutions?: number,
         avoidSimilar?: boolean,  // If true, try to generate more diverse solutions
         useVariableIndirection?: boolean,  // If true, use variable indirection to reduce solver bias
-        useIdentityPermutation?: boolean   // If true, use identity permutation for testing
+        useIdentityPermutation?: boolean,   // If true, use identity permutation for testing
+        customPermutation?: string[]       // If provided, use this specific role ordering
     }): Promise<{
         success: boolean,
         solutions: Array<{
@@ -164,7 +165,7 @@ export class BagLegalityValidator {
 
         // Step 4: Add variable indirection to eliminate VSIDS bias (optional)
         if (options?.useVariableIndirection) {
-            this.scriptCompiler.addVariableIndirection(script, this.solver, undefined, options?.useIdentityPermutation);
+            this.scriptCompiler.addVariableIndirection(script, this.solver, undefined, options?.useIdentityPermutation, options?.customPermutation);
         }
 
         console.log(`Script variables: ${scriptVarCount}`);

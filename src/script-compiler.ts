@@ -548,7 +548,7 @@ export class ScriptToSATCompiler {
 
     // Add variable indirection layer to eliminate VSIDS bias
     // Creates slot variables that inherit solver bias, then randomly maps them to roles
-    addVariableIndirection(script: Script, solver: SATSolver, randomSeed?: number, useIdentityPermutation: boolean = false): void {
+    addVariableIndirection(script: Script, solver: SATSolver, randomSeed?: number, useIdentityPermutation: boolean = false, customPermutation?: string[]): void {
         const roleCount = script.roleIds.length;
         console.log(`Adding variable indirection for ${roleCount} roles to eliminate VSIDS bias...`);
         
@@ -559,12 +559,25 @@ export class ScriptToSATCompiler {
             slotVars.push(slotVar);
         }
         
-        // Step 2: Generate permutation of roles (identity or random)
-        const shuffledRoles = useIdentityPermutation 
-            ? [...script.roleIds]  // Identity permutation: roles in original order
-            : this.shuffleArray([...script.roleIds], randomSeed);
+        // Step 2: Generate permutation of roles (custom, identity, or random)
+        let shuffledRoles: string[];
+        let permutationType: string;
         
-        const permutationType = useIdentityPermutation ? "IDENTITY" : "RANDOM";
+        if (customPermutation) {
+            // Validate custom permutation has all roles
+            if (customPermutation.length !== script.roleIds.length || 
+                !script.roleIds.every(role => customPermutation.includes(role))) {
+                throw new Error('Custom permutation must contain exactly all script roles');
+            }
+            shuffledRoles = [...customPermutation];
+            permutationType = "CUSTOM";
+        } else if (useIdentityPermutation) {
+            shuffledRoles = [...script.roleIds];  // Identity permutation: roles in original order
+            permutationType = "IDENTITY";
+        } else {
+            shuffledRoles = this.shuffleArray([...script.roleIds], randomSeed);
+            permutationType = "RANDOM";
+        }
         console.log(`${permutationType} permutation: ${shuffledRoles.map((role, idx) => `slot_${idx + 1}↔${role}`).join(', ')}`);
         
         // Step 3: Add biconditional constraints: slot_i ↔ role_j_present

@@ -165,10 +165,12 @@
 - [ ] Advanced variety metrics and analysis tools
 
 **🔍 IDENTIFIED ISSUES**:
-- [ ] **Baron Constraint Investigation**: Baron never appears in 8-player setups (0/100 in both sequential and random seed tests)
-  - Investigate why Baron constraint requirements are rarely satisfied
-  - May need different player counts or specific role combinations
-  - Could be game balance issue rather than solver bias
+- [ ] **Multi-Player Count Baron Analysis**: Comprehensive analysis across player counts 7-12
+  - Apply both seed sets ([0,999] and random-seeds.json) to player counts 7, 9, 10, 11, 12
+  - Compare Baron appearance patterns across different player counts
+  - Identify which player counts favor Baron vs base distributions
+  - Look for correlations between player count, role selection, and seed patterns
+  - **Current findings**: Baron appears in 85% of 7-player games but 0% of 8-player games (without variable indirection)
 - [ ] **Role Type Bias Analysis**: Extend bias analysis to study variation within role types
   - Compare Townsfolk vs Outsider vs Minion vs Demon selection patterns
   - Analyze baron vs non-baron scenario differences
@@ -179,6 +181,10 @@
   - Most existing tests in `src/index.ts` were written before variable indirection and use the old direct approach
   - Need to ensure constraint correctness is maintained across both code paths
   - Decision impacts whether we maintain two modes vs. standardize on indirection
+- [ ] **Clean up experimental Baron investigation files**: Many temporary investigation scripts created
+  - Review experimental files for permanent value vs temporary debugging
+  - Keep useful analysis tools, remove one-off debugging scripts
+  - Consolidate learnings into permanent analysis framework
 
 **Value**: ✅ PROVEN - Immediate practical improvement, genuine setup variety
 **Risk**: ✅ MITIGATED - Technical feasibility confirmed, bias solution designed
