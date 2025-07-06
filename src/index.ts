@@ -8,6 +8,7 @@ import { SATSolver } from './solver';
 import { testSolutionExploration } from './solution-exploration-test';
 import { testSolutionPatterns } from './solution-pattern-test';
 import { testBOTCBias, testConstrainedBias } from './bias-analysis-test';
+import './variable-indirection-test';
 
 console.log("Hello BOTC DSL!");
 

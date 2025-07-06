@@ -102,7 +102,8 @@ export class BagLegalityValidator {
         mustExclude?: string[],
         maxSolutions?: number,
         avoidSimilar?: boolean,  // If true, try to generate more diverse solutions
-        randomizeVariableOrder?: boolean  // If true, randomize variable ordering to reduce solver bias
+        useVariableIndirection?: boolean,  // If true, use variable indirection to reduce solver bias
+        useIdentityPermutation?: boolean   // If true, use identity permutation for testing
     }): Promise<{
         success: boolean,
         solutions: Array<{
@@ -161,11 +162,16 @@ export class BagLegalityValidator {
             }
         }
 
+        // Step 4: Add variable indirection to eliminate VSIDS bias (optional)
+        if (options?.useVariableIndirection) {
+            this.scriptCompiler.addVariableIndirection(script, this.solver, undefined, options?.useIdentityPermutation);
+        }
+
         console.log(`Script variables: ${scriptVarCount}`);
         console.log(`Total variables: ${this.solver.getVariableCount()}`);
         console.log(`Total clauses: ${this.solver.getClauseCount()}`);
 
-        // Step 4: Generate multiple solutions using blocking clauses
+        // Step 5: Generate multiple solutions using blocking clauses
         for (let i = 0; i < maxSolutions; i++) {
             const result = this.solver.solveWithModel();
             
@@ -202,7 +208,7 @@ export class BagLegalityValidator {
             // Add the blocking clause to prevent this exact role combination
             if (blockingClause.length > 0) {
                 this.solver.addClause(blockingClause);
-                console.log(`  Added blocking clause: NOT(${selectedRoles.join(' AND ')}) = [${blockingClause.join(', ')}]`);
+                // Blocking clause details removed for cleaner output
             } else {
                 console.log("  Warning: Could not create blocking clause - no role variables found");
             }

@@ -545,4 +545,61 @@ export class ScriptToSATCompiler {
             }
         }
     }
+
+    // Add variable indirection layer to eliminate VSIDS bias
+    // Creates slot variables that inherit solver bias, then randomly maps them to roles
+    addVariableIndirection(script: Script, solver: SATSolver, randomSeed?: number, useIdentityPermutation: boolean = false): void {
+        const roleCount = script.roleIds.length;
+        console.log(`Adding variable indirection for ${roleCount} roles to eliminate VSIDS bias...`);
+        
+        // Step 1: Create slot variables (these will inherit the solver bias)
+        const slotVars: number[] = [];
+        for (let i = 1; i <= roleCount; i++) {
+            const slotVar = solver.addVariable(`slot_${i}`);
+            slotVars.push(slotVar);
+        }
+        
+        // Step 2: Generate permutation of roles (identity or random)
+        const shuffledRoles = useIdentityPermutation 
+            ? [...script.roleIds]  // Identity permutation: roles in original order
+            : this.shuffleArray([...script.roleIds], randomSeed);
+        
+        const permutationType = useIdentityPermutation ? "IDENTITY" : "RANDOM";
+        console.log(`${permutationType} permutation: ${shuffledRoles.map((role, idx) => `slot_${idx + 1}↔${role}`).join(', ')}`);
+        
+        // Step 3: Add biconditional constraints: slot_i ↔ role_j_present
+        for (let i = 0; i < roleCount; i++) {
+            const slotVar = slotVars[i];
+            const roleId = shuffledRoles[i];
+            const roleVar = solver.addVariable(`${roleId}_present`);
+            
+            // Biconditional: slot_i ↔ role_j_present
+            // Encoded as: (slot_i → role_j_present) ∧ (role_j_present → slot_i)
+            // CNF: (¬slot_i ∨ role_j_present) ∧ (¬role_j_present ∨ slot_i)
+            solver.addClause([-slotVar, roleVar]);   // slot_i → role_j_present
+            solver.addClause([-roleVar, slotVar]);   // role_j_present → slot_i
+        }
+        
+        console.log(`Added ${roleCount} slot variables and ${roleCount * 2} biconditional clauses`);
+    }
+
+    // Fisher-Yates shuffle with optional seed for reproducibility
+    private shuffleArray<T>(array: T[], seed?: number): T[] {
+        const shuffled = [...array];
+        
+        // Simple seeded random number generator (Linear Congruential Generator)
+        let rng = seed !== undefined ? seed : Math.floor(Math.random() * 1000000);
+        const seededRandom = (): number => {
+            rng = (rng * 1664525 + 1013904223) % (2 ** 32);
+            return rng / (2 ** 32);
+        };
+        
+        // Fisher-Yates shuffle
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(seededRandom() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        
+        return shuffled;
+    }
 }
