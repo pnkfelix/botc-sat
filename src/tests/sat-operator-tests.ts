@@ -1,5 +1,5 @@
 // Proper SAT solver tests for logical operators using CNF interface
-import { SATSolver } from './solver';
+import { SATSolver } from '../core/solver';
 
 export async function runSATOperatorTests(): Promise<void> {
     console.log("=== Testing SAT Solver CNF Interface ===");

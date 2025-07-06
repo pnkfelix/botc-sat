@@ -1,5 +1,5 @@
 // Script definitions for Blood on the Clocktower
-import { Role, getRole } from './roles';
+import { Role, getRole } from '../core/roles';
 
 export interface Script {
     id: string;

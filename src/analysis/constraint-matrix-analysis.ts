@@ -1,9 +1,9 @@
 // Systematic constraint-based analysis of solution space
 // Tests Baron frequency across all role pair constraints and player counts
 
-import { BagLegalityValidator } from './bag-compiler';
-import { troubleBrewing } from './scripts';
-import { registerTroubleBrewing } from './trouble-brewing-roles';
+import { BagLegalityValidator } from '../core/bag-compiler';
+import { troubleBrewing } from '../core/scripts';
+import { registerTroubleBrewing } from '../data/trouble-brewing-roles';
 import { promises as fs } from 'fs';
 
 interface ConstraintScenario {

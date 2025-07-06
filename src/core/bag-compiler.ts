@@ -1,8 +1,8 @@
 // Compiler from bag observations to SAT constraints (specific facts)
-import { Script } from './scripts';
-import { RoleDistribution, getRole } from './roles';
-import { ScriptToSATCompiler } from './script-compiler';
-import { SATSolver } from './solver';
+import { Script } from '../core/scripts';
+import { RoleDistribution, getRole } from '../core/roles';
+import { ScriptToSATCompiler } from '../core/script-compiler';
+import { SATSolver } from '../core/solver';
 
 export interface BagLegalityProblem {
     script: Script;

@@ -1,6 +1,6 @@
 // Test variable indirection for bias elimination
-import { BagLegalityValidator } from './bag-compiler';
-import { troubleBrewing } from './scripts';
+import { BagLegalityValidator } from '../core/bag-compiler';
+import { troubleBrewing } from '../core/scripts';
 
 async function testVariableIndirection() {
     console.log('=== Testing Variable Indirection for Bias Elimination ===\n');

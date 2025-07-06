@@ -4,7 +4,7 @@ declare const minisolvers: any; // Global available in browser
 // Try to require JSMiniSolvers for Node.js
 let nodeJSMiniSolvers: any = null;
 try {
-    nodeJSMiniSolvers = require('../vendor/minisolvers.js');
+    nodeJSMiniSolvers = require('../../vendor/minisolvers.js');
 } catch (e) {
     // Will use global minisolvers in browser
 }

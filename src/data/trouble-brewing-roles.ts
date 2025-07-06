@@ -1,5 +1,5 @@
 // Trouble Brewing roles with their bag legality effects
-import { Role, registerRole } from './roles';
+import { Role, registerRole } from '../core/roles';
 
 // Roles that affect bag composition during setup
 

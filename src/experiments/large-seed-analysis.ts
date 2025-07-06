@@ -1,6 +1,6 @@
 // Large-scale seed analysis: test seeds 0-999 for comprehensive bias patterns
-import { BagLegalityValidator } from './bag-compiler';
-import { troubleBrewing } from './scripts';
+import { BagLegalityValidator } from '../core/bag-compiler';
+import { troubleBrewing } from '../core/scripts';
 
 async function largeSeedAnalysis() {
     console.log('=== Large-Scale Seed Analysis (0-999) ===\n');

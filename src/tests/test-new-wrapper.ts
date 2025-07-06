@@ -1,5 +1,5 @@
 // Test the new thin wrapper interface
-import { SATSolver } from './solver';
+import { SATSolver } from '../core/solver';
 
 console.log("=== Testing New SATSolver Wrapper ===");
 

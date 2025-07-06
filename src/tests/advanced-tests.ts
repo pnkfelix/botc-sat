@@ -1,4 +1,4 @@
-import { SATSolver } from './solver';
+import { SATSolver } from '../core/solver';
 
 export async function runAdvancedSATTests(): Promise<{ results: any[], summary: string }> {
     console.log("Testing SAT solver integration...");

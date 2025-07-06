@@ -1,5 +1,5 @@
 // Test to understand the pattern of solution generation
-import { SATSolver } from './solver';
+import { SATSolver } from '../core/solver';
 
 export async function testSolutionPatterns(): Promise<void> {
     console.log("=== Testing Solution Generation Patterns ===");

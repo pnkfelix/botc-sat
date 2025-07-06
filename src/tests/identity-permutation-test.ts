@@ -1,6 +1,6 @@
 // Test identity permutation vs no indirection
-import { BagLegalityValidator } from './bag-compiler';
-import { troubleBrewing } from './scripts';
+import { BagLegalityValidator } from '../core/bag-compiler';
+import { troubleBrewing } from '../core/scripts';
 
 async function testIdentityPermutation() {
     console.log('=== Testing Identity Permutation vs No Indirection ===\n');

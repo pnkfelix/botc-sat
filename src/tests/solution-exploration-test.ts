@@ -1,5 +1,5 @@
 // Test file for exploring JSMiniSolvers solution space capabilities
-import { SATSolver } from './solver';
+import { SATSolver } from '../core/solver';
 
 export async function testSolutionExploration(): Promise<void> {
     console.log("=== Testing Solution Space Exploration ===");

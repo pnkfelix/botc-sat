@@ -1,6 +1,6 @@
 // Test to analyze bias in BOTC bag generation
-import { BagLegalityValidator } from './bag-compiler';
-import { troubleBrewing } from './scripts';
+import { BagLegalityValidator } from '../core/bag-compiler';
+import { troubleBrewing } from '../core/scripts';
 
 export async function testBOTCBias(): Promise<void> {
     console.log("=== Testing BOTC Bag Generation Bias ===");

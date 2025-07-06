@@ -1,5 +1,5 @@
 // Test suite exercising TypeScript wrapper with same logical operations as vendored-solver-tests
-import { SATSolver } from './solver';
+import { SATSolver } from '../core/solver';
 
 interface WrapperTestCase {
     name: string;

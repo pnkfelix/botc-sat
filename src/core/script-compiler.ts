@@ -1,7 +1,7 @@
 // Compiler from script DSL to SAT constraints (general rules)
-import { Script } from './scripts';
-import { getRole, getBaseSetup } from './roles';
-import { SATSolver } from './solver';
+import { Script } from '../core/scripts';
+import { getRole, getBaseSetup } from '../core/roles';
+import { SATSolver } from '../core/solver';
 
 export class ScriptToSATCompiler {
     

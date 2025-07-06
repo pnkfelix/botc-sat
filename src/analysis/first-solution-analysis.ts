@@ -1,7 +1,7 @@
 // Analyze first solution bias across many seeds
-import { BagLegalityValidator } from './bag-compiler';
-import { troubleBrewing } from './scripts';
-import { registerTroubleBrewing } from './trouble-brewing-roles';
+import { BagLegalityValidator } from '../core/bag-compiler';
+import { troubleBrewing } from '../core/scripts';
+import { registerTroubleBrewing } from '../data/trouble-brewing-roles';
 import { promises as fs } from 'fs';
 
 // Interface for seed configuration

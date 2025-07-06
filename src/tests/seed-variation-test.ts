@@ -1,6 +1,6 @@
 // Test how different random seeds affect bias patterns
-import { BagLegalityValidator } from './bag-compiler';
-import { troubleBrewing } from './scripts';
+import { BagLegalityValidator } from '../core/bag-compiler';
+import { troubleBrewing } from '../core/scripts';
 
 async function testSeedVariation() {
     console.log('=== Testing Seed Variation in Variable Indirection ===\n');

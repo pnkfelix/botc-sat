@@ -1,5 +1,5 @@
 // Test logical negation support in vendored SAT solver
-import { SATSolver } from './solver';
+import { SATSolver } from '../core/solver';
 
 async function testLogicalNegation() {
     console.log("=== Testing Logical Negation Support ===");

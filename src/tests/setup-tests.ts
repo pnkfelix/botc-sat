@@ -1,5 +1,5 @@
 // Test the setup function against known correct values
-import { getBaseSetup } from './roles';
+import { getBaseSetup } from '../core/roles';
 
 export function testSetupFunction(): void {
     console.log("Testing setup function...");
