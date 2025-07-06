@@ -8,10 +8,10 @@
     "dev": "ts-node src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["blood-on-the-clocktower", "botc", "sat-solver", "constraint-satisfaction", "game-logic", "typescript"],
+  "author": "pnkfelix",
   "license": "ISC",
-  "description": "",
+  "description": "Blood on the Clocktower DSL prototype for SAT-based bag validation and generation with bias-free role selection",
   "devDependencies": {
     "@types/node": "^24.0.8",
     "ts-node": "^10.9.2",
