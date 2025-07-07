@@ -131,6 +131,16 @@ Based on development sessions, these patterns lead to better outcomes:
 - **Research findings belong in research/ directory** - Capture analysis results, failed approaches, and insights for future reference
 - **Update documentation immediately after major findings** - Don't let insights get lost in conversation history
 
+### Documentation Ecosystem
+This project maintains multiple documentation files for different audiences:
+- **README.md**: Public-facing project overview and navigation hub for humans
+- **DESIGN.md**: Complete architectural documentation for developers and future Claude invocations
+- **TODO.md**: Current tasks, priorities, and strategic development directions  
+- **CLAUDE.md** (this file): AI assistant guidance and development workflow preferences
+- **research/**: Analysis findings, experimental results, and research documentation
+
+**For efficient project understanding**: Always read DESIGN.md first for architectural context, then TODO.md for current priorities
+
 ## Build Commands
 - `npm run build` - Compile TypeScript for Node.js
 - `npm run build:browser` - Compile TypeScript to UMD for browser
@@ -178,3 +188,12 @@ Based on development sessions, these patterns lead to better outcomes:
 - This is a prototype/experimental project
 - Focus on modeling the logical structure of BOTC rules
 - Will eventually integrate into a web application
+
+## Third-Party Dependencies
+
+This project includes vendored third-party code with specific licensing requirements.
+
+See [`vendor/README.md`](vendor/README.md) for complete details on:
+- What libraries are vendored and their licenses
+- Attribution and compliance information
+- Why vendoring was chosen over npm dependencies

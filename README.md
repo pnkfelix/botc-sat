@@ -87,3 +87,26 @@ npm run build:browser
 - 🚧 Advanced preference-based generation
 
 This is a prototype/experimental project focused on exploring the feasibility of formal logical approaches to complex game rule modeling.
+
+## Documentation
+
+### For Developers
+- **[`DESIGN.md`](DESIGN.md)** - Complete architectural overview and technical implementation details
+  - High-level explanation of script-to-SAT compilation approach
+  - Core design patterns and technical innovations
+  - Performance characteristics and optimization strategies
+  - Comprehensive mapping of all source files and their purposes
+
+### For Development Planning
+- **[`TODO.md`](TODO.md)** - Current tasks, research directions, and strategic planning
+  - Immediate implementation tasks and their priority
+  - Research experiments and validation approaches
+  - Long-term architectural evolution plans
+  - Lessons learned and technical debt tracking
+
+### For AI Assistant (Claude)
+- **[`CLAUDE.md`](CLAUDE.md)** - Development workflow preferences and architectural guidance
+  - Preferred development patterns and workflow approaches
+  - Lessons learned from previous development sessions
+  - Technical constraints and compatibility requirements
+  - Bias analysis methodology and validation approaches
