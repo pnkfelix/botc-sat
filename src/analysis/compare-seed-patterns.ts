@@ -7,7 +7,7 @@ async function compareSeedPatterns() {
     console.log('Testing hypothesis: Better bit-pattern variation reduces role bias\n');
     
     // Load first 100 random seeds from file
-    const seedData = JSON.parse(await fs.readFile('./random-seeds.json', 'utf-8'));
+    const seedData = JSON.parse(await fs.readFile('../data/random-seeds.json', 'utf-8'));
     const first100RandomSeeds = seedData.seeds.slice(0, 100);
     
     console.log('📊 First 10 random seeds:', first100RandomSeeds.slice(0, 10).join(', '));

@@ -28,7 +28,7 @@ async function generateRandomSeeds() {
         seeds: seeds
     };
     
-    const outputPath = join(__dirname, '../random-seeds.json');
+    const outputPath = join(__dirname, '../data/random-seeds.json');
     
     try {
         await fs.writeFile(outputPath, JSON.stringify(seedData, null, 2));

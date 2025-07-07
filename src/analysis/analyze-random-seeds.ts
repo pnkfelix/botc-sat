@@ -6,7 +6,7 @@ async function analyzeRandomSeeds() {
     
     await firstSolutionAnalysis(8, {
         type: 'random',
-        filePath: '../random-seeds.json'
+        filePath: '../data/random-seeds.json'
     });
 }
 

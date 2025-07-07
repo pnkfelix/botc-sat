@@ -49,7 +49,7 @@ async function multiPlayerCountAnalysis() {
         const randomResult = await analyzePlayerCountWithSeeds({
             playerCount,
             seedType: 'random',
-            filePath: './random-seeds.json'
+            filePath: '../data/random-seeds.json'
         });
         
         const time2 = (Date.now() - startTime2) / 1000;

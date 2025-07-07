@@ -23,7 +23,7 @@ async function demonstrateSeedConfigurations() {
     try {
         // Load the first 100 random seeds from our generated file
         const fs = require('fs').promises;
-        const seedData = JSON.parse(await fs.readFile('../random-seeds.json', 'utf-8'));
+        const seedData = JSON.parse(await fs.readFile('../data/random-seeds.json', 'utf-8'));
         const first100RandomSeeds = seedData.seeds.slice(0, 100);
         
         await firstSolutionAnalysis(8, {

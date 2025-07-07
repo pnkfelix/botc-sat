@@ -236,7 +236,7 @@ async function runSequentialAnalysis() {
 async function runRandomSeedAnalysis() {
     await firstSolutionAnalysis(8, {
         type: 'random',
-        filePath: '../random-seeds.json'
+        filePath: '../data/random-seeds.json'
     });
 }
 
