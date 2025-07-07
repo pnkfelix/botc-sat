@@ -293,7 +293,11 @@ const solution = extractSolution(result.model);
 
 ### 🔄 **Variable Indirection Pattern**
 
-To eliminate SAT solver bias (VSIDS heuristic), we use a two-layer variable system:
+**Problem**: SAT solvers use VSIDS (Variable State Independent Decaying Sum) heuristics that create systematic bias toward lower-numbered variables, causing some roles to never appear in generated solutions.
+
+**Solution**: A two-layer variable indirection system that absorbs solver bias while preserving logical constraints.
+
+#### Technical Implementation:
 
 ```typescript
 // Layer 1: Slot variables (inherit solver bias)
@@ -302,9 +306,39 @@ slot_1, slot_2, slot_3, ...
 // Layer 2: Role variables (actual game roles)  
 baron_present, drunk_present, ...
 
-// Random mapping: slot_i ↔ role_j_present
+// Random permutation mapping: slot_i ↔ role_j_present
 addBiconditional(slot_i, role_j_present);
 ```
+
+#### How It Works:
+1. **Slot variables** are created in order (slot_1, slot_2, ...) and inherit the SAT solver's natural bias
+2. **Role variables** represent actual game roles and maintain all logical constraints
+3. **Random permutation** maps slots to roles differently on each generation (controlled by seed)
+4. **Biconditional constraints** ensure slot_i ↔ role_j equivalence preserves all game logic
+
+#### Complexity and Tradeoffs:
+- **Adds 22 slot variables** (relatively small compared to ~13K total SAT variables)
+- **Adds 44 biconditional clauses** (small compared to ~50K total SAT clauses)
+- **Optional feature** - can be disabled for deterministic behavior
+- **Seed-controlled** - enables reproducible "random" permutations
+- **Overhead is modest** relative to overall constraint system complexity
+
+#### Measured Impact:
+- **Improves variety**: 47.3% → 40.4% CV (permutation alone)
+- **Does not enable rare roles**: Baron still never appeared (0%) with permutation alone
+- **Requires constraint exploration**: Constraints are what force rare roles like Baron to appear (10.5%)
+
+#### Uncertainty and Future Work:
+⚠️ **Important**: We are not 100% certain this achieves truly uniform sampling. The approach:
+- Assumes VSIDS bias is the primary source of non-uniformity
+- May have other systematic biases we haven't identified
+- Requires validation via ground truth experiments (e.g., uniform minion sampling)
+
+**When to Use**:
+- ✅ Research and analysis scenarios requiring variety
+- ✅ Bag generation for human players (reduces repetition)  
+- ❌ Deterministic testing (use identity permutation or disable)
+- ❌ Performance-critical scenarios (adds computational overhead)
 
 ### 📊 **Constraint Matrix Pattern**
 
@@ -326,10 +360,12 @@ for (roleA, roleB in rolePairs) {
 - **Solution**: Sequential counter variables reduce to ~50K clauses (168x improvement)
 - **Implementation**: `addExactlyNRolesConstraint()` in script-compiler
 
-### 🎲 **Variable Indirection for Bias Elimination**
-- **Problem**: SAT solvers have systematic bias due to VSIDS heuristics
-- **Solution**: Random permutation layer that absorbs bias while preserving constraints
-- **Impact**: Eliminates "Baron never appears" artifacts
+### 🎲 **Variable Indirection for Bias Reduction**
+- **Problem**: SAT solvers have systematic bias due to VSIDS heuristics causing roles to never appear
+- **Solution**: Two-layer variable system with random slot-to-role permutation mapping
+- **Complexity**: Adds 22 slot variables and 44 biconditional clauses (modest overhead vs ~13K variables, ~50K clauses total)
+- **Impact**: Improves variety (47.3% → 40.4% CV) but constraint exploration still required for rare roles
+- **Uncertainty**: ⚠️ Not proven to achieve uniform sampling - may have remaining systematic biases
 
 ### 🗺️ **Solution Space Topology Mapping**
 - **Innovation**: Constraint matrix analysis reveals structured solution neighborhoods
