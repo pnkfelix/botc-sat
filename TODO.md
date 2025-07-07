@@ -108,6 +108,11 @@
 - [ ] Add proper TypeScript strict mode compliance
 - [ ] Improve CNF clause generation efficiency
 - [ ] Add unit tests for individual constraint types
+- [ ] **INVESTIGATION**: Inconsistent constraint type definitions between `roles.ts` and actual usage
+  - `roles.ts` defines `BagConstraint` interface with complex nested structure
+  - Actual role definitions use simplified constraint format with direct `type`, `target`, `delta` fields
+  - `trouble-brewing-roles.ts` uses the simpler format exclusively
+  - Need to decide: standardize on one approach or support both with proper type safety
 
 ## Strategic Development Directions
 
@@ -163,6 +168,113 @@
 - [ ] Add weighted preferences (slight bias toward/against certain roles)
 - [ ] Implement "avoid recent" mode (prefer different roles than last N games)
 - [ ] Advanced variety metrics and analysis tools
+
+### 6. Textual Representation Standardization 🆕
+**Priority**: High  
+**Status**: New requirement identified
+
+**Goal**: Establish standard textual formats for core BOTC game state representations
+
+**Required formats**:
+- [ ] **Bag representation**: Standard format for role token collections
+  - Physical bag vs in-play distribution
+  - Role counts and substitutions
+  - Validation status display
+- [ ] **Player layout**: Standard format for game seating and player identities
+  - Seat positions and player names
+  - Alive/dead status
+  - Voting eligibility
+- [ ] **Grimoire state**: Standard format for complete game state
+  - Player character assignments
+  - Reminder tokens and their positions
+  - Status effects (poisoned, drunk, etc.)
+  - Secret information tracking
+- [ ] **Events**: Standard format for game state transitions
+  - Player actions and ability usage
+  - Storyteller information distribution
+  - State change documentation
+  - Turn/phase tracking
+
+**Requirements**:
+- [ ] Human-readable text format
+- [ ] Machine-parseable structure
+- [ ] Consistent formatting across all tools
+- [ ] Support for partial/incomplete information
+- [ ] Validation of format correctness
+
+**Impact**: Foundation for grimoire validation, event modeling, and full gameplay state tracking
+
+### 7. Uniform Minion Sampling Validation 🔬
+**Priority**: Medium  
+**Status**: Research validation experiment
+
+**Goal**: Validate whether our 35% CV represents mathematical reality vs remaining algorithmic bias
+
+**Methodology**:
+- [ ] **Enumerate all valid minion combinations** for each player count (7-12)
+  - 7 players: [Baron], [Poisoner], [Spy], [Scarlet Woman] (4 combinations)
+  - 8+ players: All valid 1-minion and 2-minion combinations
+- [ ] **Sample uniformly** from minion combinations (not SAT-solver dependent)
+- [ ] **Solve for remaining roles** using SAT constraints to complete each setup
+- [ ] **Measure resulting role frequencies** across uniform minion distribution
+- [ ] **Compare with constraint matrix results** (Baron: 10.5%, CV: 35.0%)
+
+**Expected Insights**:
+- If uniform sampling → similar frequencies: Our system achieves near-mathematical optimum
+- If uniform sampling → higher Baron frequency: Our system still has algorithmic bias
+- Establishes ground-truth baseline for "true" BOTC role frequency distribution
+
+**Implementation**:
+```typescript
+// For each player count, enumerate all valid minion combinations
+const minionCombos = generateAllValidMinionCombinations(playerCount);
+for (const minions of minionCombos) {
+    const solution = solveWithFixedMinions(minions);
+    // Aggregate frequencies across uniform minion sampling
+}
+```
+
+**Value**: Validates our bias reduction methods and establishes mathematical baseline for BOTC frequencies
+
+### 8. Web UI Visualization Layer 🔮
+**Priority**: Low (Future)  
+**Status**: Long-term enhancement
+
+**Goal**: Rich web interface with interactive visualizations for BOTC game state
+
+**Components**:
+- [ ] **Interactive Grimoire Board**: SVG-based game board with drag-and-drop tokens
+  - Clickable player seats with status indicators
+  - Token placement and movement animations
+  - Real-time validation feedback
+  - Touch-friendly mobile interface
+- [ ] **Bag Visualization**: Interactive representation of role token collections
+  - Visual diff between physical bag and in-play distribution
+  - Drag-and-drop role assignment
+  - Validation status with visual indicators
+- [ ] **Player Layout Interface**: Interactive seating chart
+  - Click to assign players to seats
+  - Status indicators (alive/dead, voting eligibility)
+  - Player information panels
+- [ ] **Event Timeline**: Visual history of game state transitions
+  - Chronological event display
+  - Click to inspect detailed event information
+  - Ability usage tracking and visualization
+- [ ] **Storyteller Tools**: Interactive utilities for game management
+  - Quick role assignment and validation
+  - Information distribution tracking
+  - Turn/phase management interface
+
+**Technical Requirements**:
+- [ ] Build on standardized textual representation formats
+- [ ] Responsive design for desktop and mobile
+- [ ] Real-time validation integration
+- [ ] Accessibility compliance
+- [ ] Touch and mouse interaction support
+
+**Dependencies**: Requires completion of textual representation standardization (Task #6)
+
+**Impact**: Enhanced user experience for storytellers and players, broader tool adoption
 
 **✅ MAJOR BREAKTHROUGH - SOLUTION SPACE TOPOLOGY MAPPED**:
 - ✅ **Constraint Matrix Analysis**: Systematic exploration of solution space via role pair constraints

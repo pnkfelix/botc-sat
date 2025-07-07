@@ -90,11 +90,15 @@ The constraint analysis proves that BOTC's solution space is **highly structured
 - Physical bag substitution mechanics
 
 ### 2. SAT Solver Bias vs. Natural Constraints
-Previous findings of "Baron never appears" (0% in unconstrained analysis) vs. "Baron appears 31% in 7-player constrained analysis" vs. "Baron appears 23.1% in systematic constraints" shows:
+Comprehensive bias analysis across different approaches:
 
-- **Unconstrained SAT solving**: Finds "simple" base distributions
-- **Single constraints**: Can force exploration of Baron scenarios  
-- **Systematic constraints**: Reveals true probability distribution
+| Approach | Baron Frequency | Coefficient of Variation | Assessment |
+|----------|-----------------|-------------------------|------------|
+| **Unconstrained SAT solving** | 0% (never appears) | 47.3% CV | High bias - finds "simple" distributions |
+| **Permutation-only (random seeds)** | 0% (never appears) | 40.4% CV | Moderate bias - improves variety but misses Baron |
+| **Systematic constraints (combined)** | 10.5% realistic | 35.0% CV | **Lowest bias** - reveals natural frequencies |
+
+**Key Insight**: Constraint-driven exploration achieves both realistic role frequencies AND lowest overall distribution bias
 
 ### 3. Practical Bag Generation
 For random bag generation systems:

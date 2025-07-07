@@ -1,5 +1,84 @@
 # Blood on the Clocktower DSL - Architecture Design
 
+## High-Level Concept
+
+### The Core Insight: Script-to-SAT Compilation
+
+The fundamental innovation of this system is treating Blood on the Clocktower rule validation as a **constraint satisfaction problem**. Instead of writing imperative code to check each rule manually, we compile the entire script (collection of roles) into a SAT formula that encodes all legal game configurations. This approach transforms rule validation from "check if this specific setup is legal" to "find any/all legal setups that satisfy these constraints."
+
+### From English Rules to SAT Constraints
+
+Each BOTC role comes with English rule text that describes setup effects. For example:
+- **Baron**: "There are extra Outsiders in play. [+2 Outsiders]"
+- **Drunk**: "You do not know you are the Drunk. You think you are a Townsfolk character, but you are not."
+
+We extract the mathematical essence of these rules into a simple DSL attached to each role definition:
+
+```typescript
+// Baron modifies the base role-type distribution
+baron: {
+  constraints: [
+    { type: 'count_modification', target: 'townsfolk', delta: -2 },
+    { type: 'count_modification', target: 'outsider', delta: 2 }
+  ]
+}
+
+// Drunk creates a mismatch between physical bag and in-play roles
+drunk: {
+  constraints: [
+    { type: 'physical_bag_substitution', fromType: 'outsider', toType: 'townsfolk' }
+  ]
+}
+```
+
+### The Role-Type Count Pipeline Challenge
+
+A critical insight was modeling how role-type counts flow through modifications. The base game has fixed distributions (e.g., 7 players = 5 Townsfolk, 0 Outsiders, 1 Minion, 1 Demon), but roles like Baron change these counts. The challenge is efficiently encoding scenarios where multiple roles might modify the same count type.
+
+Our solution uses a **constraint pipeline** approach to avoid SAT formula explosion:
+1. **Base counts**: Encode the standard distribution for each player count
+2. **Modification chain**: For each role type, create a sequential chain of modifications where each role in the script potentially alters the count
+3. **Final counts**: The end result represents the actual in-play distribution
+4. **Physical bag mapping**: Additional transformations for roles like Drunk that affect physical tokens
+
+For example, with Baron in a 7-player game:
+```
+base_townsfolk_5 → after_role_baron_townsfolk_3 → final_townsfolk_3
+base_outsider_0  → after_role_baron_outsider_2  → final_outsider_2
+```
+
+Note: The sequential ordering is an implementation convenience - current BOTC role modifications are mathematically commutative, so the final counts are independent of the processing order. The pipeline avoids the complexity of encoding all possible combinations of role presence as separate constraint branches.
+
+### SAT Variables and Constraint Encoding
+
+The system creates thousands of boolean variables representing every possible game state:
+- `player_count_7` = "this is a 7-player game"
+- `baron_present` = "Baron is in this setup"
+- `base_townsfolk_5` = "base setup has 5 Townsfolk"
+- `final_outsider_2` = "final setup has 2 Outsiders"
+
+These variables are connected by logical implications encoded as CNF clauses:
+- `player_count_7 → base_townsfolk_5` (7-player games start with 5 Townsfolk)
+- `baron_present ∧ base_townsfolk_5 → after_baron_townsfolk_3` (Baron reduces 5→3 Townsfolk)
+
+### The Power of Constraint Compilation
+
+This approach provides remarkable capabilities:
+
+**Validation**: Given a specific setup, add constraints that fix the variables (`baron_present=true`, `player_count_7=true`, etc.) and check satisfiability. If SAT, the setup is legal; if UNSAT, it violates BOTC rules.
+
+**Generation**: Add only high-level constraints (`player_count_8=true`) and let the SAT solver find any valid configuration. The solver automatically handles complex interactions like "if Drunk is present in a 7-player game, Baron must also be present to create Outsider slots."
+
+**Analysis**: Generate thousands of valid setups to understand the mathematical structure of BOTC's solution space, revealing patterns like Baron appearing 23% of the time in 7-player games but only 4% in 8-player games.
+
+### Why This Architecture Succeeds
+
+1. **Declarative**: Rules are facts about legal configurations, not procedural steps
+2. **Composable**: New roles just add more constraints without breaking existing logic  
+3. **Complete**: The SAT solver explores the entire solution space, finding edge cases humans might miss
+4. **Efficient**: Despite generating ~50K constraints, modern SAT solvers handle this easily
+5. **Analyzable**: The constraint structure reveals deep mathematical properties of BOTC rules
+
 ## Overview
 
 This project implements a domain-specific language (DSL) for modeling Blood on the Clocktower (BOTC) game mechanics using SAT (Satisfiability) solving. The system can validate game setups, generate legal configurations, and analyze the mathematical structure of BOTC's constraint system.
@@ -65,6 +144,16 @@ src/
   - Preference handling (mustInclude/mustExclude)
   - Physical bag vs. in-play distribution reconciliation
 
+### 🔌 **Application Layer** (`src/`)
+
+#### `index.ts` - Main Library Entry Point
+- **Purpose**: Clean public API for external applications
+- **Key Features**:
+  - BOTCValidator class for easy integration
+  - Unified interface for validation and generation
+  - Exports core classes and analysis tools
+  - Simplified method signatures for common use cases
+
 #### `roles.ts` - Role Type System
 - **Purpose**: Core role definitions and type management
 - **Key Features**:
@@ -106,9 +195,44 @@ src/
 - **Purpose**: Compare bias patterns between sequential vs random seeds
 - **Finding**: Random seeds improve uniformity (6.9% CV improvement)
 
+#### `generate-random-seeds.ts` - Random Seed Generation
+- **Purpose**: Generate high-quality random seeds for deterministic testing
+- **Key Features**:
+  - Produces 1000 random seeds with improved bit-pattern variation
+  - Exports to `random-seeds.json` for reproducible analysis
+  - Supports configurable seed count and output formats
+
+#### `analyze-random-seeds.ts` - Random Seed Analysis Helper
+- **Purpose**: Analyze bias patterns using random seed sets
+- **Key Features**:
+  - Role frequency calculation across random seed trials
+  - Statistical bias metrics (coefficient of variation)
+  - Supports integration with larger analysis frameworks
+
+#### `analyze-sequential-seeds.ts` - Sequential Seed Analysis Helper  
+- **Purpose**: Analyze bias patterns using sequential seed sets
+- **Key Features**:
+  - Complementary analysis to random seed approach
+  - Reveals solver bias artifacts in deterministic sequences
+  - Statistical comparison baseline for bias reduction validation
+
+#### `multi-player-count-analysis.ts` - Multi-Player Analysis
+- **Purpose**: Comprehensive analysis across different player counts
+- **Key Features**:
+  - Baron frequency analysis across player counts 7-12
+  - Cross-player-count pattern identification
+  - Systematic exploration of player count effects on solution space
+
+#### `test-seed-configurations.ts` - Seed Configuration Testing
+- **Purpose**: Test framework for different seed configuration approaches
+- **Key Features**:
+  - Validates seed generation and analysis pipelines
+  - Configurable test scenarios for bias analysis
+  - Integration testing for analysis workflows
+
 ### 🧪 **Test Layer** (`src/tests/`)
 
-#### `index.ts` - Main Test Runner
+#### `test-runner.ts` - Main Test Runner
 - **Purpose**: Comprehensive test suite covering all major functionality
 - **Coverage**: 
   - Setup function validation
@@ -117,11 +241,36 @@ src/
   - Generative setup testing
   - Bias analysis validation
 
-#### Test Categories:
-- **Core Tests**: `advanced-tests.ts`, `setup-tests.ts`
-- **SAT Tests**: `sat-operator-tests.ts`, `negation-tests.ts`
-- **Bias Tests**: `bias-analysis-test.ts`, `variable-indirection-test.ts`
-- **Integration Tests**: `solution-exploration-test.ts`, `solution-pattern-test.ts`
+#### Core Functionality Tests:
+- **`advanced-tests.ts`**: Core SAT solver functionality and constraint validation
+- **`setup-tests.ts`**: Base setup function validation and role type distribution testing
+
+#### SAT Solver Tests:
+- **`sat-operator-tests.ts`**: SAT logical operator validation (AND, OR, NOT, implications)
+- **`negation-tests.ts`**: Negation and contradiction handling in SAT constraints
+- **`test-actual-solver.ts`**: Direct SAT solver capability testing
+- **`test-new-wrapper.ts`**: SAT wrapper interface validation
+- **`vendored-solver-tests.ts`**: JSMiniSolvers integration verification
+- **`wrapper-logic-tests.ts`**: SAT wrapper logic correctness testing
+
+#### Bias Analysis Tests:
+- **`bias-analysis-test.ts`**: SAT solver bias detection and measurement
+- **`variable-indirection-test.ts`**: Variable indirection system validation
+- **`identity-permutation-test.ts`**: Identity permutation correctness testing
+- **`seed-variation-test.ts`**: Seed variation impact analysis
+
+#### Integration Tests:
+- **`solution-exploration-test.ts`**: Multi-solution generation and exploration testing
+- **`solution-pattern-test.ts`**: Solution pattern analysis and variety validation
+
+### 🧪 **Experimental Layer** (`src/experiments/`)
+
+#### `large-seed-analysis.ts` - Large-Scale Seed Analysis
+- **Purpose**: Experimental analysis with larger seed sets and extended scenarios
+- **Key Features**:
+  - Performance testing with high-volume seed analysis
+  - Extended statistical validation scenarios
+  - Research into scalability limits and optimization opportunities
 
 ## Key Design Patterns
 

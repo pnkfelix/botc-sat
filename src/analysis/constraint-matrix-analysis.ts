@@ -262,6 +262,62 @@ async function analyzeConstraintResults(results: TrialResult[]) {
     
     console.log(`🎯 Overall Baron Frequency: ${totalBaronPresent}/${successfulResults.length} (${overallPercentage.toFixed(1)}%)`);
     console.log(`📊 This represents Baron's frequency across ${successfulResults.length} diverse constraint scenarios`);
+    
+    // Calculate Coefficient of Variation for role frequencies
+    console.log('\n📊 Coefficient of Variation Analysis:');
+    console.log('===================================');
+    
+    const roleFrequencies = new Map<string, number>();
+    
+    // Count all role appearances across successful solutions
+    successfulResults.forEach(r => {
+        if (r.solution) {
+            r.solution.forEach(roleId => {
+                roleFrequencies.set(roleId, (roleFrequencies.get(roleId) || 0) + 1);
+            });
+        }
+    });
+    
+    // Calculate statistics
+    const frequencies = Array.from(roleFrequencies.values());
+    const totalRoles = roleFrequencies.size;
+    const mean = frequencies.reduce((a, b) => a + b, 0) / frequencies.length;
+    const variance = frequencies.reduce((sum, freq) => sum + Math.pow(freq - mean, 2), 0) / frequencies.length;
+    const stdDev = Math.sqrt(variance);
+    const cv = (stdDev / mean) * 100;
+    
+    console.log(`Total unique roles analyzed: ${totalRoles}`);
+    console.log(`Mean role frequency: ${mean.toFixed(1)} appearances`);
+    console.log(`Standard deviation: ${stdDev.toFixed(1)}`);
+    console.log(`Coefficient of Variation: ${cv.toFixed(1)}%`);
+    
+    // Show frequency distribution
+    console.log('\n📈 Role Frequency Distribution:');
+    const sortedFreqs = Array.from(roleFrequencies.entries()).sort((a, b) => b[1] - a[1]);
+    sortedFreqs.slice(0, 5).forEach(([role, freq]) => {
+        const percentage = (100 * freq / successfulResults.length).toFixed(1);
+        console.log(`  ${role}: ${freq} (${percentage}%)`);
+    });
+    console.log('  ...');
+    sortedFreqs.slice(-5).forEach(([role, freq]) => {
+        const percentage = (100 * freq / successfulResults.length).toFixed(1);
+        console.log(`  ${role}: ${freq} (${percentage}%)`);
+    });
+    
+    // Compare to previous bias analysis results
+    console.log('\n🔍 Bias Comparison:');
+    console.log('===================');
+    console.log('Sequential seeds (permutation-only): 47.3% CV');
+    console.log('Random seeds (permutation-only): 40.4% CV');
+    console.log(`Constraint approach (combined): ${cv.toFixed(1)}% CV`);
+    
+    if (cv < 40.4) {
+        console.log('✅ Constraint approach shows LOWER bias than permutation-only!');
+    } else if (cv < 47.3) {
+        console.log('✅ Constraint approach shows BETTER bias than sequential baseline!');
+    } else {
+        console.log('⚠️  Constraint approach shows similar or higher bias');
+    }
 }
 
 async function saveDetailedResults(results: TrialResult[]) {

@@ -18,9 +18,15 @@ This project is a prototype for domain-specific logical languages, specifically 
 ## Project Structure
 ```
 /src/
-  - Core DSL implementation
-/dist/
-  - Compiled TypeScript output
+├── core/           # Core constraint system (solver, compiler, roles)
+├── data/           # Game data definitions (Trouble Brewing roles)
+├── analysis/       # Research and analysis tools  
+├── tests/          # Test suites (comprehensive coverage)
+├── experiments/    # One-off experimental code
+└── index.ts        # Main library entry point
+/research/          # Analysis findings and documentation
+/vendor/            # Third-party dependencies (JSMiniSolvers)
+/dist/              # Compiled TypeScript output
 ```
 
 ## Development Workflow Preferences
@@ -80,6 +86,14 @@ Based on development sessions, these patterns lead to better outcomes:
 - **For large files near size limit** - read first half then second half instead of using offset/limit
 - **Files within 2x of 256KB limit** - split reading approach is more efficient than small chunks
 
+### Long-Running Command Output Strategy
+- **For long-running commands** - Always pipe output to a file so results can be reviewed repeatedly without re-execution
+- **For commands with long output** - Use `>` redirection, NOT `tee`, to avoid consuming token budget
+- **Good pattern**: `npm run analysis:constraint-matrix > analysis-results.log 2>&1`
+- **Avoid**: `npm run analysis:constraint-matrix 2>&1 | tee analysis-results.log` (wastes tokens)
+- **Review strategy**: Use `tail`, `head`, `grep` to examine specific sections of large output files
+- **Rationale**: Token budget is limited; don't spend it on command output that's saved to files
+
 ### Dealing with Minified/Unreadable Code
 - **Problem**: Minified vendor code (like minisolvers.js) exceeds size limits and is unreadable
 - **Solution**: Use `npx js-beautify` to create readable versions for analysis
@@ -101,15 +115,32 @@ Based on development sessions, these patterns lead to better outcomes:
 - **Elegant solutions exist** - Variable indirection avoids expensive recompilation while solving bias
 - **Incremental development** - Start with simple blocking, identify bias, design targeted solution
 
+### Bias Measurement and Validation Approach
+- **Coefficient of Variation (CV) is the key metric** - CV = (stdDev / mean) × 100%, lower is better
+- **Multiple approaches needed** - No single bias reduction technique is sufficient:
+  - Permutation-only approach: Improves variety (47.3% → 40.4% CV) but misses rare roles
+  - Constraint-only approach: Forces exploration of edge cases but may introduce other biases  
+  - **Combined approach is optimal**: Variable indirection + systematic constraints achieves lowest bias (35.0% CV)
+- **Question mathematical vs algorithmic bias** - High CV might reflect game rules, not just algorithm bias
+- **Validate with ground truth experiments** - Use uniform sampling of constrained subspaces to establish baselines
+- **Document all bias analysis results** - Track CV improvements across different methodologies in research/ files
+
+### Architecture Documentation Strategy  
+- **DESIGN.md must comprehensively catalog all source files** - Future Claude invocations need complete file purpose mapping
+- **Distinguish algorithmic choices from mathematical constraints** - Be explicit about implementation convenience vs semantic requirements
+- **Research findings belong in research/ directory** - Capture analysis results, failed approaches, and insights for future reference
+- **Update documentation immediately after major findings** - Don't let insights get lost in conversation history
+
 ## Build Commands
 - `npm run build` - Compile TypeScript for Node.js
 - `npm run build:browser` - Compile TypeScript to UMD for browser
 - `npm run dev` - Run with ts-node for development
 
 ## Testing
-- **Node.js**: `npm run dev` runs TypeScript directly
+- **Node.js**: `npm run dev` runs TypeScript directly (executes `src/tests/test-runner.ts`)
 - **Browser**: Open `test-browser.html` in browser to run same code
-- **Unified Testing**: Same TypeScript code (`src/advanced-tests.ts`) runs in both environments
+- **Unified Testing**: Same TypeScript code runs in both environments
+- **Analysis Scripts**: Use `npm run analysis:*` commands for research tools
 
 ## SAT Solver Integration Use Cases
 1. **Legality Checking**: Verify if a logical expression/game state is valid
