@@ -236,7 +236,43 @@ for (const minions of minionCombos) {
 
 **Value**: Validates our bias reduction methods and establishes mathematical baseline for BOTC frequencies
 
-### 8. Web UI Visualization Layer 🔮
+### 8. BDD Alternative Architecture Investigation 🔬
+**Priority**: Low (Future Research)  
+**Status**: Speculative - current SAT approach works well enough
+
+**Goal**: Investigate Binary Decision Diagrams (BDDs) as alternative to SAT for true uniform sampling
+
+**Motivation**: 
+- Current 35.0% CV, while improved, still indicates bias
+- BDDs offer native uniform sampling and exact solution counting
+- BOTC constraints might have favorable structure for compact BDD representation
+
+**Research Questions**:
+- [ ] **Structural analysis**: Do BOTC constraints create compact BDDs despite ~13K variable scope?
+- [ ] **Variable reduction**: Can compositional BDD construction reduce effective variable count?
+- [ ] **Tool availability**: Are there browser-compatible BDD libraries with adequate performance?
+- [ ] **Sampling quality**: Would BDD uniform sampling eliminate our 35% CV bias entirely?
+
+**Experimental Approach**:
+- [ ] **Minimal scope test**: 7-player game, Baron + 3-4 other roles
+- [ ] **Size measurement**: Compare BDD size to equivalent SAT variable count
+- [ ] **Composition validation**: Build modular BDDs and compose via logical operations
+- [ ] **Performance comparison**: Time, memory, and sampling quality vs SAT approach
+
+**Favorable Indicators**:
+- **Structural redundancy**: Only 2/22 roles (Baron, Drunk) have setup effects
+- **Simple arithmetic**: Count modifications are linear (±1, ±2)
+- **Natural sharing**: Common modification patterns and unreachable variable combinations
+- **Limited interaction**: Role presence decisions mostly independent
+
+**Risk Mitigation**: 
+- Low priority until higher-value tasks completed
+- Current SAT approach provides acceptable bias reduction (35% CV vs 47% baseline)
+- Bounded experimental scope limits implementation cost
+
+**Value**: Could provide perfect uniform sampling and exact solution counting if BOTC structure proves BDD-favorable
+
+### 9. Web UI Visualization Layer 🔮
 **Priority**: Low (Future)  
 **Status**: Long-term enhancement
 
