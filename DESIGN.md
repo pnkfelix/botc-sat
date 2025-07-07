@@ -31,6 +31,28 @@ drunk: {
 }
 ```
 
+### DSL vs SAT: Compilation Required
+
+**Critical Architecture Point**: The DSL constraints are **not SAT fragments** themselves. They are declarative specifications that require contextual compilation.
+
+**Why Compilation is Necessary**:
+- **Role ordering matters**: Baron's effect depends on its position in the modification chain
+- **Script context required**: The same role constraint generates different SAT variables depending on which other roles are present
+- **Sequential dependencies**: Count modifications create chains like `base_townsfolk_5 → after_baron_townsfolk_3 → final_townsfolk_3`
+
+**Compilation Process**:
+1. **Script analysis**: Determine which roles modify each count type
+2. **Ordering resolution**: Create sequential modification chains based on script role order
+3. **Variable generation**: Create context-specific SAT variables for each step in the chain
+4. **Constraint synthesis**: Generate CNF clauses that encode the modification logic
+
+**Alternative Architecture Question**: Could we precompile role-specific SAT fragments independent of script context? This would require solving complex problems:
+- **Variable naming conflicts**: How to merge fragments without collisions?
+- **Ordering dependencies**: How to handle sequential count modifications?
+- **Context isolation**: How to encode "Baron reduces townsfolk by 2" without knowing the starting count?
+
+Currently, our **script-to-SAT compilation** approach handles these complexities by generating the complete constraint system with full context awareness.
+
 ### The Role-Type Count Pipeline Challenge
 
 A critical insight was modeling how role-type counts flow through modifications. The base game has fixed distributions (e.g., 7 players = 5 Townsfolk, 0 Outsiders, 1 Minion, 1 Demon), but roles like Baron change these counts. The challenge is efficiently encoding scenarios where multiple roles might modify the same count type.
