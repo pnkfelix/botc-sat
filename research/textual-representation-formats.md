@@ -43,7 +43,7 @@ Current focus: single-line and ASCII art formats.
 │                                                                                │
 │ Ian                                                 Frank                      │
 │ mayor (2)                                           virgin (54)                │
-│       (poisoned)                                           (washerwoman:wrong) │
+│       (poisoned)                                           (virgin:no_ability) │
 │                                                                                │
 │    Leo       Mark      Kate      Hannah     Grace                              │
 │    chef      monk      slayer    librarian  imp                                │
