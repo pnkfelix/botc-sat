@@ -34,6 +34,7 @@ const drunk: Role = {
     name: 'Drunk',
     type: 'Outsider',
     englishText: 'You do not know you are the Drunk. You think you are a Townsfolk character, but you are not.',
+    reminderTokens: ['is_the_drunk'],
     constraints: [
         {
             type: 'physical_bag_substitution',
@@ -53,6 +54,7 @@ const simpleRoles: Role[] = [
         name: 'Washerwoman',
         type: 'Townsfolk',
         englishText: 'You start knowing that 1 of 2 players is a particular Townsfolk.',
+        reminderTokens: ['townsfolk', 'wrong'],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -62,6 +64,7 @@ const simpleRoles: Role[] = [
         name: 'Librarian', 
         type: 'Townsfolk',
         englishText: 'You start knowing that 1 of 2 players is a particular Outsider, or that zero Outsiders are in play.',
+        reminderTokens: ['outsider', 'wrong'],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -71,6 +74,7 @@ const simpleRoles: Role[] = [
         name: 'Investigator',
         type: 'Townsfolk', 
         englishText: 'You start knowing that 1 of 2 players is a particular Minion.',
+        reminderTokens: ['minion', 'wrong'],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -98,6 +102,7 @@ const simpleRoles: Role[] = [
         name: 'Fortune Teller',
         type: 'Townsfolk',
         englishText: 'Each night, choose 2 players: you learn if either is a Demon. There is a good player that registers as a Demon to you.',
+        reminderTokens: ['red_herring'],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -107,6 +112,7 @@ const simpleRoles: Role[] = [
         name: 'Undertaker',
         type: 'Townsfolk',
         englishText: 'Each night*, you learn which character died by execution today.',
+        reminderTokens: ['died_today'],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -116,6 +122,7 @@ const simpleRoles: Role[] = [
         name: 'Monk',
         type: 'Townsfolk',
         englishText: 'Each night*, choose a player (not yourself): they are safe from the Demon tonight.',
+        reminderTokens: ['safe'],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -134,6 +141,7 @@ const simpleRoles: Role[] = [
         name: 'Virgin',
         type: 'Townsfolk',
         englishText: 'The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately.',
+        reminderTokens: ['no_ability'],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -143,6 +151,7 @@ const simpleRoles: Role[] = [
         name: 'Slayer',
         type: 'Townsfolk',
         englishText: 'Once per game, during the day, publicly choose a player: if they are the Demon, they die.',
+        reminderTokens: ['no_ability'],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -172,6 +181,7 @@ const simpleRoles: Role[] = [
         name: 'Butler',
         type: 'Outsider',
         englishText: 'Each night, choose a player (not yourself): tomorrow, you may only vote if they are voting too.',
+        reminderTokens: ['master'],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -201,6 +211,7 @@ const simpleRoles: Role[] = [
         name: 'Poisoner',
         type: 'Minion',
         englishText: 'Each night, choose a player: they are poisoned tonight and tomorrow day.',
+        reminderTokens: ['poisoned'],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -219,6 +230,7 @@ const simpleRoles: Role[] = [
         name: 'Scarlet Woman',
         type: 'Minion',
         englishText: 'If there are 5 or more players alive & the Demon dies, you become the Demon.',
+        reminderTokens: ['is_the_demon'],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 2
@@ -230,6 +242,7 @@ const simpleRoles: Role[] = [
         name: 'Imp',
         type: 'Demon',
         englishText: 'Each night*, choose a player: they die. If you kill yourself this way, a Minion becomes the Imp.',
+        reminderTokens: ['dead'],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1

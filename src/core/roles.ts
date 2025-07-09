@@ -57,6 +57,10 @@ export interface Role {
     // English rule text from the official rules
     englishText: string;
     
+    // Reminder tokens this role introduces (e.g., ["townsfolk", "wrong"] for washerwoman)
+    // In grimoire format these appear as "washerwoman:townsfolk", "washerwoman:wrong"
+    reminderTokens?: string[];
+    
     // Constraints this role imposes on bag/setup legality
     bagConstraints?: BagConstraint[];
     
