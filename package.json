@@ -11,7 +11,14 @@
     "analysis:constraint-matrix": "ts-node src/analysis/constraint-matrix-analysis.ts",
     "analysis:seed-patterns": "ts-node src/analysis/compare-seed-patterns.ts"
   },
-  "keywords": ["blood-on-the-clocktower", "botc", "sat-solver", "constraint-satisfaction", "game-logic", "typescript"],
+  "keywords": [
+    "blood-on-the-clocktower",
+    "botc",
+    "sat-solver",
+    "constraint-satisfaction",
+    "game-logic",
+    "typescript"
+  ],
   "author": "pnkfelix",
   "license": "ISC",
   "description": "Blood on the Clocktower DSL prototype for SAT-based bag validation and generation with bias-free role selection",
