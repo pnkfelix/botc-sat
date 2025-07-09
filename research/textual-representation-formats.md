@@ -65,11 +65,101 @@ Current focus: single-line and ASCII art formats.
 - Parentheses notation for position markers and tokens
 - Game mechanics example: Librarian shown outsider token, told it's either Alice (`librarian:outsider`) or Charlie (`librarian:wrong`)
 
+## Single-Line Grimoire Format
+
+### Specification
+
+**Format**: `[player_entry player_entry ...]`
+
+**Player Entry Format**:
+- Living player: `name:role` or `name:role(tokens)`
+- Dead player: `*name:role*` or `*name:role(tokens)*`
+- Tokens: `(token1,token2,...)` - comma-separated list in parentheses
+
+**Naming Conventions**:
+- Player names: Initial capital letter (e.g., `Alice`, `Bob`)
+- Roles: All lowercase with underscores (e.g., `baron`, `scarlet_woman`)
+- Reminder tokens: All lowercase with underscores (e.g., `is_the_drunk`, `no_ability`)
+
+### Context-Free Grammar
+
+```
+grimoire ::= '[' player_list ']'
+
+player_list ::= player_entry
+              | player_entry ' ' player_list
+              | ε
+
+player_entry ::= living_player | dead_player
+
+living_player ::= name ':' role tokens?
+
+dead_player ::= '*' name ':' role tokens? '*'
+
+tokens ::= '(' token_list ')'
+
+token_list ::= token
+             | token ',' token_list
+
+token ::= identifier
+
+name ::= identifier
+
+role ::= identifier
+
+identifier ::= letter (letter | digit | '_')*
+
+letter ::= 'a' | 'b' | ... | 'z' | 'A' | 'B' | ... | 'Z'
+
+digit ::= '0' | '1' | ... | '9'
+```
+
+### Examples
+
+**Basic grimoire with living players:**
+```
+[Alice:baron Bob:imp Charlie:butler]
+```
+
+**With reminder tokens:**
+```
+[Alice:baron(washerwoman:wrong,poisoned) Bob:imp Charlie:butler(is_the_drunk)]
+```
+
+**With dead players:**
+```
+[Alice:baron(poisoned) *Bob:imp* Charlie:butler(is_the_drunk)]
+```
+
+**Mixed living and dead:**
+```
+[Alice:baron Bob:imp(4) *Charlie:butler(is_the_drunk)* Dave:washerwoman *Eve:poisoner*]
+```
+
+**All dead:**
+```
+[*Alice:baron* *Bob:imp* *Charlie:butler* *Dave:washerwoman*]
+```
+
+**No reminder tokens:**
+```
+[Alice:baron Bob:imp *Charlie:butler*]
+```
+
+### Design Rationale
+
+- **Asterisks for dead players**: Encompasses entire entry for clear visual distinction
+- **Parentheses for tokens**: Consistent with ASCII art format convention
+- **Square brackets**: Enclose entire player list for clear boundaries
+- **Colon separation**: Clear delimiter between player name and role
+- **Comma-separated tokens**: Natural list format within parentheses
+- **No day/phase tracking**: Grimoire represents player state, not game progression
+
 ## Underspecified Areas
 
-- **Single-line format syntax** for bags and grimoires - specific delimiters TBD
 - **Event representation** - not yet designed
 - **Implementation algorithm** for ASCII layout generation
 - **Bag representation** examples - mentioned but not fully specified
 - **Column spacing rules** - minimum separation, calculation method
 - **Box alignment** - how to ensure consistent right borders
+- **ASCII art dead player representation** - needs to be consistent with singleline format
