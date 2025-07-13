@@ -1,5 +1,5 @@
 // Comprehensive tests for vendored JSMiniSolvers demonstrating logical operations
-const minisolvers = require('../vendor/minisolvers.js');
+const minisolversVendored = require('../vendor/minisolvers.js');
 
 interface TestCase {
     name: string;
@@ -14,7 +14,7 @@ function runTest(testCase: TestCase): void {
     console.log(`Description: ${testCase.description}`);
     console.log(`Clauses: ${JSON.stringify(testCase.clauses)}`);
     
-    const solver = new minisolvers.MinisatSolver();
+    const solver = new minisolversVendored.MinisatSolver();
     
     // Determine max variable number to create variables
     const maxVar = Math.max(...testCase.clauses.flat().map(lit => Math.abs(lit)));

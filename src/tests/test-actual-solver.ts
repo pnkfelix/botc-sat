@@ -1,13 +1,13 @@
 // Test the actual JSMiniSolvers API directly
-const minisolvers = require('../vendor/minisolvers.js');
+const minisolversActual = require('../vendor/minisolvers.js');
 
 console.log("=== JSMiniSolvers Direct API Test ===");
 
 console.log("\n1. Available exports:");
-console.log(Object.keys(minisolvers));
+console.log(Object.keys(minisolversActual));
 
 console.log("\n2. MinisatSolver methods:");
-const solver = new minisolvers.MinisatSolver();
+const solver = new minisolversActual.MinisatSolver();
 console.log(Object.getOwnPropertyNames(solver));
 
 // Check if these common SAT solver methods exist
@@ -48,7 +48,7 @@ try {
 
 console.log("\n5. Testing satisfiable case:");
 try {
-    const solver2 = new minisolvers.MinisatSolver();
+    const solver2 = new minisolversActual.MinisatSolver();
     solver2.new_var();
     solver2.new_var();
     
