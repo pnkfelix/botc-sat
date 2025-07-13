@@ -8,7 +8,6 @@ import { SATSolver } from '../core/solver';
 import { testSolutionExploration } from './solution-exploration-test';
 import { testSolutionPatterns } from './solution-pattern-test';
 import { testBOTCBias, testConstrainedBias } from './bias-analysis-test';
-import { runGrimoireExamplesTest } from './grimoire-examples-test';
 import './variable-indirection-test';
 
 console.log("Hello BOTC DSL!");
@@ -48,8 +47,6 @@ export async function main() {
     // Test generative setup  
     await testGenerativeSetup();
     
-    // Generate grimoire examples
-    await runGrimoireExamplesTest();
     
     console.log("\n✅ Ready for BOTC modeling!");
 }
