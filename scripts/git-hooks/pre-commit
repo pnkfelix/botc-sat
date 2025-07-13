@@ -1,0 +1,22 @@
+#!/bin/sh
+#
+# Pre-commit hook to run TypeScript compilation
+# This prevents commits with TypeScript compilation errors
+#
+
+echo "Running TypeScript compilation check..."
+
+# Run npm run build to check for TypeScript errors
+if ! npm run build > /dev/null 2>&1; then
+    echo ""
+    echo "❌ TypeScript compilation failed!"
+    echo "Please fix the TypeScript errors before committing:"
+    echo ""
+    npm run build
+    echo ""
+    echo "💡 Tip: Run 'npm run build' to see detailed error messages"
+    exit 1
+fi
+
+echo "✅ TypeScript compilation successful"
+exit 0
