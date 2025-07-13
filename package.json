@@ -6,7 +6,11 @@
     "build": "tsc",
     "build:browser": "tsc -p tsconfig.browser.json",
     "dev": "ts-node src/tests/test-runner.ts",
-    "test": "ts-node src/tests/test-runner.ts",
+    "test": "npm run test:unit && npm run test:research",
+    "test:research": "ts-node src/tests/test-runner.ts",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:unit:ui": "vitest --ui",
     "lib": "ts-node -e \"import('./src/index').then(m => console.log('Library loaded successfully:', Object.keys(m)))\"",
     "analysis:constraint-matrix": "ts-node src/analysis/constraint-matrix-analysis.ts",
     "analysis:seed-patterns": "ts-node src/analysis/compare-seed-patterns.ts"
@@ -24,7 +28,9 @@
   "description": "Blood on the Clocktower DSL prototype for SAT-based bag validation and generation with bias-free role selection",
   "devDependencies": {
     "@types/node": "^24.0.8",
+    "@vitest/ui": "^3.2.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   }
 }
