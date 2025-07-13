@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { GrimoireState, PlayerState } from '../core/grimoire';
+import { GRIMOIRE_EXAMPLES } from './grimoire-examples-data';
 
 // Functions we'll implement using TDD
 function renderGrimoireToSingleLine(grimoire: GrimoireState): string {
@@ -300,138 +301,23 @@ function parseGrimoireFromSingleLine(singleLine: string): GrimoireState {
 }
 
 describe('Grimoire Single-Line Format', () => {
-    describe('Basic Rendering', () => {
-        it('should render simple alive players', () => {
-            const grimoire: GrimoireState = {
-                players: [
-                    { name: "Alice", role: "washerwoman", alive: true, position: 0, tokens: [], ghost: false },
-                    { name: "Bob", role: "imp", alive: true, position: 1, tokens: [], ghost: false }
-                ]
-            };
-
-            const result = renderGrimoireToSingleLine(grimoire);
-            expect(result).toBe("[Alice:washerwoman Bob:imp]");
-        });
-
-        it('should render players with reminder tokens', () => {
-            const grimoire: GrimoireState = {
-                players: [
-                    { name: "Alice", role: "washerwoman", alive: true, position: 0, tokens: ["washerwoman:townsfolk"], ghost: false },
-                    { name: "Bob", role: "imp", alive: true, position: 1, tokens: [], ghost: false }
-                ]
-            };
-
-            const result = renderGrimoireToSingleLine(grimoire);
-            expect(result).toBe("[Alice:washerwoman(washerwoman:townsfolk) Bob:imp]");
-        });
-
-        it('should render players with multiple tokens', () => {
-            const grimoire: GrimoireState = {
-                players: [
-                    { name: "Alice", role: "washerwoman", alive: true, position: 0, tokens: ["washerwoman:townsfolk", "poisoner:poisoned"], ghost: false }
-                ]
-            };
-
-            const result = renderGrimoireToSingleLine(grimoire);
-            expect(result).toBe("[Alice:washerwoman(washerwoman:townsfolk,poisoner:poisoned)]");
-        });
-
-        it('should render dead player with ghost vote', () => {
-            const grimoire: GrimoireState = {
-                players: [
-                    { name: "Alice", role: "washerwoman", alive: false, position: 0, tokens: [], ghost: true }
-                ]
-            };
-
-            const result = renderGrimoireToSingleLine(grimoire);
-            expect(result).toBe("[*Alice:washerwoman*]");
-        });
-
-        it('should render dead player with used ghost vote', () => {
-            const grimoire: GrimoireState = {
-                players: [
-                    { name: "Alice", role: "washerwoman", alive: false, position: 0, tokens: [], ghost: false }
-                ]
-            };
-
-            const result = renderGrimoireToSingleLine(grimoire);
-            expect(result).toBe("[*~~Alice~~:washerwoman*]");
-        });
-
-        it('should render dead player with tokens and ghost vote', () => {
-            const grimoire: GrimoireState = {
-                players: [
-                    { name: "Alice", role: "librarian", alive: false, position: 0, tokens: ["librarian:outsider"], ghost: true }
-                ]
-            };
-
-            const result = renderGrimoireToSingleLine(grimoire);
-            expect(result).toBe("[*Alice:librarian(librarian:outsider)*]");
+    describe('Rendering', () => {
+        it('should render all grimoire examples correctly', () => {
+            // Test all examples from our comprehensive test data
+            for (const example of GRIMOIRE_EXAMPLES) {
+                const rendered = renderGrimoireToSingleLine(example.grimoire);
+                expect(rendered).toBe(example.expectedSingleLine);
+            }
         });
     });
 
-    describe('Basic Parsing', () => {
-        it('should parse simple alive players', () => {
-            const singleLine = "[Alice:washerwoman Bob:imp]";
-            
-            const result = parseGrimoireFromSingleLine(singleLine);
-            
-            expect(result.players).toHaveLength(2);
-            expect(result.players[0]).toEqual({
-                name: "Alice",
-                role: "washerwoman", 
-                alive: true,
-                position: 0,
-                tokens: [],
-                ghost: false
-            });
-            expect(result.players[1]).toEqual({
-                name: "Bob",
-                role: "imp",
-                alive: true, 
-                position: 1,
-                tokens: [],
-                ghost: false
-            });
-        });
-
-        it('should parse players with tokens', () => {
-            const singleLine = "[Alice:washerwoman(washerwoman:townsfolk) Bob:imp]";
-            
-            const result = parseGrimoireFromSingleLine(singleLine);
-            
-            expect(result.players[0].tokens).toEqual(["washerwoman:townsfolk"]);
-            expect(result.players[1].tokens).toEqual([]);
-        });
-
-        it('should parse dead player with ghost vote', () => {
-            const singleLine = "[*Alice:washerwoman*]";
-            
-            const result = parseGrimoireFromSingleLine(singleLine);
-            
-            expect(result.players[0]).toEqual({
-                name: "Alice",
-                role: "washerwoman",
-                alive: false,
-                position: 0,
-                tokens: [],
-                ghost: true
-            });
-        });
-
-        it('should parse dead player with used ghost vote', () => {
-            const singleLine = "[*~~Alice~~:washerwoman*]";
-            
-            const result = parseGrimoireFromSingleLine(singleLine);
-            
-            expect(result.players[0]).toEqual({
-                name: "Alice", 
-                role: "washerwoman",
-                alive: false,
-                position: 0,
-                tokens: [],
-                ghost: false
-            });
+    describe('Parsing', () => {
+        it('should parse all grimoire examples correctly', () => {
+            // Test all examples from our comprehensive test data
+            for (const example of GRIMOIRE_EXAMPLES) {
+                const parsed = parseGrimoireFromSingleLine(example.expectedSingleLine);
+                expect(parsed).toEqual(example.grimoire);
+            }
         });
     });
 
