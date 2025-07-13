@@ -73,13 +73,14 @@ Current focus: single-line and ASCII art formats.
 
 **Player Entry Format**:
 - Living player: `name:role` or `name:role(tokens)`
-- Dead player: `*name:role*` or `*name:role(tokens)*`
-- Tokens: `(token1,token2,...)` - comma-separated list in parentheses
+- Dead player with ghost vote: `*name:role*` or `*name:role(tokens)*`
+- Dead player with used ghost vote: `*~~name~~:role*` or `*~~name~~:role(tokens)*`
+- Tokens: `(token1,token2,...)` - comma-separated list in parentheses with role prefixes
 
 **Naming Conventions**:
 - Player names: Initial capital letter (e.g., `Alice`, `Bob`)
 - Roles: All lowercase with underscores (e.g., `baron`, `scarlet_woman`)
-- Reminder tokens: All lowercase with underscores (e.g., `is_the_drunk`, `no_ability`)
+- Reminder tokens: All lowercase with underscores and role prefixes (e.g., `drunk:is_the_drunk`, `washerwoman:townsfolk`)
 
 ### Context-Free Grammar
 
@@ -94,7 +95,9 @@ player_entry ::= living_player | dead_player
 
 living_player ::= name ':' role tokens?
 
-dead_player ::= '*' name ':' role tokens? '*'
+dead_player ::= '*' dead_name ':' role tokens? '*'
+
+dead_name ::= name | '~~' name '~~'
 
 tokens ::= '(' token_list ')'
 
@@ -123,37 +126,45 @@ digit ::= '0' | '1' | ... | '9'
 
 **With reminder tokens:**
 ```
-[Alice:baron(washerwoman:wrong,poisoned) Bob:imp Charlie:butler(is_the_drunk)]
+[Alice:baron(washerwoman:townsfolk,poisoner:poisoned) Bob:imp Charlie:butler(drunk:is_the_drunk)]
 ```
 
-**With dead players:**
+**With dead players (ghost votes available):**
 ```
-[Alice:baron(poisoned) *Bob:imp* Charlie:butler(is_the_drunk)]
-```
-
-**Mixed living and dead:**
-```
-[Alice:baron Bob:imp(4) *Charlie:butler(is_the_drunk)* Dave:washerwoman *Eve:poisoner*]
+[Alice:baron(poisoner:poisoned) *Bob:imp* Charlie:butler(drunk:is_the_drunk)]
 ```
 
-**All dead:**
+**With used ghost votes:**
 ```
-[*Alice:baron* *Bob:imp* *Charlie:butler* *Dave:washerwoman*]
+[Alice:baron *~~Bob~~:imp* Charlie:butler(drunk:is_the_drunk)]
+```
+
+**Mixed living, dead with ghost votes, and used ghost votes:**
+```
+[Alice:baron *Bob:imp* *~~Charlie~~:butler(drunk:is_the_drunk)* Dave:washerwoman *~~Eve~~:poisoner*]
+```
+
+**All dead with mixed ghost vote status:**
+```
+[*Alice:baron* *~~Bob~~:imp* *Charlie:butler* *~~Dave~~:washerwoman*]
 ```
 
 **No reminder tokens:**
 ```
-[Alice:baron Bob:imp *Charlie:butler*]
+[Alice:baron Bob:imp *~~Charlie~~:butler*]
 ```
 
 ### Design Rationale
 
 - **Asterisks for dead players**: Encompasses entire entry for clear visual distinction
+- **Double tildes for used ghost votes**: `~~name~~` evokes Markdown strikethrough, semantically representing "struck out of the game"
+- **Three-state voting system**: Living (can vote), dead with ghost vote (`*name*`), dead without ghost vote (`*~~name~~*`)
 - **Parentheses for tokens**: Consistent with ASCII art format convention
+- **Role prefixes on tokens**: Tokens include role source (e.g., `washerwoman:townsfolk`) since players often have tokens from other roles
 - **Square brackets**: Enclose entire player list for clear boundaries
 - **Colon separation**: Clear delimiter between player name and role
 - **Comma-separated tokens**: Natural list format within parentheses
-- **No day/phase tracking**: Grimoire represents player state, not game progression
+- **Round-trip compatibility**: Format contains exactly the information needed to reconstruct grimoire state
 
 ## Underspecified Areas
 
