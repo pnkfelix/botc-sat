@@ -43,6 +43,12 @@ This project is a prototype for domain-specific logical languages, specifically 
 - Use descriptive commit messages that explain the "why" not just the "what"
 - Include the standard footer for Claude-generated commits
 
+### Branch Strategy Preferences
+- **Feature branches preferred** over `it.skip()` for incomplete functionality
+- Use incremental commits on feature branches to preserve progress
+- Keep main branch clean with passing tests
+- Merge back to main once features are complete and tested
+
 ## Lessons Learned About Preferred Workflow
 Based on development sessions, these patterns lead to better outcomes:
 
@@ -130,6 +136,12 @@ Based on development sessions, these patterns lead to better outcomes:
 - **Distinguish algorithmic choices from mathematical constraints** - Be explicit about implementation convenience vs semantic requirements
 - **Research findings belong in research/ directory** - Capture analysis results, failed approaches, and insights for future reference
 - **Update documentation immediately after major findings** - Don't let insights get lost in conversation history
+
+### Test-Driven Development Best Practices
+- **Implementation code belongs in source files, not test files** - Extract feature code from test files once TDD cycle completes
+- **Focus tests on realistic domain scenarios** - Avoid edge cases that violate fundamental domain constraints
+- **Example**: BOTC minimum 5 players - don't test 1-4 player scenarios (academic exercises with no practical value)
+- **Domain-driven edge case evaluation** - Question whether edge cases represent real-world usage vs theoretical completeness
 
 ### Documentation Ecosystem
 This project maintains multiple documentation files for different audiences:
