@@ -1,13 +1,43 @@
 # Blood on the Clocktower DSL - TODO List
 
 ## Current Status
-- **Branch**: `dsl-to-sat-experiment`
-- **Last Updated**: 2025-07-05
+- **Main Branch**: `main` - stable SAT-based bag validation system
+- **Feature Branch**: `feature/ascii-grimoire-hybrid-spacing` - ASCII grimoire rendering development
+- **Last Updated**: 2025-07-14
 - **Core System**: ✅ Working SAT-based bag validation with Baron & Drunk roles
+- **New Feature**: 🚧 ASCII grimoire rendering with hybrid spacing algorithm
 
 ## Immediate Tasks
 
-### 1. Performance Optimization ✅
+### 1. ASCII Grimoire Rendering System 🚧
+**Priority**: High  
+**Branch**: `feature/ascii-grimoire-hybrid-spacing`  
+**Status**: Core algorithm completed, incremental features in progress
+
+**✅ COMPLETED**:
+- ✅ Hybrid dense/justified spacing algorithm implementation
+- ✅ 5-player and 6-player layout rendering with proper visual balance
+- ✅ Symmetric vertical spacing around right-side players (1 empty line above/below)
+- ✅ Dense layout for naturally longer sides (more players/longer names)
+- ✅ Justified spacing for shorter sides to match longer side width
+- ✅ Domain-focused testing (removed irrelevant 1-4 player edge cases)
+
+**🚧 IN PROGRESS**:
+- [ ] **Token rendering** - add reminder tokens above player names
+- [ ] **Column number toggle** - update expected output for `showColumnNumbers: false`
+- [ ] **Constrained rendering modes** - implement width/height-constrained layouts
+- [ ] **Extended player counts** - support 7-15 players with hybrid spacing
+- [ ] **Left-side player placement** - complete four-sided layout support
+
+**🔧 TECHNICAL DEBT**:
+- [ ] **Extract implementation from test files** - move feature code to proper source modules
+  - Create `src/rendering/ascii-grimoire.ts` for implementation
+  - Keep only test logic in `src/tests/ascii-grimoire.test.ts`
+  - Establish proper module exports and imports
+
+**Value**: Foundation for grimoire visualization, debugging, and user-friendly state representation
+
+### 2. Performance Optimization ✅
 **Priority**: High  
 **Issue**: Role enumeration constraints cause 4000x clause explosion (2K → 8.3M clauses)
 
@@ -113,6 +143,11 @@
   - Actual role definitions use simplified constraint format with direct `type`, `target`, `delta` fields
   - `trouble-brewing-roles.ts` uses the simpler format exclusively
   - Need to decide: standardize on one approach or support both with proper type safety
+- [ ] **CODE ORGANIZATION**: Extract implementation code from test files (TDD artifact cleanup)
+  - Multiple test files contain substantial feature implementation
+  - Implementation belongs in `src/` modules, not `src/tests/` files
+  - Maintain clean separation: tests test behavior, source files contain logic
+  - **Example**: `ascii-grimoire.test.ts` contains ~300 lines of rendering implementation
 
 ## Strategic Development Directions
 
