@@ -206,6 +206,8 @@ mcp__cclsp__get_diagnostics(file_path: "src/core/solver.ts")
 
 **Integration verified**: All LSP tools tested and working with this TypeScript project structure.
 
+**Setup note**: The cclsp MCP server must be installed separately by each developer who wants these enhanced navigation capabilities. See https://github.com/anthropics/cclsp for installation instructions. The tools are optional but recommended for TypeScript development on this project.
+
 ### Documentation Ecosystem
 This project maintains multiple documentation files for different audiences:
 - **README.md**: Public-facing project overview and navigation hub for humans
