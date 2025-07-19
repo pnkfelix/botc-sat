@@ -390,8 +390,26 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
         }
     }
     
-    // Place left players (we'll implement this when needed)
-    // For now, just handle top, right, bottom
+    // Place left players
+    let leftStartRow = roleRow + 2; // Start below top players with spacing
+    const leftCol = 1; // Left edge position (inside border)
+    for (const pos of leftPlayers) {
+        const { name, role, tokens } = pos.player;
+        
+        cells.push({ content: name, row: leftStartRow, col: leftCol });
+        cells.push({ content: role, row: leftStartRow + 1, col: leftCol });
+        
+        if (options.showColumnNumbers) {
+            cells.push({ content: `(${leftCol})`, row: leftStartRow + 2, col: leftCol });
+        }
+        
+        if (tokens && tokens.length > 0) {
+            const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
+            cells.push({ content: `(${formattedTokens.join(',')})`, row: leftStartRow + 3, col: leftCol });
+        }
+        
+        leftStartRow += 3; // Account for name, role, and space to next player
+    }
     
     // Calculate grid bounds
     const minRow = cells.length > 0 ? Math.min(...cells.map(c => c.row)) : 0;
@@ -456,28 +474,88 @@ function setTextInLines(lines: string[], row: number, col: number, text: string)
     lines[row] = before + text + after;
 }
 
-function findBestTurnConfiguration(players: any[], _options: RenderOptions): TurnBasedLayout {
+function findBestTurnConfiguration(players: any[], options: RenderOptions): TurnBasedLayout {
     const playerCount = players.length;
     const allTurnConfigs = generateAllTurnConfigurations(playerCount);
     
-    // Simple heuristic: prefer configurations that match our test cases
-    // Later we can make this more sophisticated
-    if (playerCount === 5) {
-        // Prefer 3 on top, 0 on right, 2 on bottom, 0 on left
-        const preferred = allTurnConfigs.find(config => 
-            config.topCount === 3 && config.rightCount === 0 && 
-            config.bottomCount === 2 && config.leftCount === 0
-        );
-        if (preferred) return preferred;
-    } else if (playerCount === 6) {
-        // Prefer 3 on top, 1 on right, 2 on bottom, 0 on left
-        const preferred = allTurnConfigs.find(config => 
-            config.topCount === 3 && config.rightCount === 1 && 
-            config.bottomCount === 2 && config.leftCount === 0
-        );
-        if (preferred) return preferred;
+    // Evaluate each configuration by rendering and measuring dimensions
+    let bestConfig = allTurnConfigs[0];
+    let bestScore = Number.POSITIVE_INFINITY;
+    
+    // Debug: uncomment to see all evaluations
+    // console.log(`\nEvaluating ${allTurnConfigs.length} configurations for ${playerCount} players:`);
+    
+    for (const config of allTurnConfigs) {
+        const score = evaluateLayoutSquareness(players, config, options);
+        if (score < bestScore) {
+            bestScore = score;
+            bestConfig = config;
+        }
+        
+        // Debug: uncomment to see scoring details
+        // console.log(`[${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] score: ${score.toFixed(3)}`);
     }
     
-    // Fallback: pick the first reasonable configuration
-    return allTurnConfigs[0];
+    // Debug: uncomment to see final choice
+    // console.log(`Best: [${bestConfig.topCount},${bestConfig.rightCount},${bestConfig.bottomCount},${bestConfig.leftCount}] score: ${bestScore.toFixed(3)}`);
+    
+    return bestConfig;
+}
+
+/**
+ * Evaluates how "square-like" a layout configuration is by measuring actual rendered dimensions.
+ * Returns a score where lower is better (0 = perfect square).
+ * 
+ * @param players - The players to layout
+ * @param layout - The turn configuration to evaluate  
+ * @param options - Render options (without tokens for layout evaluation)
+ * @returns Score where 0 is perfect square, higher values are less square
+ */
+function evaluateLayoutSquareness(players: any[], layout: TurnBasedLayout, options: RenderOptions): number {
+    // Create a copy of options that disables tokens for pure layout measurement
+    const layoutOptions: RenderOptions = {
+        ...options,
+        // Force all players to have no tokens for layout evaluation
+        mode: 'explicit-turns',
+        explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount]
+    };
+    
+    // Create players without tokens for layout measurement
+    const playersWithoutTokens = players.map(player => ({
+        ...player,
+        tokens: [] // Remove tokens for pure layout evaluation
+    }));
+    
+    const grimoire = { players: playersWithoutTokens };
+    
+    // Render this configuration and measure dimensions
+    try {
+        const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
+        const dimensions = measureRenderedDimensions(rendered);
+        
+        // Calculate "squareness" score: how far the visual aspect ratio is from 1.0
+        // Character dimensions: 6 points wide, 10 points tall (1.67:1 height:width ratio)
+        const characterAspectRatio = 10 / 6; // 1.67
+        const visualAspectRatio = dimensions.width / (dimensions.height * characterAspectRatio);
+        const squarenessScore = Math.abs(visualAspectRatio - 1.0);
+        
+        return squarenessScore;
+    } catch (error) {
+        // If rendering fails, return a very high score (worst possible)
+        return Number.POSITIVE_INFINITY;
+    }
+}
+
+/**
+ * Measures the actual width and height of rendered ASCII art.
+ * 
+ * @param rendered - The rendered ASCII art string
+ * @returns Object with width and height in characters
+ */
+function measureRenderedDimensions(rendered: string): { width: number; height: number } {
+    const lines = rendered.split('\n');
+    const height = lines.length;
+    const width = Math.max(...lines.map(line => line.length));
+    
+    return { width, height };
 }
