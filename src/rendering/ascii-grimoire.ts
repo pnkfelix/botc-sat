@@ -390,25 +390,32 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
         }
     }
     
-    // Place left players
-    let leftStartRow = roleRow + 2; // Start below top players with spacing
+    // Place left players - ensure they don't overlap with bottom players
+    // Start after bottom players finish, or after right players if no bottom players
+    const leftStartRow = Math.max(
+        roleRow + 2, // Below top players with spacing
+        bottomPlayers.length > 0 ? bottomRow + 4 : roleRow + 2 // After bottom players finish (name + role + spacing)
+    );
+    
     const leftCol = 1; // Left edge position (inside border)
+    let currentLeftRow = leftStartRow;
+    
     for (const pos of leftPlayers) {
         const { name, role, tokens } = pos.player;
         
-        cells.push({ content: name, row: leftStartRow, col: leftCol });
-        cells.push({ content: role, row: leftStartRow + 1, col: leftCol });
+        cells.push({ content: name, row: currentLeftRow, col: leftCol });
+        cells.push({ content: role, row: currentLeftRow + 1, col: leftCol });
         
         if (options.showColumnNumbers) {
-            cells.push({ content: `(${leftCol})`, row: leftStartRow + 2, col: leftCol });
+            cells.push({ content: `(${leftCol})`, row: currentLeftRow + 2, col: leftCol });
         }
         
         if (tokens && tokens.length > 0) {
             const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
-            cells.push({ content: `(${formattedTokens.join(',')})`, row: leftStartRow + 3, col: leftCol });
+            cells.push({ content: `(${formattedTokens.join(',')})`, row: currentLeftRow + 3, col: leftCol });
         }
         
-        leftStartRow += 3; // Account for name, role, and space to next player
+        currentLeftRow += 3; // Account for name, role, and space to next player
     }
     
     // Calculate grid bounds
