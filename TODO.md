@@ -40,11 +40,15 @@
 - **Flexibility**: Optional abbreviations system avoids decision paralysis while trending toward consistency
 - **Quality**: All tests passing, both ASCII art and single-line format support abbreviations
 
+**✅ RECENTLY COMPLETED**:
+- ✅ **Left-side player placement** - complete four-sided layout support with proper coordinate separation
+- ✅ **Intelligent auto mode** - exhaustive evaluation with visual squareness scoring (6:10 aspect ratio)
+- ✅ **Text overlap bug fix** - resolved coordinate collision between layout quadrants
+
 **🚧 IN PROGRESS**:
 - [ ] **Column number toggle** - update expected output for `showColumnNumbers: false`
-- [ ] **Constrained rendering modes** - implement width/height-constrained layouts
+- [ ] **Constrained rendering modes** - implement width/height-constrained layouts  
 - [ ] **Extended player counts** - support 7-15 players with hybrid spacing
-- [ ] **Left-side player placement** - complete four-sided layout support
 
 **✅ COMPLETED REFACTORING**:
 1. ✅ **Extract ASCII grimoire implementation from test file** 

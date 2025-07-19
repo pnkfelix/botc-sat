@@ -21,6 +21,7 @@ This project is a prototype for domain-specific logical languages, specifically 
 ├── core/           # Core constraint system (solver, compiler, roles)
 ├── data/           # Game data definitions (Trouble Brewing roles)
 ├── analysis/       # Research and analysis tools  
+├── rendering/      # ASCII grimoire visualization system
 ├── tests/          # Test suites (comprehensive coverage)
 ├── experiments/    # One-off experimental code
 └── index.ts        # Main library entry point
@@ -142,6 +143,33 @@ Based on development sessions, these patterns lead to better outcomes:
 - **Focus tests on realistic domain scenarios** - Avoid edge cases that violate fundamental domain constraints
 - **Example**: BOTC minimum 5 players - don't test 1-4 player scenarios (academic exercises with no practical value)
 - **Domain-driven edge case evaluation** - Question whether edge cases represent real-world usage vs theoretical completeness
+
+### ASCII Grimoire Rendering System Development Insights
+Based on the successful implementation of the ASCII grimoire visualization:
+
+#### Spacing Algorithm Design
+- **Hybrid dense/justified approach works well** - Keep naturally longer sides dense, justify shorter sides to match
+- **Role abbreviations provide significant compactness** - 31% width reduction with abbreviations (ww, lib, inv, poi, ft, etc.)
+- **Fix layout calculations to use abbreviated widths** - Don't calculate spacing with full tokens then render abbreviated
+- **Character aspect ratio matters for auto mode** - 6:10 point ratio (width:height) for visual squareness scoring
+
+#### Four-Sided Layout Implementation
+- **Coordinate separation is critical** - Ensure proper spacing between layout quadrants to prevent text overlap
+- **Auto mode via exhaustive evaluation** - Enumerate all possible turn configurations and score for "squareness"
+- **Visual squareness scoring** - Use actual rendered dimensions with character aspect ratio correction
+- **Bottom-to-top ordering for left side** - Maintains clockwise player flow around the table
+
+#### Text Overlap Prevention
+- **Test with realistic player/role combinations** - Use actual BOTC role names, not placeholder data
+- **Coordinate collision detection** - Ensure left players start after bottom players finish (bottomRow + 4)
+- **Create standalone bug reproduction tests** - Isolate specific scenarios that trigger overlap issues
+- **Verify role name integrity** - Check that role names don't merge incorrectly in rendered output
+
+#### Token Visualization Patterns
+- **Bubble column format** - Vertical token stacking with visual connections to player names
+- **Right-to-left token placement** - Fill token matrix systematically for consistent visual appearance
+- **Placeholder system** - Use () for visual connections even when no tokens present
+- **Abbreviation toggle support** - Maintain backward compatibility with full token names
 
 ### Documentation Ecosystem
 This project maintains multiple documentation files for different audiences:
