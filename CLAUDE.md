@@ -171,6 +171,41 @@ Based on the successful implementation of the ASCII grimoire visualization:
 - **Placeholder system** - Use () for visual connections even when no tokens present
 - **Abbreviation toggle support** - Maintain backward compatibility with full token names
 
+### TypeScript Code Navigation Tools (cclsp MCP)
+This project has **Language Server Protocol (LSP) tools** available via the cclsp MCP server that provide superior TypeScript code navigation:
+
+#### When to Use LSP Tools vs Traditional Search:
+- **Prefer LSP tools for TypeScript symbol navigation**:
+  - `mcp__cclsp__find_definition` - Find where classes, functions, variables are defined
+  - `mcp__cclsp__find_references` - Find all usages of a symbol across the codebase  
+  - `mcp__cclsp__rename_symbol` - Rename symbols with type-aware refactoring
+  - `mcp__cclsp__get_diagnostics` - Get TypeScript compiler errors/warnings
+
+- **Use traditional Grep/Glob for**:
+  - Text content searches within files
+  - Pattern matching across file types
+  - When searching for strings that aren't TypeScript symbols
+
+#### LSP Tool Benefits for BOTC DSL:
+- **Cross-file symbol tracking** - See how core classes flow through constraint system
+- **Method usage analysis** - Track SAT solver patterns across compilers and tests  
+- **Type-aware navigation** - Understands TypeScript semantics, not just text matching
+- **Zero false positives** - Only finds actual symbol references, not string matches
+
+#### Example Usage Patterns:
+```typescript
+// Find where BOTCValidator class is defined
+mcp__cclsp__find_definition(file_path: "src/index.ts", symbol_name: "BOTCValidator", symbol_kind: "class")
+
+// Find all references to troubleBrewing script across codebase
+mcp__cclsp__find_references(file_path: "src/core/scripts.ts", symbol_name: "troubleBrewing")
+
+// Check for TypeScript compilation errors
+mcp__cclsp__get_diagnostics(file_path: "src/core/solver.ts")
+```
+
+**Integration verified**: All LSP tools tested and working with this TypeScript project structure.
+
 ### Documentation Ecosystem
 This project maintains multiple documentation files for different audiences:
 - **README.md**: Public-facing project overview and navigation hub for humans
