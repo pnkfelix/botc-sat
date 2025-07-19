@@ -22,18 +22,34 @@
 - ✅ Justified spacing for shorter sides to match longer side width
 - ✅ Domain-focused testing (removed irrelevant 1-4 player edge cases)
 
+**✅ COMPLETED**:
+- ✅ **Bubble column token rendering** - vertical token stacking with right-to-left placement algorithm
+- ✅ **Placeholder system** - visual connections from tokens to player names using `()`
+- ✅ **Border alignment verification** - consistent 92-character width across all lines
+- ✅ **Test expectations updated** - all 4 ASCII grimoire tests passing
+
 **🚧 IN PROGRESS**:
-- [ ] **Token rendering** - add reminder tokens above player names
 - [ ] **Column number toggle** - update expected output for `showColumnNumbers: false`
 - [ ] **Constrained rendering modes** - implement width/height-constrained layouts
 - [ ] **Extended player counts** - support 7-15 players with hybrid spacing
 - [ ] **Left-side player placement** - complete four-sided layout support
 
-**🔧 TECHNICAL DEBT**:
-- [ ] **Extract implementation from test files** - move feature code to proper source modules
-  - Create `src/rendering/ascii-grimoire.ts` for implementation
-  - Keep only test logic in `src/tests/ascii-grimoire.test.ts`
-  - Establish proper module exports and imports
+**🔧 HIGH PRIORITY REFACTORING**:
+1. [ ] **Extract ASCII grimoire implementation from test file**
+   - Move ~500 lines of rendering logic from `src/tests/ascii-grimoire.test.ts` to proper source module
+   - Create `src/rendering/ascii-grimoire.ts` for implementation
+   - Create `src/rendering/types.ts` for interfaces (RenderOptions, GridCell, etc.)
+   - Keep only test logic and expectations in test file
+   - Establish proper module exports and imports
+   - **Rationale**: Implementation code belongs in source modules, not test files
+
+2. [ ] **Introduce role name abbreviations for reminder tokens**
+   - Add role abbreviation system to reduce token text length
+   - Examples: `ww:townsfolk` instead of `washerwoman:townsfolk`, `ww:wrong` instead of `washerwoman:wrong`
+   - Benefits: shorter token text, better visual layout, consistent abbreviation standard
+   - Consider common abbreviations: `ww`=washerwoman, `lib`=librarian, `inv`=investigator, `poi`=poisoner, etc.
+   - Update both single-line format and ASCII art rendering to use abbreviations
+   - Maintain backward compatibility or provide conversion utilities
 
 **Value**: Foundation for grimoire visualization, debugging, and user-friendly state representation
 
