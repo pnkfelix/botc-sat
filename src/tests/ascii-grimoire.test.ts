@@ -1,8 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { getExampleByName } from './grimoire-examples-data';
 import { renderGrimoireToAsciiArt } from '../rendering/ascii-grimoire';
+import { registerTroubleBrewing } from '../data/trouble-brewing-roles';
 
 describe('ASCII Grimoire Rendering', () => {
+    beforeAll(() => {
+        // Ensure roles are registered before tests run
+        registerTroubleBrewing();
+    });
     describe('Auto-sizing mode (square proportions)', () => {
         it('should render 5-player basic grimoire in roughly square layout', () => {
             const example = getExampleByName("5-player basic");
@@ -154,22 +159,22 @@ describe('ASCII Grimoire Rendering', () => {
                 showColumnNumbers: true 
             });
             
-            // Should include token information in separate parentheses (one per row)
-            expect(result).toContain("(washerwoman:townsfolk)");
-            expect(result).toContain("(poisoner:poisoned)");
-            expect(result).toContain("(librarian:outsider)");
-            expect(result).toContain("(investigator:minion)");
+            // Should include token information in separate parentheses (one per row) with abbreviations
+            expect(result).toContain("(ww:townsfolk)");
+            expect(result).toContain("(poi:poisoned)");
+            expect(result).toContain("(lib:outsider)");
+            expect(result).toContain("(inv:minion)");
             
             // Tokens should be on separate rows, not combined
-            expect(result).not.toContain("(washerwoman:townsfolk,poisoner:poisoned)");
+            expect(result).not.toContain("(ww:townsfolk,poi:poisoned)");
             const expected = `\
 ┌─ Grimoire (7 players) ─────────────────────────────────────────────────────────────────────┐
 │                                                                                            │
-│    (washerwoman:townsfolk)                                                                 │
-│    (poisoner:poisoned)                                                                     │
-│    ()                       (librarian:outsider)                                           │
+│    (ww:townsfolk)                                                                          │
+│    (poi:poisoned)                                                                          │
+│    ()                       (lib:outsider)                                                 │
 │    ()                       ()                                                             │
-│    ()                       ()                    (investigator:minion)                    │
+│    ()                       ()                    (inv:minion)                             │
 │    ()                       ()                    ()                                       │
 │    (4)                      (29)                  (51)                   (74)              │
 │    Alice                    Bob                   Charlie                Dave              │
@@ -184,6 +189,28 @@ describe('ASCII Grimoire Rendering', () => {
 └────────────────────────────────────────────────────────────────────────────────────────────┘`;
 
             expect(result).toBe(expected);
+        });
+        
+        it('should render without abbreviations when disabled', () => {
+            const example = getExampleByName("7-player with tokens");
+            if (!example) throw new Error("7-player with tokens example not found");
+            
+            const result = renderGrimoireToAsciiArt(example.grimoire, { 
+                mode: 'explicit-turns', 
+                explicitTurns: [4, 1, 2, 0], // 7 players: 4 top, 1 right, 2 bottom
+                showColumnNumbers: false,
+                useAbbreviations: false  // Disable abbreviations
+            });
+            
+            // Should include full role names in tokens
+            expect(result).toContain("(washerwoman:townsfolk)");
+            expect(result).toContain("(poisoner:poisoned)");
+            expect(result).toContain("(librarian:outsider)");
+            expect(result).toContain("(investigator:minion)");
+            
+            // Should not include abbreviations
+            expect(result).not.toContain("(ww:townsfolk)");
+            expect(result).not.toContain("(poi:poisoned)");
         });
     });
     

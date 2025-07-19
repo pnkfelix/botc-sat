@@ -19,6 +19,7 @@
  * - mode determines the layout algorithm: auto-selection, constraint optimization, or manual specification
  * - targetWidth/targetHeight represent visual space constraints in character units
  * - showColumnNumbers controls debug information display
+ * - useAbbreviations controls whether to use role abbreviations in reminder tokens
  * - explicitTurns maps to [top-side, right-side, bottom-side, left-side] player distribution
  */
 export interface RenderOptions {
@@ -26,6 +27,7 @@ export interface RenderOptions {
     targetWidth?: number;
     targetHeight?: number;
     showColumnNumbers?: boolean; // Whether to show (4), (12), etc.
+    useAbbreviations?: boolean; // Whether to use role abbreviations in reminder tokens (default: true)
     explicitTurns?: [number, number, number, number]; // [top, right, bottom, left] counts
 }
 

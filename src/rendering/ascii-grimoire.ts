@@ -7,8 +7,9 @@
 
 import { GrimoireState } from '../core/grimoire';
 import { RenderOptions, TurnBasedLayout, PlayerPosition, AbstractGrid, GridCell } from './types';
+import { formatReminderTokens } from './token-formatter';
 
-export function renderGrimoireToAsciiArt(grimoire: GrimoireState, options: RenderOptions = { mode: 'auto', showColumnNumbers: true }): string {
+export function renderGrimoireToAsciiArt(grimoire: GrimoireState, options: RenderOptions = { mode: 'auto', showColumnNumbers: true, useAbbreviations: true }): string {
     const players = grimoire.players;
     
     if (options.mode === 'explicit-turns') {
@@ -291,23 +292,26 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
             const { tokens } = pos.player;
             
             if (tokens.length > 0) {
+                // Format tokens with abbreviations if enabled
+                const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
+                
                 // Place actual tokens first, then placeholders below them
                 if (i === 0 && tokens.length >= 2) { // Alice - 2 tokens
-                    tokenMatrix[0][i] = `(${tokens[0]})`; // washerwoman:townsfolk
-                    tokenMatrix[1][i] = `(${tokens[1]})`; // poisoner:poisoned
+                    tokenMatrix[0][i] = `(${formattedTokens[0]})`; // washerwoman:townsfolk -> ww:townsfolk
+                    tokenMatrix[1][i] = `(${formattedTokens[1]})`; // poisoner:poisoned -> poi:poisoned
                     // Placeholders below tokens (rows 2-5 for Alice)
                     tokenMatrix[2][i] = '()';
                     tokenMatrix[3][i] = '()';
                     tokenMatrix[4][i] = '()';
                     tokenMatrix[5][i] = '()';
                 } else if (i === 1 && tokens.length >= 1) { // Bob - 1 token  
-                    tokenMatrix[2][i] = `(${tokens[0]})`; // librarian:outsider
+                    tokenMatrix[2][i] = `(${formattedTokens[0]})`; // librarian:outsider -> lib:outsider
                     // Placeholders below token (rows 3-5 for Bob)
                     tokenMatrix[3][i] = '()';
                     tokenMatrix[4][i] = '()';
                     tokenMatrix[5][i] = '()';
                 } else if (i === 2 && tokens.length >= 1) { // Charlie - 1 token
-                    tokenMatrix[4][i] = `(${tokens[0]})`; // investigator:minion
+                    tokenMatrix[4][i] = `(${formattedTokens[0]})`; // investigator:minion -> inv:minion
                     // Placeholders below token (row 5 for Charlie)
                     tokenMatrix[5][i] = '()';
                 }
@@ -352,7 +356,8 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
         }
         
         if (tokens && tokens.length > 0) {
-            cells.push({ content: `(${tokens.join(',')})`, row: currentRow + 2, col: rightStartCol });
+            const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
+            cells.push({ content: `(${formattedTokens.join(',')})`, row: currentRow + 2, col: rightStartCol });
         }
         
         currentRow += 3; // Account for name, role, and space to next player
@@ -374,7 +379,8 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
         }
         
         if (tokens && tokens.length > 0) {
-            cells.push({ content: `(${tokens.join(',')})`, row: bottomRow + 3, col: currentCol });
+            const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
+            cells.push({ content: `(${formattedTokens.join(',')})`, row: bottomRow + 3, col: currentCol });
         }
     }
     

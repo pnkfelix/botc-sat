@@ -57,6 +57,10 @@ export interface Role {
     // English rule text from the official rules
     englishText: string;
     
+    // Optional suggested abbreviation for reminder tokens (e.g., "ww" for washerwoman)
+    // Scripts can use this or override with their own abbreviation
+    suggestedAbbreviation?: string;
+    
     // Reminder tokens this role introduces (e.g., ["townsfolk", "wrong"] for washerwoman)
     // In grimoire format these appear as "washerwoman:townsfolk", "washerwoman:wrong"
     reminderTokens?: string[];
