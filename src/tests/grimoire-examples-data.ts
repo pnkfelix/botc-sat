@@ -274,8 +274,8 @@ export const GRIMOIRE_EXAMPLES: GrimoireExample[] = [
                 { name: "Grace", role: "imp", alive: true, position: 6, tokens: [], ghost: false }
             ]
         },
-        expectedSingleLine: "[Alice:washerwoman(washerwoman:townsfolk,poisoner:poisoned) " +
-                            "Bob:librarian(librarian:outsider) Charlie:investigator(investigator:minion) " +
+        expectedSingleLine: "[Alice:washerwoman(ww:townsfolk,poi:poisoned) " +
+                            "Bob:librarian(lib:outsider) Charlie:investigator(inv:minion) " +
                             "Dave:chef Eve:empath Frank:poisoner Grace:imp]"
     },
 
@@ -296,9 +296,9 @@ export const GRIMOIRE_EXAMPLES: GrimoireExample[] = [
                 { name: "Julia", role: "imp", alive: true, position: 9, tokens: [], ghost: false }
             ]
         },
-        expectedSingleLine: "[Alice:washerwoman(washerwoman:townsfolk,poisoner:poisoned) " +
-                            "*Bob:librarian(librarian:outsider)* *~~Charlie~~:investigator(investigator:minion)* " +
-                            "Dave:chef Eve:empath Frank:fortune_teller(fortune_teller:red_herring) " +
+        expectedSingleLine: "[Alice:washerwoman(ww:townsfolk,poi:poisoned) " +
+                            "*Bob:librarian(lib:outsider)* *~~Charlie~~:investigator(inv:minion)* " +
+                            "Dave:chef Eve:empath Frank:fortune_teller(ft:red_herring) " +
                             "Grace:undertaker Hannah:poisoner Ian:spy Julia:imp]"
     },
 

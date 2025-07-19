@@ -132,6 +132,7 @@ src/
 ├── core/           # Core constraint system
 ├── data/           # Game data definitions  
 ├── analysis/       # Research and analysis tools
+├── rendering/      # ASCII grimoire visualization
 ├── tests/          # Test suites
 └── experiments/    # One-off experimental code
 ```
@@ -198,7 +199,42 @@ src/
   - 22 role definitions with setup effects
   - Baron: Modifies base distribution (5T,0O,1M,1D → 3T,2O,1M,1D)
   - Drunk: Physical bag substitution (drunk token → extra townsfolk token)
+  - Role abbreviation system (ww, lib, inv, poi, ft, but, sw, etc.)
   - Registration system for role constraint compilation
+
+### 🎨 **Rendering Layer** (`src/rendering/`)
+
+#### `ascii-grimoire.ts` - ASCII Art Grimoire Rendering
+- **Purpose**: Renders BOTC grimoire state as ASCII art with bubble column format
+- **Key Features**:
+  - Hybrid dense/justified spacing algorithm for optimal visual layout
+  - Intelligent auto mode with exhaustive configuration evaluation
+  - Four-sided layout support (top, right, bottom, left player placement)
+  - Visual squareness scoring with 6:10 character aspect ratio
+  - Proper coordinate separation to prevent text overlap
+
+#### `token-formatter.ts` - Token Abbreviation System  
+- **Purpose**: Handles role name abbreviations for compact token display
+- **Key Features**:
+  - Automatic abbreviation of reminder tokens (washerwoman:townsfolk → ww:townsfolk)
+  - 31% width reduction in rendered layouts
+  - Toggle support for backward compatibility
+  - Comprehensive role abbreviation mapping
+
+#### `single-line-format.ts` - Single-Line Format Renderer
+- **Purpose**: Compact single-line representation of grimoire state
+- **Key Features**:
+  - Abbreviated format support
+  - Player status indicators (alive/dead, ghost vote)
+  - Token display with abbreviations
+  - Consistent format across all player counts
+
+#### `types.ts` - Rendering Type Definitions
+- **Purpose**: TypeScript interfaces and types for rendering system
+- **Key Features**:
+  - RenderOptions, TurnBasedLayout, PlayerPosition interfaces
+  - AbstractGrid and GridCell definitions
+  - Comprehensive type documentation with representation invariants
 
 ### 🔬 **Analysis Layer** (`src/analysis/`)
 
@@ -266,6 +302,11 @@ src/
 #### Core Functionality Tests:
 - **`advanced-tests.ts`**: Core SAT solver functionality and constraint validation
 - **`setup-tests.ts`**: Base setup function validation and role type distribution testing
+
+#### Rendering System Tests:
+- **`ascii-grimoire.test.ts`**: ASCII art grimoire rendering with comprehensive layout testing
+- **`text-overlap-bug.test.ts`**: Text overlap prevention validation
+- **`grimoire-examples-data.ts`**: Test data with SAT-generated legal role combinations (5-15 players)
 
 #### SAT Solver Tests:
 - **`sat-operator-tests.ts`**: SAT logical operator validation (AND, OR, NOT, implications)

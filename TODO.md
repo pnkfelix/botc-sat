@@ -3,18 +3,18 @@
 ## Current Status
 - **Main Branch**: `main` - stable SAT-based bag validation system
 - **Feature Branch**: `feature/ascii-grimoire-hybrid-spacing` - ASCII grimoire rendering development
-- **Last Updated**: 2025-07-14
+- **Last Updated**: 2025-07-19
 - **Core System**: ✅ Working SAT-based bag validation with Baron & Drunk roles
-- **New Feature**: 🚧 ASCII grimoire rendering with hybrid spacing algorithm
+- **New Feature**: ✅ ASCII grimoire rendering with hybrid spacing algorithm and role abbreviations
 
 ## Immediate Tasks
 
-### 1. ASCII Grimoire Rendering System 🚧
+### 1. ASCII Grimoire Rendering System ✅
 **Priority**: High  
 **Branch**: `feature/ascii-grimoire-hybrid-spacing`  
-**Status**: Core algorithm completed, incremental features in progress
+**Status**: ✅ **COMPLETED** - Core system with abbreviations and compact layouts
 
-**✅ COMPLETED**:
+**✅ COMPLETED CORE ALGORITHM**:
 - ✅ Hybrid dense/justified spacing algorithm implementation
 - ✅ 5-player and 6-player layout rendering with proper visual balance
 - ✅ Symmetric vertical spacing around right-side players (1 empty line above/below)
@@ -22,18 +22,52 @@
 - ✅ Justified spacing for shorter sides to match longer side width
 - ✅ Domain-focused testing (removed irrelevant 1-4 player edge cases)
 
-**🚧 IN PROGRESS**:
-- [ ] **Token rendering** - add reminder tokens above player names
-- [ ] **Column number toggle** - update expected output for `showColumnNumbers: false`
-- [ ] **Constrained rendering modes** - implement width/height-constrained layouts
-- [ ] **Extended player counts** - support 7-15 players with hybrid spacing
-- [ ] **Left-side player placement** - complete four-sided layout support
+**✅ COMPLETED BUBBLE COLUMN SYSTEM**:
+- ✅ **Bubble column token rendering** - vertical token stacking with right-to-left placement algorithm
+- ✅ **Placeholder system** - visual connections from tokens to player names using `()`
+- ✅ **Border alignment verification** - consistent width across all lines
+- ✅ **Test expectations updated** - all ASCII grimoire tests passing
 
-**🔧 TECHNICAL DEBT**:
-- [ ] **Extract implementation from test files** - move feature code to proper source modules
-  - Create `src/rendering/ascii-grimoire.ts` for implementation
-  - Keep only test logic in `src/tests/ascii-grimoire.test.ts`
-  - Establish proper module exports and imports
+**✅ COMPLETED ABBREVIATION SYSTEM**:
+- ✅ **Role abbreviations** - `ww`, `lib`, `inv`, `poi`, `ft`, `but`, `sw`, etc.
+- ✅ **Compact layouts** - 31% width reduction with abbreviations enabled
+- ✅ **Spacing algorithm fix** - layout calculations now use abbreviated token widths
+- ✅ **Toggle support** - `useAbbreviations` option for full backward compatibility
+
+**🎯 KEY ACHIEVEMENTS**:
+- **Architecture**: Clean separation with `src/rendering/` modules, comprehensive type documentation
+- **Compactness**: Visual layouts 31% more compact, column positions improved from `(4,29,51,74)` to `(4,20,36,50)`
+- **Flexibility**: Optional abbreviations system avoids decision paralysis while trending toward consistency
+- **Quality**: All tests passing, both ASCII art and single-line format support abbreviations
+
+**✅ RECENTLY COMPLETED**:
+- ✅ **Left-side player placement** - complete four-sided layout support with proper coordinate separation
+- ✅ **Intelligent auto mode** - exhaustive evaluation with visual squareness scoring (6:10 aspect ratio)
+- ✅ **Text overlap bug fix** - resolved coordinate collision between layout quadrants
+
+**🚧 IN PROGRESS**:
+- [ ] **Column number toggle** - update expected output for `showColumnNumbers: false`
+- [ ] **Constrained rendering modes** - implement width/height-constrained layouts  
+- [ ] **Extended player counts** - support 7-15 players with hybrid spacing
+
+**✅ COMPLETED REFACTORING**:
+1. ✅ **Extract ASCII grimoire implementation from test file** 
+   - ✅ Moved 470+ lines of rendering logic from test file to `src/rendering/ascii-grimoire.ts`
+   - ✅ Created `src/rendering/types.ts` for interfaces (RenderOptions, GridCell, AbstractGrid, etc.)
+   - ✅ Added comprehensive type documentation with representation invariants and abstract mappings
+   - ✅ Established clean module exports and imports
+   - ✅ Keep only test logic and expectations in test file
+   - **Result**: Proper separation of concerns, implementation code in source modules
+
+2. ✅ **Introduce role name abbreviations for reminder tokens**
+   - ✅ Added `suggestedAbbreviation?: string` field to Role interface
+   - ✅ Implemented suggested abbreviations for key roles: `ww`, `lib`, `inv`, `poi`, `ft`, `but`, `sw`, etc.
+   - ✅ Created `src/rendering/token-formatter.ts` utility for abbreviation handling
+   - ✅ Updated ASCII art rendering to use abbreviations with `useAbbreviations` option (default: true)
+   - ✅ Created `src/rendering/single-line-format.ts` with abbreviation support
+   - ✅ Fixed spacing algorithm to calculate layout based on abbreviated token widths
+   - ✅ Added comprehensive tests for abbreviation toggle functionality
+   - **Results**: 31% more compact layouts, `(washerwoman:townsfolk)` → `(ww:townsfolk)`, column positions improved from `(4,29,51,74)` to `(4,20,36,50)`
 
 **Value**: Foundation for grimoire visualization, debugging, and user-friendly state representation
 

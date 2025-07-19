@@ -2,6 +2,38 @@
 
 A prototype domain-specific language for modeling Blood on the Clocktower rules and game states using formal logical constraints.
 
+## Quick Start
+
+First, compile the TypeScript code:
+```bash
+npm install
+npm run build
+```
+
+### Human-Oriented Entry Points
+
+Copy and paste these commands to see the system in action:
+
+```bash
+# Generate a random legal setup
+node examples/generate-bag.js
+
+# Complete game setup workflow (bag → players → rendering)
+node examples/complete-game-setup.js
+
+# Generate multiple diverse setups for variety
+node examples/generate-multiple-bags.js
+
+# Validate a legal setup (Baron with proper Outsiders)  
+node examples/validate-legal-bag.js
+
+# Validate an illegal setup (Baron without Outsiders)
+node examples/validate-illegal-bag.js
+
+# One-liner for quick testing
+node examples/one-liner.js
+```
+
 ## Project Goals
 
 This project aims to create a comprehensive DSL that can:
@@ -56,23 +88,17 @@ See [`vendor/README.md`](vendor/README.md) for complete details on:
 - Why they were vendored instead of using npm
 - Attribution and compliance information
 
-## Development
+### Development and Testing
 
+**Run all tests:**
 ```bash
-# Install dependencies
-npm install
-
-# Run development server (Node.js)
 npm run dev
+```
 
-# Compile TypeScript for Node.js
-npm run build
-
-# Compile TypeScript for browser (UMD modules)
+**Browser compatibility test:**
+```bash
 npm run build:browser
-
-# Test browser compatibility
-# Open test-browser.html in a browser
+# Then open test-browser.html in a browser
 ```
 
 ## Project Status
