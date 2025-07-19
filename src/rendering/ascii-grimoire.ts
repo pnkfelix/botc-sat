@@ -56,7 +56,7 @@ function renderTurnBasedLayout(players: any[], layout: TurnBasedLayout, options:
     const grid = createAbstractGrid(playerPositions, options);
     
     // 3. Convert abstract grid to final ASCII art
-    return renderAbstractGrid(grid, players.length);
+    return renderAbstractGrid(grid, players.length, options);
 }
 
 function assignPlayersToSides(players: any[], layout: TurnBasedLayout): PlayerPosition[] {
@@ -430,7 +430,7 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
 // Legacy spacing function - replaced by hybrid dense/justified algorithm
 // Kept for potential future use in other layout modes
 
-function renderAbstractGrid(grid: AbstractGrid, playerCount: number): string {
+function renderAbstractGrid(grid: AbstractGrid, playerCount: number, options?: RenderOptions & { _isEvaluation?: boolean }): string {
     // Create a 2D array to hold the final output
     const height = grid.maxRow - grid.minRow + 3; // Add padding for border
     const width = grid.maxCol - grid.minCol + 4;  // Content width + 2 borders + 1 right padding
@@ -447,8 +447,19 @@ function renderAbstractGrid(grid: AbstractGrid, playerCount: number): string {
         setTextInLines(lines, row, col, cell.content);
     }
     
-    // Add border
-    const title = `─ Grimoire (${playerCount} players) `;
+
+    // Add border with configurable title during evaluation
+    let title: string;
+    if (options?._isEvaluation) {
+        // Use configurable evaluation title or default to original
+        title = (options as any)._evaluationTitle || `─ Grimoire (${playerCount} players) `;
+    } else {
+        // For final rendering, choose adaptive title based on content width
+        const fullTitle = `─ Grimoire (${playerCount} players) `;
+        const shortTitle = `─ Grim `;
+        const borderWidth = width - 2;
+        title = fullTitle.length <= borderWidth ? fullTitle : shortTitle;
+    }
     const borderWidth = width - 2;
     const borderTop = '┌' + title + '─'.repeat(Math.max(0, borderWidth - title.length)) + '┐';
     const borderBottom = '└' + '─'.repeat(borderWidth) + '┘';
@@ -520,11 +531,15 @@ function findBestTurnConfiguration(players: any[], options: RenderOptions): Turn
  */
 function evaluateLayoutSquareness(players: any[], layout: TurnBasedLayout, options: RenderOptions): number {
     // Create a copy of options that disables tokens for pure layout measurement
-    const layoutOptions: RenderOptions = {
+    const layoutOptions: RenderOptions & { _isEvaluation?: boolean; _evaluationTitle?: string } = {
         ...options,
         // Force all players to have no tokens for layout evaluation
         mode: 'explicit-turns',
-        explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount]
+        explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount],
+        // Flag to ensure title logic doesn't affect layout evaluation
+        _isEvaluation: true,
+        // Pass through evaluation title if specified
+        _evaluationTitle: (options as any)._evaluationTitle
     };
     
     // Create players without tokens for layout measurement
