@@ -106,7 +106,7 @@ function assignPlayersToSides(players: any[], layout: TurnBasedLayout): PlayerPo
     return result;
 }
 
-function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers: PlayerPosition[], bottomPlayers: PlayerPosition[], _leftPlayers: PlayerPosition[]): { top: number[]; right: number[]; bottom: number[]; left: number[] } {
+function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers: PlayerPosition[], bottomPlayers: PlayerPosition[], _leftPlayers: PlayerPosition[], options: RenderOptions): { top: number[]; right: number[]; bottom: number[]; left: number[] } {
     const minGap = 2; // Minimum gap between players
     const leftPadding = 2; // Space from left edge
     
@@ -122,8 +122,10 @@ function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers
                 const { name, role, tokens } = players[i].player;
                 const nameWidth = name.length;
                 const roleWidth = role.length;
-                const longestTokenWidth = tokens.length > 0 ? 
-                    Math.max(...tokens.map(token => `(${token})`.length)) : 0;
+                // Format tokens with abbreviations before calculating width
+                const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
+                const longestTokenWidth = formattedTokens.length > 0 ? 
+                    Math.max(...formattedTokens.map(token => `(${token})`.length)) : 0;
                 const textWidth = Math.max(nameWidth, roleWidth, longestTokenWidth);
                 currentCol += textWidth + minGap;
             }
@@ -136,7 +138,7 @@ function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers
                 lastPlayer.player.name.length, 
                 lastPlayer.player.role.length,
                 lastPlayer.player.tokens.length > 0 ? 
-                    Math.max(...lastPlayer.player.tokens.map(token => `(${token})`.length)) : 0
+                    Math.max(...formatReminderTokens(lastPlayer.player.tokens, options.useAbbreviations ?? true).map(token => `(${token})`.length)) : 0
             ) : 0;
         const totalWidth = currentCol + lastPlayerWidth - startCol;
         
@@ -157,11 +159,11 @@ function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers
     if (topIsLonger) {
         // Top is longer - keep top dense, justify bottom to match top's width
         topPositions = topDense.positions;
-        bottomPositions = justifyToWidth(bottomPlayers, leftPadding - 1, topDense.totalWidth);
+        bottomPositions = justifyToWidth(bottomPlayers, leftPadding - 1, topDense.totalWidth, options);
     } else {
         // Bottom is longer - keep bottom dense, justify top to match bottom's width  
         bottomPositions = bottomDense.positions;
-        topPositions = justifyToWidth(topPlayers, leftPadding + 2, bottomDense.totalWidth);
+        topPositions = justifyToWidth(topPlayers, leftPadding + 2, bottomDense.totalWidth, options);
     }
     
     return {
@@ -172,7 +174,7 @@ function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers
     };
 }
 
-function justifyToWidth(players: PlayerPosition[], startCol: number, targetWidth: number): number[] {
+function justifyToWidth(players: PlayerPosition[], startCol: number, targetWidth: number, options: RenderOptions): number[] {
     if (players.length === 0) return [];
     if (players.length === 1) return [startCol];
     
@@ -184,8 +186,10 @@ function justifyToWidth(players: PlayerPosition[], startCol: number, targetWidth
         const { name, role, tokens } = pos.player;
         const nameWidth = name.length;
         const roleWidth = role.length;
-        const longestTokenWidth = tokens.length > 0 ? 
-            Math.max(...tokens.map(token => `(${token})`.length)) : 0;
+        // Format tokens with abbreviations before calculating width
+        const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
+        const longestTokenWidth = formattedTokens.length > 0 ? 
+            Math.max(...formattedTokens.map(token => `(${token})`.length)) : 0;
         return sum + Math.max(nameWidth, roleWidth, longestTokenWidth);
     }, 0);
     
@@ -204,8 +208,10 @@ function justifyToWidth(players: PlayerPosition[], startCol: number, targetWidth
             const { name, role, tokens } = players[i].player;
             const nameWidth = name.length;
             const roleWidth = role.length;
-            const longestTokenWidth = tokens.length > 0 ? 
-                Math.max(...tokens.map(token => `(${token})`.length)) : 0;
+            // Format tokens with abbreviations before calculating width
+            const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
+            const longestTokenWidth = formattedTokens.length > 0 ? 
+                Math.max(...formattedTokens.map(token => `(${token})`.length)) : 0;
             const textWidth = Math.max(nameWidth, roleWidth, longestTokenWidth);
             currentCol += textWidth + actualGapSize;
         }
@@ -224,7 +230,7 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
     const leftPlayers = playerPositions.filter(p => p.side === 'left');
     
     // Calculate justified positions for each side
-    const justifiedPositions = calculateJustifiedPositions(topPlayers, rightPlayers, bottomPlayers, leftPlayers);
+    const justifiedPositions = calculateJustifiedPositions(topPlayers, rightPlayers, bottomPlayers, leftPlayers, options);
     
     // Calculate how many token rows we need above the top players
     // Find the maximum number of tokens across ALL players to determine bubble height

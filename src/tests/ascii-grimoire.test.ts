@@ -168,25 +168,25 @@ describe('ASCII Grimoire Rendering', () => {
             // Tokens should be on separate rows, not combined
             expect(result).not.toContain("(ww:townsfolk,poi:poisoned)");
             const expected = `\
-┌─ Grimoire (7 players) ─────────────────────────────────────────────────────────────────────┐
-│                                                                                            │
-│    (ww:townsfolk)                                                                          │
-│    (poi:poisoned)                                                                          │
-│    ()                       (lib:outsider)                                                 │
-│    ()                       ()                                                             │
-│    ()                       ()                    (inv:minion)                             │
-│    ()                       ()                    ()                                       │
-│    (4)                      (29)                  (51)                   (74)              │
-│    Alice                    Bob                   Charlie                Dave              │
-│    washerwoman              librarian             investigator           chef              │
-│                                                                                            │
-│                                                                                Eve         │
-│                                                                                empath (80) │
-│                                                                                            │
-│ Grace                                                             Frank                    │
-│ imp                                                               poisoner                 │
-│ (1)                                                               (67)                     │
-└────────────────────────────────────────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (7 players) ─────────────────────────────────────────────┐
+│                                                                    │
+│    (ww:townsfolk)                                                  │
+│    (poi:poisoned)                                                  │
+│    ()              (lib:outsider)                                  │
+│    ()              ()                                              │
+│    ()              ()              (inv:minion)                    │
+│    ()              ()              ()                              │
+│    (4)             (20)            (36)          (50)              │
+│    Alice           Bob             Charlie       Dave              │
+│    washerwoman     librarian       investigator  chef              │
+│                                                                    │
+│                                                        Eve         │
+│                                                        empath (56) │
+│                                                                    │
+│ Grace                                     Frank                    │
+│ imp                                       poisoner                 │
+│ (1)                                       (43)                     │
+└────────────────────────────────────────────────────────────────────┘`;
 
             expect(result).toBe(expected);
         });
