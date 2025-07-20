@@ -251,6 +251,17 @@ This project maintains multiple documentation files for different audiences:
 
 **For efficient project understanding**: Always read DESIGN.md first for architectural context, then TODO.md for current priorities
 
+### TODO.md Structure and Maintenance
+**CRITICAL**: Maintain strict priority ordering in TODO.md to ensure focus on most important work.
+
+**Structure Rules**:
+- **High-priority sections come FIRST** - unfixed critical issues must appear before completed items
+- **Completed items belong at the END** - move to "Recently Completed" section at bottom of document
+- **Never mark items as "✅ completed" within high-priority sections** - remove them entirely and relocate
+- **Update immediately after completion** - don't let completed items linger in active priority lists
+
+**Rationale**: High-priority lists should only contain actionable items that need immediate attention. Completed items serve as reference but should not compete for visual attention with active work.
+
 ## Build Commands
 - `npm run build` - Compile TypeScript for Node.js
 - `npm run build:browser` - Compile TypeScript to UMD for browser

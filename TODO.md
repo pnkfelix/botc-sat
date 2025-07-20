@@ -9,53 +9,35 @@
 
 ## 🚨 HIGH-PRIORITY FIXES, REGRESSIONS & IMPLEMENTATION GAPS
 
-**Status**: Critical issues found during testing, including items previously marked complete but never properly implemented
+**Status**: Major progress made - 2 of 5 critical issues resolved. Focus now on remaining edge cases and rendering consistency.
 
-**Validation Strategy Gap**: Several features were marked "✅ complete" without sufficient end-to-end testing to verify actual working functionality. This highlights need for more rigorous validation before marking items as done.
+**Recent Completions**: ✅ BUG #7 (left side positioning) and ✅ BUG #8 (dead player indicators) successfully fixed with comprehensive test coverage.
 
 ### ASCII Grimoire Rendering Issues
 **Priority**: HIGH | **Impact**: Visual correctness | **Test Cases**: `src/tests/render-grimoire-cases.test.ts`
 
-1. **🐛 BUG #7: Left Side Positioning Never Implemented Correctly**
-   - **Issue**: Left side players appear below bottom row instead of on proper clockwise arc
-   - **Previous Status**: ✅ Marked complete ("Left-side player placement - complete four-sided layout support")
-   - **Reality**: Feature was never properly implemented, marking as complete was premature
-   - **Test Case**: 6-player `[Alice:investigator Bob:chef Charlie:empath Dave:librarian Eve:butler *Frank:imp*]`
-   - **Expected**: Dave → Frank → Eve → Alice clockwise arc
-   - **Actual**: Frank and Eve appear below Dave/Charlie/Bob row
-   - **Location**: `src/rendering/ascii-grimoire.ts` left side positioning logic
-
-2. **🐛 BUG #8: Dead Player Visual Indicators Missing**
-   - **Issue**: Dead players (marked with `*dead*` in input) show no visual indication in ASCII output
-   - **Test Case**: Harold marked as `*Harold:imp*` but renders identically to alive players
-   - **Impact**: Critical game state information (alive/dead) not visually represented
-   - **Parser Status**: ✅ Correctly parses dead status, ❌ ASCII rendering ignores it
-
-3. **🐛 BUG #9: Layout Selection Affected by Visual Formatting**
+1. **🐛 BUG #9: Layout Selection Affected by Visual Formatting**
    - **Issue**: Auto layout selection may change based on visual formatting (dead indicators, etc.) rather than logical structure
    - **Risk**: Same logical grimoire could select different layouts based on alive/dead status
    - **Impact**: Layout "optimality" based on visual appearance instead of player positioning logic
    - **Status**: Needs concrete test case development and investigation
 
 ### Token Rendering Issues
-4. **🐛 Token Rendering Inconsistency**
+2. **🐛 Token Rendering Inconsistency**
    - **Issue**: Some tokens not appearing in rendered output (Alice's `ww:townsfolk` missing while Bob's `lib:outsider` shows)
    - **Test Case**: `[Alice:washerwoman(ww:townsfolk) Bob:librarian(lib:outsider) *Charlie:imp*]`
    - **Status**: Inconsistent token placement in bubble column system
 
 ### Edge Case Handling
-5. **🐛 Empty Grimoire Auto Layout Crash**
+3. **🐛 Empty Grimoire Auto Layout Crash**
    - **Issue**: Auto layout system crashes with "Cannot read properties of undefined (reading 'topCount')" for empty grimoires
    - **Impact**: System should handle edge cases gracefully
    - **Root Cause**: Auto layout can't generate turn configurations for 0 players
 
 **Action Items**:
-- [ ] Fix left side positioning to place players on proper clockwise arc (BUG #7)
-- [ ] Implement visual dead player indicators in ASCII rendering (BUG #8)  
 - [ ] Investigate and fix token rendering inconsistencies
 - [ ] Create test demonstrating layout selection bias from visual formatting (BUG #9)
 - [ ] Fix empty grimoire crash with graceful edge case handling
-- [ ] Update "completed" status markers to reflect actual working state
 
 **Documentation**: All bugs captured with visual examples in `src/tests/render-grimoire-cases.test.ts`
 
@@ -488,6 +470,26 @@ npm run build:browser
 # Run specific test scenarios
 # (modify src/index.ts to focus on specific tests)
 ```
+
+## Recently Completed ✅
+
+### ASCII Grimoire Rendering Fixes
+**Completed**: 2025-07-20
+
+1. **✅ BUG #7: Left Side Positioning - FIXED**
+   - **Issue**: Left side players appeared below bottom row instead of on proper clockwise arc
+   - **Solution**: Fixed coordinate calculations in `src/rendering/ascii-grimoire.ts` - bottom players now positioned below left players to avoid row conflicts
+   - **Test Case**: 6-player `[Alice:investigator Bob:chef Charlie:empath Dave:librarian Eve:butler *Frank:imp*]`
+   - **Result**: ✅ Proper clockwise arc: Alice (top) → Bob (right) → Dave/Charlie (bottom) → Frank/Eve (left)
+   - **Status**: ✅ **COMPLETED** - All tests passing, visual inspection confirms correct layout
+
+2. **✅ BUG #8: Dead Player Visual Indicators - FIXED**
+   - **Issue**: Dead players (marked with `*dead*` in input) showed no visual indication in ASCII output
+   - **Solution**: Implemented consistent visual formatting between single-line and ASCII formats:
+     - Living players: `Harold` / `imp` (no formatting)
+     - Dead with ghost vote: `*Harold*` / `*imp*` (asterisk formatting)
+     - Dead without ghost vote: `*~~Harold~~*` / `*~~imp~~*` (asterisk + strikethrough)
+   - **Status**: ✅ **COMPLETED** - Format consistency maintained, all tests passing
 
 ## Key Files
 
