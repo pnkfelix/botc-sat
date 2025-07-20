@@ -21,6 +21,9 @@ node examples/generate-bag.js
 # Complete game setup workflow (bag → players → rendering)
 node examples/complete-game-setup.js
 
+# Render grimoire from single-line format to ASCII art
+node examples/render-grimoire.js trouble-brewing "[Alice:washerwoman Bob:imp]"
+
 # Generate multiple diverse setups for variety
 node examples/generate-multiple-bags.js
 

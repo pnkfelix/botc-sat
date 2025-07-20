@@ -17,6 +17,9 @@ export { renderGrimoireToAsciiArt } from './rendering/ascii-grimoire';
 export { renderGrimoireToSingleLine } from './rendering/single-line-format';
 export { RenderOptions, TurnBasedLayout } from './rendering/types';
 
+// Parsing
+export { parseGrimoireFromStream, parseGrimoireFromSingleLine } from './parsing/single-line-parser';
+
 // Import types for use in the class
 import { BagLegalityValidator } from './core/bag-compiler';
 import { RoleDistribution } from './core/roles';
