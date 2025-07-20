@@ -136,7 +136,7 @@ export interface TurnBasedLayout {
  * - Multiple PlayerPositions form complete seating arrangement around table
  */
 export interface PlayerPosition {
-    player: { name: string; role: string; tokens: string[] };
+    player: import('../core/grimoire').PlayerState;
     side: 'top' | 'right' | 'bottom' | 'left';
     sideIndex: number; // position within that side (0-based)
 }

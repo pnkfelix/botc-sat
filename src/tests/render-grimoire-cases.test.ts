@@ -116,8 +116,8 @@ describe('Render Grimoire Command Test Cases', () => {
 │Eve              chef │
 │butler                │
 │                      │
-│Frank                 │
-│imp                   │
+│*Frank*               │
+│*imp*                 │
 │                      │
 │                      │
 │Dave       Charlie    │
@@ -172,8 +172,8 @@ describe('Render Grimoire Command Test Cases', () => {
 │Grace                          │
 │virgin                         │
 │                               │
-│Harold                         │
-│imp                            │
+│*Harold*                       │
+│*imp*                          │
 └───────────────────────────────┘`;
             
             expect(rendered).toBe(expected);
@@ -195,9 +195,9 @@ describe('Render Grimoire Command Test Cases', () => {
         });
     });
 
-    describe('Known Bugs - Dead Player Rendering', () => {
-        it('BROKEN: dead players not visually indicated in ASCII output', () => {
-            // BUG #8: Harold marked as *dead* in input but shows as alive in ASCII output
+    describe('Fixed - Dead Player Rendering', () => {
+        it('FIXED: dead players now show visual indicators in ASCII output', () => {
+            // BUG #8 FIXED: Harold marked as *dead* in input now shows strikethrough in ASCII output
             const input = "[Alice:investigator Bob:chef Charlie:empath Dave:librarian Eve:butler Frank:mayor Grace:virgin *Harold:imp*]";
             const grimoire = parseGrimoireFromSingleLine(input);
             
@@ -212,8 +212,8 @@ describe('Render Grimoire Command Test Cases', () => {
                 useAbbreviations: true
             });
             
-            // Current broken output - Harold appears alive with no visual indicators
-            const currentBrokenOutput = `\
+            // Fixed output - Harold now appears with asterisk formatting (dead with ghost vote)
+            const expectedFixedOutput = `\
 ┌─ Grimoire (8 players) ────────┐
 │   Alice         Bob           │
 │   investigator  chef          │
@@ -231,21 +231,21 @@ describe('Render Grimoire Command Test Cases', () => {
 │Grace                          │
 │virgin                         │
 │                               │
-│Harold                         │
-│imp                            │
+│*Harold*                       │
+│*imp*                          │
 └───────────────────────────────┘`;
             
-            // Currently renders without dead player indicators
-            expect(rendered).toBe(currentBrokenOutput);
+            // Now renders with dead player indicators
+            expect(rendered).toBe(expectedFixedOutput);
             
-            // BUG: Harold should have visual dead player indicators but doesn't
-            expect(rendered).toContain('Harold'); // Present but not marked as dead
-            expect(rendered).not.toContain('~~Harold~~'); // No strikethrough
+            // FIXED: Harold now has visual dead player indicators
+            expect(rendered).toContain('*Harold*'); // Asterisk formatting for dead with ghost vote
+            expect(rendered).toContain('*imp*'); // Role also has asterisk formatting
             
-            // TODO: When bug is fixed, Harold should appear with visual dead indicators
-            // Future expected output might look like:
-            // │~~Harold~~                     │
-            // │~~imp~~                        │
+            // Verify Harold appears only with asterisk formatting (dead with ghost vote available)
+            const haroldMatches = rendered.match(/Harold/g);
+            expect(haroldMatches).toHaveLength(1); // Should appear exactly once
+            expect(rendered).toMatch(/\*Harold\*/); // Only as asterisk-wrapped
         });
     });
 

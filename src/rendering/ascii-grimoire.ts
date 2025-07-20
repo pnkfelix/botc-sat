@@ -5,9 +5,49 @@
  * Supports hybrid dense/justified spacing algorithm for optimal visual layout.
  */
 
-import { GrimoireState } from '../core/grimoire';
+import { GrimoireState, PlayerState } from '../core/grimoire';
 import { RenderOptions, TurnBasedLayout, PlayerPosition, AbstractGrid, GridCell } from './types';
 import { formatReminderTokens } from './token-formatter';
+
+/**
+ * Formats player name and role with visual indicators for dead players.
+ * 
+ * @param player - The player to format
+ * @returns Object with formatted name and role strings
+ */
+function formatPlayerDisplayText(player: PlayerState): { name: string; role: string } {
+    if (player.alive) {
+        // Living player - no formatting
+        return { name: player.name, role: player.role };
+    } else if (player.ghost) {
+        // Dead with ghost vote available - use asterisks like single-line format
+        return { name: `*${player.name}*`, role: `*${player.role}*` };
+    } else {
+        // Dead with used ghost vote - use strikethrough like single-line format
+        return { name: `*~~${player.name}~~*`, role: `*~~${player.role}~~*` };
+    }
+}
+
+/**
+ * Calculates the display width needed for a player (name, role, and tokens).
+ * Takes into account formatting for dead players.
+ * 
+ * @param player - The player to measure
+ * @param useAbbreviations - Whether to use abbreviations for tokens
+ * @returns Maximum width needed for this player's display
+ */
+function getPlayerDisplayWidth(player: PlayerState, useAbbreviations: boolean): number {
+    const { name, role } = formatPlayerDisplayText(player);
+    const nameWidth = name.length;
+    const roleWidth = role.length;
+    
+    // Format tokens with abbreviations before calculating width
+    const formattedTokens = formatReminderTokens(player.tokens, useAbbreviations);
+    const longestTokenWidth = formattedTokens.length > 0 ? 
+        Math.max(...formattedTokens.map(token => `(${token})`.length)) : 0;
+    
+    return Math.max(nameWidth, roleWidth, longestTokenWidth);
+}
 
 export function renderGrimoireToAsciiArt(grimoire: GrimoireState, options: RenderOptions = { mode: 'auto', showColumnNumbers: true, useAbbreviations: true }): string {
     const players = grimoire.players;
@@ -119,14 +159,7 @@ function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers
             positions.push(currentCol);
             if (i < players.length - 1) {
                 // Consider name, role, and longest token when calculating width
-                const { name, role, tokens } = players[i].player;
-                const nameWidth = name.length;
-                const roleWidth = role.length;
-                // Format tokens with abbreviations before calculating width
-                const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
-                const longestTokenWidth = formattedTokens.length > 0 ? 
-                    Math.max(...formattedTokens.map(token => `(${token})`.length)) : 0;
-                const textWidth = Math.max(nameWidth, roleWidth, longestTokenWidth);
+                const textWidth = getPlayerDisplayWidth(players[i].player, options.useAbbreviations ?? true);
                 currentCol += textWidth + minGap;
             }
         }
@@ -134,12 +167,7 @@ function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers
         // Calculate the width of this dense layout
         const lastPlayer = players[players.length - 1];
         const lastPlayerWidth = players.length > 0 ? 
-            Math.max(
-                lastPlayer.player.name.length, 
-                lastPlayer.player.role.length,
-                lastPlayer.player.tokens.length > 0 ? 
-                    Math.max(...formatReminderTokens(lastPlayer.player.tokens, options.useAbbreviations ?? true).map(token => `(${token})`.length)) : 0
-            ) : 0;
+            getPlayerDisplayWidth(lastPlayer.player, options.useAbbreviations ?? true) : 0;
         const totalWidth = currentCol + lastPlayerWidth - startCol;
         
         return { positions, totalWidth };
@@ -183,14 +211,7 @@ function justifyToWidth(players: PlayerPosition[], startCol: number, targetWidth
     
     // Calculate total text width (including tokens)
     const totalTextWidth = players.reduce((sum, pos) => {
-        const { name, role, tokens } = pos.player;
-        const nameWidth = name.length;
-        const roleWidth = role.length;
-        // Format tokens with abbreviations before calculating width
-        const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
-        const longestTokenWidth = formattedTokens.length > 0 ? 
-            Math.max(...formattedTokens.map(token => `(${token})`.length)) : 0;
-        return sum + Math.max(nameWidth, roleWidth, longestTokenWidth);
+        return sum + getPlayerDisplayWidth(pos.player, options.useAbbreviations ?? true);
     }, 0);
     
     // Calculate available space for gaps
@@ -205,14 +226,7 @@ function justifyToWidth(players: PlayerPosition[], startCol: number, targetWidth
     for (let i = 0; i < players.length; i++) {
         positions.push(Math.round(currentCol));
         if (i < players.length - 1) {
-            const { name, role, tokens } = players[i].player;
-            const nameWidth = name.length;
-            const roleWidth = role.length;
-            // Format tokens with abbreviations before calculating width
-            const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
-            const longestTokenWidth = formattedTokens.length > 0 ? 
-                Math.max(...formattedTokens.map(token => `(${token})`.length)) : 0;
-            const textWidth = Math.max(nameWidth, roleWidth, longestTokenWidth);
+            const textWidth = getPlayerDisplayWidth(players[i].player, options.useAbbreviations ?? true);
             currentCol += textWidth + actualGapSize;
         }
     }
@@ -259,8 +273,8 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
     // Place top players with justified spacing - names and roles first
     for (let i = 0; i < topPlayers.length; i++) {
         const pos = topPlayers[i];
-        const { name, role } = pos.player;
         const currentCol = justifiedPositions.top[i];
+        const { name, role } = formatPlayerDisplayText(pos.player);
         
         // Place column number
         if (options.showColumnNumbers) {
@@ -351,21 +365,15 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
     // Account for left side players that will be positioned in the same vertical space as right players
     // Find the maximum width needed by left side players (name, role, or tokens)
     const maxLeftWidth = leftPlayers.length > 0 ? 
-        Math.max(...leftPlayers.map(pos => {
-            const { name, role, tokens } = pos.player;
-            const nameWidth = name.length;
-            const roleWidth = role.length;
-            const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
-            const tokenWidth = formattedTokens.length > 0 ? `(${formattedTokens.join(',')})`.length : 0;
-            return Math.max(nameWidth, roleWidth, tokenWidth);
-        })) : 0;
+        Math.max(...leftPlayers.map(pos => getPlayerDisplayWidth(pos.player, options.useAbbreviations ?? true))) : 0;
     
     const rightStartCol = Math.max(maxTopCol + 2, 1 + maxLeftWidth + 3); // leftCol is 1
     
     // Place right players
     let currentRow = roleRow + 2; // Start below top players with spacing
     for (const pos of rightPlayers) {
-        const { name, role, tokens } = pos.player;
+        const { tokens } = pos.player;
+        const { name, role } = formatPlayerDisplayText(pos.player);
         
         cells.push({ content: name, row: currentRow, col: rightStartCol });
         if (options.showColumnNumbers) {
@@ -391,7 +399,8 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
         Math.max(currentRow, leftEndRow + 1, 8);
     for (let i = 0; i < bottomPlayers.length; i++) {
         const pos = bottomPlayers[i];
-        const { name, role, tokens } = pos.player;
+        const { tokens } = pos.player;
+        const { name, role } = formatPlayerDisplayText(pos.player);
         const currentCol = justifiedPositions.bottom[i];
         
         // DEBUG removed - use explicit-turns mode for targeted debugging
@@ -421,7 +430,8 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
     let currentLeftRow = leftStartRow;
     
     for (const pos of leftPlayers) {
-        const { name, role, tokens } = pos.player;
+        const { tokens } = pos.player;
+        const { name, role } = formatPlayerDisplayText(pos.player);
         
         cells.push({ content: name, row: currentLeftRow, col: leftCol });
         cells.push({ content: role, row: currentLeftRow + 1, col: leftCol });
