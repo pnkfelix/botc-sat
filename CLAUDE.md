@@ -194,6 +194,17 @@ Based on the successful implementation of the ASCII grimoire visualization:
 - **Placeholder system** - Use () for visual connections even when no tokens present
 - **Abbreviation toggle support** - Maintain backward compatibility with full token names
 
+#### Dead Player Rendering and Format Consistency
+- **Maintain format consistency across rendering systems** - Single-line and ASCII formats must use identical visual conventions
+- **PlayerPosition interface completeness** - Ensure all player properties (alive, ghost, position) are preserved through rendering pipeline
+- **Width calculations include formatting** - Account for additional characters (*Harold*, *~~Harold~~*) in layout spacing algorithms
+- **Visual indicator patterns established**:
+  - Living players: `Harold` / `imp` (no formatting)
+  - Dead with ghost vote: `*Harold*` / `*imp*` (asterisk formatting)
+  - Dead without ghost vote: `*~~Harold~~*` / `*~~imp~~*` (asterisk + strikethrough)
+- **Test expectations must reflect actual output** - Update ASCII art test cases when visual formatting changes
+- **Helper function patterns** - Use `formatPlayerDisplayText()` and `getPlayerDisplayWidth()` consistently across all rendering locations
+
 ### TypeScript Code Navigation Tools (cclsp MCP)
 This project has **Language Server Protocol (LSP) tools** available via the cclsp MCP server that provide superior TypeScript code navigation:
 
