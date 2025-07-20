@@ -34,10 +34,20 @@ describe('Render Grimoire Command Test Cases', () => {
                 useAbbreviations: true
             });
             
-            expect(rendered).toContain('Alice');
-            expect(rendered).toContain('washerwoman');
-            expect(rendered).toContain('Bob');
-            expect(rendered).toContain('imp');
+            // Simple layout with 2 players should be arranged optimally
+            const expected = `\
+┌─ Grim ────────┐
+│   Alice       │
+│   washerwoman │
+│               │
+│               │
+│               │
+│               │
+│Bob            │
+│imp            │
+└───────────────┘`;
+            
+            expect(rendered).toBe(expected);
         });
 
         it('should render complex grimoire with tokens and dead player', () => {
@@ -82,9 +92,9 @@ describe('Render Grimoire Command Test Cases', () => {
         });
     });
 
-    describe('Known Bugs - Left Side Positioning', () => {
-        it('BROKEN: six-player layout shows left side positioning bug', () => {
-            // BUG #7: Left side players appear below bottom row instead of above it on the arc
+    describe('Fixed - Left Side Positioning', () => {
+        it('FIXED: six-player layout shows correct left side positioning', () => {
+            // BUG #7 FIXED: Left side players now appear in proper clockwise arc position
             const input = "[Alice:investigator Bob:chef Charlie:empath Dave:librarian Eve:butler *Frank:imp*]";
             const grimoire = parseGrimoireFromSingleLine(input);
             
@@ -96,10 +106,27 @@ describe('Render Grimoire Command Test Cases', () => {
                 useAbbreviations: true
             });
             
-            // This test documents the current broken behavior
-            // TODO: Update expectations once bug #7 is fixed
+            // Expected ASCII output showing proper clockwise layout
+            const expected = `\
+┌─ Grim ───────────────┐
+│   Alice              │
+│   investigator       │
+│                      │
+│                 Bob  │
+│Eve              chef │
+│butler                │
+│                      │
+│Frank                 │
+│imp                   │
+│                      │
+│                      │
+│Dave       Charlie    │
+│librarian  empath     │
+└──────────────────────┘`;
             
-            // The layout should be [1,0,3,2]: Alice(top), none(right), Dave+Charlie+Bob(bottom), Eve+Frank(left)
+            expect(rendered).toBe(expected);
+            
+            // Verify all players are present
             expect(rendered).toContain('Alice');
             expect(rendered).toContain('Dave');
             expect(rendered).toContain('Charlie'); 
@@ -107,19 +134,14 @@ describe('Render Grimoire Command Test Cases', () => {
             expect(rendered).toContain('Eve');
             expect(rendered).toContain('Frank');
             
-            // CURRENT BUG: Left side players (Eve, Frank) appear below the bottom row
-            // They should appear above the bottom row, creating an arc: Dave → Frank → Eve → Alice
-            // This makes it look like Frank and Eve are "under the table" rather than on the left side
-            
-            console.log('\n=== BUG #7 DEMONSTRATION ===');
-            console.log('Six-player layout with broken left side positioning:');
-            console.log(rendered);
-            console.log('ISSUE: Eve and Frank should be positioned above Dave/Charlie/Bob, not below them');
-            console.log('Expected clockwise arc: Dave → Frank → Eve → Alice');
+            // FIXED: Verify no text corruption (was "Eveath" before fix)
+            expect(rendered).toContain('empath');
+            expect(rendered).not.toContain('Eveath');
+            expect(rendered).not.toContain('Frankrian');
         });
 
-        it('BROKEN: eight-player layout shows same left side positioning bug', () => {
-            // BUG #7: Same issue with larger layout
+        it('FIXED: eight-player layout shows correct left side positioning', () => {
+            // BUG #7 FIXED: Left side players now positioned correctly for larger layouts
             const input = "[Alice:investigator Bob:chef Charlie:empath Dave:librarian Eve:butler Frank:mayor Grace:virgin *Harold:imp*]";
             const grimoire = parseGrimoireFromSingleLine(input);
             
@@ -131,11 +153,45 @@ describe('Render Grimoire Command Test Cases', () => {
                 useAbbreviations: true
             });
             
-            // CURRENT BUG: All left side players appear below bottom row
-            console.log('\n=== BUG #7 DEMONSTRATION (8 players) ===');
-            console.log('Eight-player layout with broken left side positioning:');
-            console.log(rendered);
-            console.log('ISSUE: Frank, Grace, Harold should be on left arc, not below bottom players');
+            // Expected ASCII output showing proper clockwise layout with left side players
+            const expected = `\
+┌─ Grimoire (8 players) ────────┐
+│   Alice         Bob           │
+│   investigator  chef          │
+│                               │
+│                       Charlie │
+│Dave                   empath  │
+│librarian                      │
+│                               │
+│Eve                            │
+│butler                         │
+│                               │
+│Frank                          │
+│mayor                          │
+│                               │
+│Grace                          │
+│virgin                         │
+│                               │
+│Harold                         │
+│imp                            │
+└───────────────────────────────┘`;
+            
+            expect(rendered).toBe(expected);
+            
+            // Verify all players are present and no text corruption
+            expect(rendered).toContain('Alice');
+            expect(rendered).toContain('Bob');
+            expect(rendered).toContain('Charlie');
+            expect(rendered).toContain('Dave');
+            expect(rendered).toContain('Eve');
+            expect(rendered).toContain('Frank');
+            expect(rendered).toContain('Grace');
+            expect(rendered).toContain('Harold');
+            
+            // Verify no text corruption issues
+            expect(rendered).toContain('empath');
+            expect(rendered).toContain('mayor');
+            expect(rendered).toContain('virgin');
         });
     });
 
@@ -156,14 +212,40 @@ describe('Render Grimoire Command Test Cases', () => {
                 useAbbreviations: true
             });
             
-            // CURRENT BUG: No visual indication that Harold is dead
-            console.log('\n=== BUG #8 DEMONSTRATION ===');
-            console.log('Harold is parsed as dead but not visually indicated:');
-            console.log(rendered);
-            console.log('ISSUE: Dead players should have visual indicators (strikethrough, different style, etc.)');
+            // Current broken output - Harold appears alive with no visual indicators
+            const currentBrokenOutput = `\
+┌─ Grimoire (8 players) ────────┐
+│   Alice         Bob           │
+│   investigator  chef          │
+│                               │
+│                       Charlie │
+│Dave                   empath  │
+│librarian                      │
+│                               │
+│Eve                            │
+│butler                         │
+│                               │
+│Frank                          │
+│mayor                          │
+│                               │
+│Grace                          │
+│virgin                         │
+│                               │
+│Harold                         │
+│imp                            │
+└───────────────────────────────┘`;
             
-            // TODO: Add expectations for visual dead player indicators once implemented
-            // expect(rendered).toContain('~~Harold~~'); // or some other dead player indicator
+            // Currently renders without dead player indicators
+            expect(rendered).toBe(currentBrokenOutput);
+            
+            // BUG: Harold should have visual dead player indicators but doesn't
+            expect(rendered).toContain('Harold'); // Present but not marked as dead
+            expect(rendered).not.toContain('~~Harold~~'); // No strikethrough
+            
+            // TODO: When bug is fixed, Harold should appear with visual dead indicators
+            // Future expected output might look like:
+            // │~~Harold~~                     │
+            // │~~imp~~                        │
         });
     });
 
@@ -221,8 +303,14 @@ describe('Render Grimoire Command Test Cases', () => {
                 useAbbreviations: true
             });
             
-            expect(rendered).toContain('Alice');
-            expect(rendered).toContain('washerwoman');
+            // Single player should render in minimal layout
+            const expected = `\
+┌─ Grim ─────┐
+│Alice       │
+│washerwoman │
+└────────────┘`;
+            
+            expect(rendered).toBe(expected);
         });
     });
 });

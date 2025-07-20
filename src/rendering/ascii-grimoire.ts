@@ -344,10 +344,23 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
         }
     }
     
-    // Calculate dimensions based on placed top players
+    // Calculate dimensions based on placed top players and potential left side content
     const maxTopCol = topPlayers.length > 0 ? 
         Math.max(...cells.filter(c => c.row <= roleRow).map(c => c.col + c.content.length)) : 4;
-    const rightStartCol = maxTopCol + 2;
+    
+    // Account for left side players that will be positioned in the same vertical space as right players
+    // Find the maximum width needed by left side players (name, role, or tokens)
+    const maxLeftWidth = leftPlayers.length > 0 ? 
+        Math.max(...leftPlayers.map(pos => {
+            const { name, role, tokens } = pos.player;
+            const nameWidth = name.length;
+            const roleWidth = role.length;
+            const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
+            const tokenWidth = formattedTokens.length > 0 ? `(${formattedTokens.join(',')})`.length : 0;
+            return Math.max(nameWidth, roleWidth, tokenWidth);
+        })) : 0;
+    
+    const rightStartCol = Math.max(maxTopCol + 2, 1 + maxLeftWidth + 3); // leftCol is 1
     
     // Place right players
     let currentRow = roleRow + 2; // Start below top players with spacing
@@ -370,12 +383,18 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
     }
     
     // Place bottom players with justified spacing
-    // Symmetric spacing: 1 empty line above right players, 1 empty line below them
-    const bottomRow = rightPlayers.length > 0 ? currentRow : Math.max(currentRow, 8);
+    // Ensure bottom players are positioned below left players to avoid row conflicts
+    const leftPlayersNeeded = leftPlayers.length * 3; // Each left player needs 3 rows (name, role, spacing)
+    const leftEndRow = roleRow + 3 + leftPlayersNeeded; // Where left players will end
+    const bottomRow = rightPlayers.length > 0 ? 
+        Math.max(currentRow, leftEndRow + 1) : 
+        Math.max(currentRow, leftEndRow + 1, 8);
     for (let i = 0; i < bottomPlayers.length; i++) {
         const pos = bottomPlayers[i];
         const { name, role, tokens } = pos.player;
         const currentCol = justifiedPositions.bottom[i];
+        
+        // DEBUG removed - use explicit-turns mode for targeted debugging
         
         cells.push({ content: name, row: bottomRow, col: currentCol });
         cells.push({ content: role, row: bottomRow + 1, col: currentCol });
@@ -390,12 +409,13 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
         }
     }
     
-    // Place left players - ensure they don't overlap with bottom players
-    // Start after bottom players finish, or after right players if no bottom players
-    const leftStartRow = Math.max(
-        roleRow + 2, // Below top players with spacing
-        bottomPlayers.length > 0 ? bottomRow + 4 : roleRow + 2 // After bottom players finish (name + role + spacing)
-    );
+    // Place left players on proper clockwise arc between top and bottom players
+    // Left players should appear in the vertical space between top and bottom areas,
+    // creating a visual arc: bottom players → left players → top players
+    // Start after top players with adequate spacing, and ensure no overlap with bottom
+    const leftStartRow = roleRow + 3; // Start below top players with spacing
+    
+    // DEBUG: Log coordinate values (removed after testing)
     
     const leftCol = 1; // Left edge position (inside border)
     let currentLeftRow = leftStartRow;
@@ -480,6 +500,8 @@ function setTextInLines(lines: string[], row: number, col: number, text: string)
     
     let line = lines[row];
     
+    // DEBUG: Check for potential text overlaps (removed after testing)
+    
     // Extend line if needed
     if (line.length < col + text.length) {
         line = line + ' '.repeat(col + text.length - line.length);
@@ -490,6 +512,8 @@ function setTextInLines(lines: string[], row: number, col: number, text: string)
     const after = line.substring(col + text.length);
     
     lines[row] = before + text + after;
+    
+    // DEBUG: Show result for problematic text (removed after testing)
 }
 
 function findBestTurnConfiguration(players: any[], options: RenderOptions): TurnBasedLayout {
