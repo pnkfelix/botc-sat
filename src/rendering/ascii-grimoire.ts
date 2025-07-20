@@ -496,22 +496,68 @@ function findBestTurnConfiguration(players: any[], options: RenderOptions): Turn
     const playerCount = players.length;
     const allTurnConfigs = generateAllTurnConfigurations(playerCount);
     
+    // Debug: Check if we're using a custom evaluation title
+    const evaluationTitle = (options as any)._evaluationTitle;
+    const isInstrumented = evaluationTitle && (evaluationTitle.includes('Grim') || evaluationTitle.includes('long title'));
+    
+    if (isInstrumented) {
+        console.log(`\n=== FINDBESTTURN DEBUG: title="${evaluationTitle}" ===`);
+        console.log(`Generated ${allTurnConfigs.length} configurations for ${playerCount} players`);
+    }
+    
     // Evaluate each configuration by rendering and measuring dimensions
     let bestConfig = allTurnConfigs[0];
     let bestScore = Number.POSITIVE_INFINITY;
-    
-    // Debug: uncomment to see all evaluations
-    // console.log(`\nEvaluating ${allTurnConfigs.length} configurations for ${playerCount} players:`);
+    let evaluationResults: Array<{config: TurnBasedLayout, score: number, success: boolean, error?: string}> = [];
     
     for (const config of allTurnConfigs) {
-        const score = evaluateLayoutSquareness(players, config, options);
-        if (score < bestScore) {
-            bestScore = score;
-            bestConfig = config;
+        try {
+            const score = evaluateLayoutSquareness(players, config, options);
+            evaluationResults.push({config, score, success: true});
+            
+            if (score < bestScore) {
+                bestScore = score;
+                bestConfig = config;
+            }
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] score: ${score.toFixed(3)} ${score === bestScore ? '← NEW BEST' : ''}`);
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            evaluationResults.push({config, score: Number.POSITIVE_INFINITY, success: false, error: errorMessage});
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] FAILED: ${errorMessage}`);
+            }
+        }
+    }
+    
+    if (isInstrumented) {
+        const successfulEvals = evaluationResults.filter(r => r.success);
+        const failedEvals = evaluationResults.filter(r => !r.success);
+        
+        console.log(`\nSUMMARY:`);
+        console.log(`  Total configurations: ${allTurnConfigs.length}`);
+        console.log(`  Successful evaluations: ${successfulEvals.length}`);
+        console.log(`  Failed evaluations: ${failedEvals.length}`);
+        console.log(`  Selected best: [${bestConfig.topCount},${bestConfig.rightCount},${bestConfig.bottomCount},${bestConfig.leftCount}] score: ${bestScore.toFixed(3)}`);
+        
+        // Check if we missed any obviously good configurations
+        const sortedByScore = successfulEvals.sort((a, b) => a.score - b.score);
+        console.log(`  Top 3 scores:`);
+        for (let i = 0; i < Math.min(3, sortedByScore.length); i++) {
+            const result = sortedByScore[i];
+            console.log(`    ${i+1}. [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}] score: ${result.score.toFixed(3)}`);
         }
         
-        // Debug: uncomment to see scoring details
-        // console.log(`[${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] score: ${score.toFixed(3)}`);
+        if (failedEvals.length > 0) {
+            console.log(`  Failed configurations:`);
+            failedEvals.forEach(result => {
+                console.log(`    [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}]: ${result.error}`);
+            });
+        }
+        console.log(`=== END FINDBESTTURN DEBUG ===\n`);
     }
     
     // Debug: uncomment to see final choice
