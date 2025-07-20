@@ -12,8 +12,23 @@ import './variable-indirection-test';
 
 console.log("Hello BOTC DSL!");
 
+// Claude Code reminder for LSP tool usage
+function showClaudeCodeReminder() {
+    if (process.env.CLAUDECODE === '1' || process.env.CLAUDE_CODE_ENTRYPOINT) {
+        console.log("\n🔍 CLAUDE CODE REMINDER: Use cclsp LSP tools for code investigation:");
+        console.log("   • mcp__cclsp__find_definition - Locate function/class definitions");
+        console.log("   • mcp__cclsp__find_references - Find all uses of symbols");
+        console.log("   • mcp__cclsp__rename_symbol - Safe refactoring");
+        console.log("   • mcp__cclsp__get_diagnostics - Check TypeScript errors");
+        console.log("   See CLAUDE.md for usage patterns and workflow.\n");
+    }
+}
+
 export async function main() {
     console.log("Blood on the Clocktower DSL prototype starting...");
+    
+    // Show LSP tool reminder when running under Claude Code
+    showClaudeCodeReminder();
     
     // Register all Trouble Brewing roles
     registerTroubleBrewing();

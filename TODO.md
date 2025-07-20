@@ -7,17 +7,19 @@
 - **Core System**: ✅ Working SAT-based bag validation with Baron & Drunk roles
 - **New Feature**: ✅ ASCII grimoire rendering with hybrid spacing algorithm and role abbreviations
 
-## 🚨 HIGH-PRIORITY REGRESSIONS & CRITICAL FIXES
+## 🚨 HIGH-PRIORITY FIXES, REGRESSIONS & IMPLEMENTATION GAPS
 
-**Status**: Items previously marked complete but found to be broken during testing
+**Status**: Critical issues found during testing, including items previously marked complete but never properly implemented
+
+**Validation Strategy Gap**: Several features were marked "✅ complete" without sufficient end-to-end testing to verify actual working functionality. This highlights need for more rigorous validation before marking items as done.
 
 ### ASCII Grimoire Rendering Issues
 **Priority**: HIGH | **Impact**: Visual correctness | **Test Cases**: `src/tests/render-grimoire-cases.test.ts`
 
-1. **🐛 BUG #7: Left Side Positioning Regression**
+1. **🐛 BUG #7: Left Side Positioning Never Implemented Correctly**
    - **Issue**: Left side players appear below bottom row instead of on proper clockwise arc
    - **Previous Status**: ✅ Marked complete ("Left-side player placement - complete four-sided layout support")
-   - **Reality**: Players positioned incorrectly, breaking visual table representation
+   - **Reality**: Feature was never properly implemented, marking as complete was premature
    - **Test Case**: 6-player `[Alice:investigator Bob:chef Charlie:empath Dave:librarian Eve:butler *Frank:imp*]`
    - **Expected**: Dave → Frank → Eve → Alice clockwise arc
    - **Actual**: Frank and Eve appear below Dave/Charlie/Bob row

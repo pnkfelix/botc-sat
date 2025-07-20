@@ -37,6 +37,29 @@ This project is a prototype for domain-specific logical languages, specifically 
 - Prefer editing existing files over creating new ones unless necessary
 - Never create documentation files unless explicitly requested
 
+### 🔍 MANDATORY: Code Navigation with cclsp LSP Tools
+**ALWAYS USE THESE TOOLS FIRST** when investigating code structure, bugs, or implementing features:
+
+- **`mcp__cclsp__find_definition`** - Locate function/class definitions before editing
+- **`mcp__cclsp__find_references`** - Find all uses of a symbol before modifying
+- **`mcp__cclsp__rename_symbol`** - Safe refactoring instead of manual search/replace
+- **`mcp__cclsp__get_diagnostics`** - Check TypeScript errors in specific files
+
+**When to use cclsp tools**:
+- ✅ BEFORE editing any function or class
+- ✅ When investigating bugs (find all references to understand impact)
+- ✅ When understanding code flow (trace function calls)
+- ✅ When refactoring (find all usage sites)
+- ✅ When exploring unfamiliar code areas
+
+**Default pattern**:
+1. `mcp__cclsp__find_definition` to locate the code
+2. `mcp__cclsp__find_references` to understand usage
+3. Read relevant files based on LSP results
+4. Make informed changes
+
+**Do NOT default to basic file reading and grep** - use the sophisticated LSP tools available!
+
 ### Git Workflow Requirements
 - **Always commit working code changes** before starting unrelated tasks
 - After implementing and verifying functionality with passing tests, commit the work
