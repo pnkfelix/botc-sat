@@ -12,7 +12,7 @@ import './variable-indirection-test';
 
 console.log("Hello BOTC DSL!");
 
-// Claude Code reminder for LSP tool usage
+// Claude Code reminder for LSP tool usage and TypeScript compilation
 function showClaudeCodeReminder() {
     if (process.env.CLAUDECODE === '1' || process.env.CLAUDE_CODE_ENTRYPOINT) {
         console.log("\n🔍 CLAUDE CODE REMINDER: Use cclsp LSP tools for code investigation:");
@@ -20,7 +20,11 @@ function showClaudeCodeReminder() {
         console.log("   • mcp__cclsp__find_references - Find all uses of symbols");
         console.log("   • mcp__cclsp__rename_symbol - Safe refactoring");
         console.log("   • mcp__cclsp__get_diagnostics - Check TypeScript errors");
-        console.log("   See CLAUDE.md for usage patterns and workflow.\n");
+        console.log("   See CLAUDE.md for usage patterns and workflow.");
+        console.log("\n⚠️  TYPESCRIPT COMPILATION REMINDER:");
+        console.log("   After editing TypeScript files, always run 'npm run build' before testing!");
+        console.log("   The test runner uses compiled JavaScript from dist/, not TypeScript source.");
+        console.log("   Edit-Compile-Run cycle prevents stale JavaScript execution.\n");
     }
 }
 
