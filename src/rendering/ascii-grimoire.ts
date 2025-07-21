@@ -13,9 +13,15 @@ import { formatReminderTokens } from './token-formatter';
  * Formats player name and role with visual indicators for dead players.
  * 
  * @param player - The player to format
+ * @param options - Render options that may override formatting behavior
  * @returns Object with formatted name and role strings
  */
-function formatPlayerDisplayText(player: PlayerState): { name: string; role: string } {
+function formatPlayerDisplayText(player: PlayerState, options?: RenderOptions): { name: string; role: string } {
+    // For layout evaluation, always use worst-case formatting to ensure robust layouts
+    if (options?._forceWorstCaseFormatting) {
+        return { name: `*~~${player.name}~~*`, role: `*~~${player.role}~~*` };
+    }
+    
     if (player.alive) {
         // Living player - no formatting
         return { name: player.name, role: player.role };
@@ -34,10 +40,11 @@ function formatPlayerDisplayText(player: PlayerState): { name: string; role: str
  * 
  * @param player - The player to measure
  * @param useAbbreviations - Whether to use abbreviations for tokens
+ * @param options - Render options that may override formatting behavior
  * @returns Maximum width needed for this player's display
  */
-function getPlayerDisplayWidth(player: PlayerState, useAbbreviations: boolean): number {
-    const { name, role } = formatPlayerDisplayText(player);
+function getPlayerDisplayWidth(player: PlayerState, useAbbreviations: boolean, options?: RenderOptions): number {
+    const { name, role } = formatPlayerDisplayText(player, options);
     const nameWidth = name.length;
     const roleWidth = role.length;
     
@@ -92,11 +99,25 @@ function renderTurnBasedLayout(players: any[], layout: TurnBasedLayout, options:
     // 1. Assign players to sides based on turn configuration
     const playerPositions = assignPlayersToSides(players, layout);
     
-    // 2. Place players into abstract grid
-    const grid = createAbstractGrid(playerPositions, options);
+    // 2. For perfect border stability, calculate grid bounds using worst-case scenario
+    const coordinateOptions: RenderOptions = {
+        ...options,
+        _forceWorstCaseFormatting: true
+    };
     
-    // 3. Convert abstract grid to final ASCII art
-    return renderAbstractGrid(grid, players.length, options);
+    // 3. Calculate worst-case grid bounds by creating both alive and dead versions
+    const worstCaseGrid = createAbstractGrid(playerPositions, coordinateOptions, coordinateOptions);
+    const actualGrid = createAbstractGrid(playerPositions, coordinateOptions, options);
+    
+    // 4. Use worst-case bounds but actual content for perfect stability
+    const stableGrid = {
+        ...actualGrid,
+        maxCol: worstCaseGrid.maxCol,  // Use worst-case width
+        maxRow: worstCaseGrid.maxRow   // Use worst-case height
+    };
+    
+    // 5. Convert to final ASCII art with stable dimensions
+    return renderAbstractGrid(stableGrid, players.length, options);
 }
 
 function assignPlayersToSides(players: any[], layout: TurnBasedLayout): PlayerPosition[] {
@@ -159,7 +180,7 @@ function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers
             positions.push(currentCol);
             if (i < players.length - 1) {
                 // Consider name, role, and longest token when calculating width
-                const textWidth = getPlayerDisplayWidth(players[i].player, options.useAbbreviations ?? true);
+                const textWidth = getPlayerDisplayWidth(players[i].player, options.useAbbreviations ?? true, options);
                 currentCol += textWidth + minGap;
             }
         }
@@ -167,7 +188,7 @@ function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers
         // Calculate the width of this dense layout
         const lastPlayer = players[players.length - 1];
         const lastPlayerWidth = players.length > 0 ? 
-            getPlayerDisplayWidth(lastPlayer.player, options.useAbbreviations ?? true) : 0;
+            getPlayerDisplayWidth(lastPlayer.player, options.useAbbreviations ?? true, options) : 0;
         const totalWidth = currentCol + lastPlayerWidth - startCol;
         
         return { positions, totalWidth };
@@ -211,7 +232,7 @@ function justifyToWidth(players: PlayerPosition[], startCol: number, targetWidth
     
     // Calculate total text width (including tokens)
     const totalTextWidth = players.reduce((sum, pos) => {
-        return sum + getPlayerDisplayWidth(pos.player, options.useAbbreviations ?? true);
+        return sum + getPlayerDisplayWidth(pos.player, options.useAbbreviations ?? true, options);
     }, 0);
     
     // Calculate available space for gaps
@@ -226,7 +247,7 @@ function justifyToWidth(players: PlayerPosition[], startCol: number, targetWidth
     for (let i = 0; i < players.length; i++) {
         positions.push(Math.round(currentCol));
         if (i < players.length - 1) {
-            const textWidth = getPlayerDisplayWidth(players[i].player, options.useAbbreviations ?? true);
+            const textWidth = getPlayerDisplayWidth(players[i].player, options.useAbbreviations ?? true, options);
             currentCol += textWidth + actualGapSize;
         }
     }
@@ -234,7 +255,7 @@ function justifyToWidth(players: PlayerPosition[], startCol: number, targetWidth
     return positions;
 }
 
-function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOptions): AbstractGrid {
+function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions: RenderOptions, textOptions?: RenderOptions): AbstractGrid {
     const cells: GridCell[] = [];
     
     // Get players by side
@@ -243,8 +264,11 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
     const bottomPlayers = playerPositions.filter(p => p.side === 'bottom');
     const leftPlayers = playerPositions.filter(p => p.side === 'left');
     
-    // Calculate justified positions for each side
-    const justifiedPositions = calculateJustifiedPositions(topPlayers, rightPlayers, bottomPlayers, leftPlayers, options);
+    // Calculate justified positions for each side using coordinate options (worst-case formatting)
+    const justifiedPositions = calculateJustifiedPositions(topPlayers, rightPlayers, bottomPlayers, leftPlayers, coordinateOptions);
+    
+    // Use text options for actual content generation (actual formatting)
+    const actualTextOptions = textOptions || coordinateOptions;
     
     // Calculate how many token rows we need above the top players
     // Find the maximum number of tokens across ALL players to determine bubble height
@@ -274,10 +298,10 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
     for (let i = 0; i < topPlayers.length; i++) {
         const pos = topPlayers[i];
         const currentCol = justifiedPositions.top[i];
-        const { name, role } = formatPlayerDisplayText(pos.player);
+        const { name, role } = formatPlayerDisplayText(pos.player, actualTextOptions);
         
         // Place column number
-        if (options.showColumnNumbers) {
+        if (actualTextOptions.showColumnNumbers) {
             cells.push({ content: `(${currentCol})`, row: columnNumberRow, col: currentCol });
         }
         
@@ -313,7 +337,7 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
             
             if (tokens.length > 0) {
                 // Format tokens with abbreviations if enabled
-                const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
+                const formattedTokens = formatReminderTokens(tokens, actualTextOptions.useAbbreviations ?? true);
                 
                 // Place actual tokens first, then placeholders below them
                 if (i === 0 && tokens.length >= 2) { // Alice - 2 tokens
@@ -365,7 +389,7 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
     // Account for left side players that will be positioned in the same vertical space as right players
     // Find the maximum width needed by left side players (name, role, or tokens)
     const maxLeftWidth = leftPlayers.length > 0 ? 
-        Math.max(...leftPlayers.map(pos => getPlayerDisplayWidth(pos.player, options.useAbbreviations ?? true))) : 0;
+        Math.max(...leftPlayers.map(pos => getPlayerDisplayWidth(pos.player, coordinateOptions.useAbbreviations ?? true, coordinateOptions))) : 0;
     
     const rightStartCol = Math.max(maxTopCol + 2, 1 + maxLeftWidth + 3); // leftCol is 1
     
@@ -373,17 +397,17 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
     let currentRow = roleRow + 2; // Start below top players with spacing
     for (const pos of rightPlayers) {
         const { tokens } = pos.player;
-        const { name, role } = formatPlayerDisplayText(pos.player);
+        const { name, role } = formatPlayerDisplayText(pos.player, actualTextOptions);
         
         cells.push({ content: name, row: currentRow, col: rightStartCol });
-        if (options.showColumnNumbers) {
+        if (actualTextOptions.showColumnNumbers) {
             cells.push({ content: `${role} (${rightStartCol})`, row: currentRow + 1, col: rightStartCol });
         } else {
             cells.push({ content: role, row: currentRow + 1, col: rightStartCol });
         }
         
         if (tokens && tokens.length > 0) {
-            const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
+            const formattedTokens = formatReminderTokens(tokens, actualTextOptions.useAbbreviations ?? true);
             cells.push({ content: `(${formattedTokens.join(',')})`, row: currentRow + 2, col: rightStartCol });
         }
         
@@ -400,7 +424,7 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
     for (let i = 0; i < bottomPlayers.length; i++) {
         const pos = bottomPlayers[i];
         const { tokens } = pos.player;
-        const { name, role } = formatPlayerDisplayText(pos.player);
+        const { name, role } = formatPlayerDisplayText(pos.player, actualTextOptions);
         const currentCol = justifiedPositions.bottom[i];
         
         // DEBUG removed - use explicit-turns mode for targeted debugging
@@ -408,12 +432,12 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
         cells.push({ content: name, row: bottomRow, col: currentCol });
         cells.push({ content: role, row: bottomRow + 1, col: currentCol });
         
-        if (options.showColumnNumbers) {
+        if (actualTextOptions.showColumnNumbers) {
             cells.push({ content: `(${currentCol})`, row: bottomRow + 2, col: currentCol });
         }
         
         if (tokens && tokens.length > 0) {
-            const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
+            const formattedTokens = formatReminderTokens(tokens, actualTextOptions.useAbbreviations ?? true);
             cells.push({ content: `(${formattedTokens.join(',')})`, row: bottomRow + 3, col: currentCol });
         }
     }
@@ -431,27 +455,29 @@ function createAbstractGrid(playerPositions: PlayerPosition[], options: RenderOp
     
     for (const pos of leftPlayers) {
         const { tokens } = pos.player;
-        const { name, role } = formatPlayerDisplayText(pos.player);
+        const { name, role } = formatPlayerDisplayText(pos.player, actualTextOptions);
         
         cells.push({ content: name, row: currentLeftRow, col: leftCol });
         cells.push({ content: role, row: currentLeftRow + 1, col: leftCol });
         
-        if (options.showColumnNumbers) {
+        if (actualTextOptions.showColumnNumbers) {
             cells.push({ content: `(${leftCol})`, row: currentLeftRow + 2, col: leftCol });
         }
         
         if (tokens && tokens.length > 0) {
-            const formattedTokens = formatReminderTokens(tokens, options.useAbbreviations ?? true);
+            const formattedTokens = formatReminderTokens(tokens, actualTextOptions.useAbbreviations ?? true);
             cells.push({ content: `(${formattedTokens.join(',')})`, row: currentLeftRow + 3, col: leftCol });
         }
         
         currentLeftRow += 3; // Account for name, role, and space to next player
     }
     
-    // Calculate grid bounds
+    // Calculate grid bounds using worst-case text widths for stable layout dimensions
     const minRow = cells.length > 0 ? Math.min(...cells.map(c => c.row)) : 0;
     const maxRow = cells.length > 0 ? Math.max(...cells.map(c => c.row)) : 0;
     const minCol = cells.length > 0 ? Math.min(...cells.map(c => c.col)) : 0;
+    
+    // Calculate maxCol based on actual content (stability handled at higher level)
     const maxCol = cells.length > 0 ? Math.max(...cells.map(c => c.col + c.content.length - 1)) : 0;
     
     return { cells, minRow, maxRow, minCol, maxCol };
@@ -610,19 +636,21 @@ function findBestTurnConfiguration(players: any[], options: RenderOptions): Turn
  * @returns Score where 0 is perfect square, higher values are less square
  */
 function evaluateLayoutSquareness(players: any[], layout: TurnBasedLayout, options: RenderOptions): number {
-    // Create a copy of options that disables tokens for pure layout measurement
-    const layoutOptions: RenderOptions & { _isEvaluation?: boolean; _evaluationTitle?: string } = {
+    // Create a copy of options that uses worst-case formatting for robust layout measurement
+    const layoutOptions: RenderOptions = {
         ...options,
-        // Force all players to have no tokens for layout evaluation
         mode: 'explicit-turns',
         explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount],
         // Flag to ensure title logic doesn't affect layout evaluation
         _isEvaluation: true,
+        // Use worst-case formatting (*~~player~~*) to ensure layouts are robust to all future game states
+        _forceWorstCaseFormatting: true,
         // Pass through evaluation title if specified
         _evaluationTitle: (options as any)._evaluationTitle
     };
     
-    // Create players without tokens for layout measurement
+    // Create players without tokens for layout measurement, but keep original alive/ghost state
+    // The worst-case formatting will be handled by formatPlayerDisplayText()
     const playersWithoutTokens = players.map(player => ({
         ...player,
         tokens: [] // Remove tokens for pure layout evaluation

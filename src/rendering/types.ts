@@ -29,6 +29,9 @@ export interface RenderOptions {
     showColumnNumbers?: boolean; // Whether to show (4), (12), etc.
     useAbbreviations?: boolean; // Whether to use role abbreviations in reminder tokens (default: true)
     explicitTurns?: [number, number, number, number]; // [top, right, bottom, left] counts
+    _isEvaluation?: boolean; // Internal flag for evaluation mode
+    _evaluationTitle?: string; // Internal debugging title for layout evaluation
+    _forceWorstCaseFormatting?: boolean; // Internal flag: use worst-case (*~~player~~*) formatting for layout calculations
 }
 
 /**
