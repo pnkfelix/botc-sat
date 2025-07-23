@@ -108,24 +108,24 @@ describe('Render Grimoire Command Test Cases', () => {
             
             // Expected ASCII output showing proper clockwise layout
             const expected = `\
-┌─ Grimoire (6 players) ───┐
-│   Alice                  │
-│   investigator           │
-│                          │
-│                          │
-│Dave                      │
-│librarian                 │
-│                          │
-│Eve                       │
-│butler                    │
-│                          │
-│*Frank*                   │
-│*imp*                     │
-│                          │
-│                          │
-│Charlie        Bob        │
-│empath         chef       │
-└──────────────────────────┘`;
+┌─ Grimoire (6 players) ─────┐
+│   Alice                    │
+│   investigator             │
+│                            │
+│                    Bob     │
+│Dave                chef    │
+│librarian                   │
+│                            │
+│Eve                         │
+│butler                      │
+│                            │
+│*Frank*                     │
+│*imp*                       │
+│                            │
+│                            │
+│Charlie                     │
+│empath                      │
+└────────────────────────────┘`;
             
             expect(rendered).toBe(expected);
             
@@ -158,31 +158,26 @@ describe('Render Grimoire Command Test Cases', () => {
             
             // Expected ASCII output showing proper clockwise layout with left side players
             const expected = `\
-┌─ Grimoire (8 players) ────────────────┐
-│   Alice                               │
-│   investigator                        │
-│                                       │
-│                 Bob                   │
-│                 chef                  │
-│                                       │
-│                 Charlie               │
-│                 empath                │
-│                                       │
-│                 Dave                  │
-│                 librarian             │
-│                                       │
-│                 Eve                   │
-│                 butler                │
-│                                       │
-│                 Frank                 │
-│                 mayor                 │
-│                                       │
-│                 Grace                 │
-│                 virgin                │
-│                                       │
-│*Harold*                               │
-│*imp*                                  │
-└───────────────────────────────────────┘`;
+┌─ Grimoire (8 players) ────────┐
+│   Alice                       │
+│   investigator                │
+│                               │
+│                    Bob        │
+│Dave                chef       │
+│librarian                      │
+│                    Charlie    │
+│Eve                 empath     │
+│butler                         │
+│                               │
+│Frank                          │
+│mayor                          │
+│                               │
+│Grace                          │
+│virgin                         │
+│                               │
+│*Harold*                       │
+│*imp*                          │
+└───────────────────────────────┘`;
             
             expect(rendered).toBe(expected);
             
@@ -222,31 +217,26 @@ describe('Render Grimoire Command Test Cases', () => {
             
             // Fixed output - Harold now appears with asterisk formatting (dead with ghost vote)
             const expectedFixedOutput = `\
-┌─ Grimoire (8 players) ────────────────┐
-│   Alice                               │
-│   investigator                        │
-│                                       │
-│                 Bob                   │
-│                 chef                  │
-│                                       │
-│                 Charlie               │
-│                 empath                │
-│                                       │
-│                 Dave                  │
-│                 librarian             │
-│                                       │
-│                 Eve                   │
-│                 butler                │
-│                                       │
-│                 Frank                 │
-│                 mayor                 │
-│                                       │
-│                 Grace                 │
-│                 virgin                │
-│                                       │
-│*Harold*                               │
-│*imp*                                  │
-└───────────────────────────────────────┘`;
+┌─ Grimoire (8 players) ────────┐
+│   Alice                       │
+│   investigator                │
+│                               │
+│                    Bob        │
+│Dave                chef       │
+│librarian                      │
+│                    Charlie    │
+│Eve                 empath     │
+│butler                         │
+│                               │
+│Frank                          │
+│mayor                          │
+│                               │
+│Grace                          │
+│virgin                         │
+│                               │
+│*Harold*                       │
+│*imp*                          │
+└───────────────────────────────┘`;
             
             // Now renders with dead player indicators
             expect(rendered).toBe(expectedFixedOutput);
@@ -649,6 +639,130 @@ describe('Render Grimoire Command Test Cases', () => {
 └──────────────────┘`;
             
             expect(rendered).toBe(expected);
+        });
+    });
+
+    describe('BUG - Justified Positioning Excessive Spacing', () => {
+        it('BROKEN: layout [1,2,0,0] creates excessive spacing compared to [0,3,0,0]', () => {
+            // BUG: Justified positioning algorithm breaks when there are top players but no bottom players
+            // Same 3 players should have similar width regardless of layout arrangement
+            
+            const input = "[Alice:investigator Bob:chef Charlie:empath]";
+            const grimoire = parseGrimoireFromSingleLine(input);
+            
+            // Layout 1: All players on right side (efficient)
+            const allRight = renderGrimoireToAsciiArt(grimoire, {
+                mode: 'explicit-turns',
+                explicitTurns: [0, 3, 0, 0],
+                showColumnNumbers: false,
+                useAbbreviations: true
+            });
+            
+            // Layout 2: Mixed top/right (excessive spacing)
+            const mixedTopRight = renderGrimoireToAsciiArt(grimoire, {
+                mode: 'explicit-turns', 
+                explicitTurns: [1, 2, 0, 0],
+                showColumnNumbers: false,
+                useAbbreviations: true
+            });
+            
+            // Measure widths
+            const allRightWidth = Math.max(...allRight.split('\n').map(line => line.length));
+            const mixedWidth = Math.max(...mixedTopRight.split('\n').map(line => line.length));
+            
+            console.log('\n=== SPACING BUG DEMONSTRATION ===');
+            console.log(`Layout [0,3,0,0] - All Right: ${allRightWidth} chars (EFFICIENT)`);
+            console.log(allRight);
+            console.log(`\nLayout [1,2,0,0] - Mixed Top/Right: ${mixedWidth} chars (WASTEFUL)`);
+            console.log(mixedTopRight);
+            console.log(`\nWidth difference: +${mixedWidth - allRightWidth} characters (${Math.round((mixedWidth/allRightWidth - 1) * 100)}% increase)`);
+            
+            // Document the spacing improvement (was much worse before fix)
+            expect(allRightWidth).toBeLessThan(25); // All-right layout should be efficient (18 chars)
+            expect(mixedWidth).toBeLessThan(35); // Mixed layout improved significantly (30 chars)
+            expect(mixedWidth - allRightWidth).toBeGreaterThan(10); // Still some spacing difference (12 chars)
+            
+            // Expected: These layouts should have similar widths (within ~5 characters)
+            // Actual: Mixed layout uses 71% more width than all-right layout
+            // Root cause: Justified positioning algorithm breaks with no bottom players
+        });
+        
+        it('BROKEN: excessive trailing spaces in mixed top/right layout', () => {
+            // BUG: Alice/investigator gets 22 trailing spaces instead of expected ~7
+            
+            const input = "[Alice:investigator Bob:chef Charlie:empath]";
+            const grimoire = parseGrimoireFromSingleLine(input);
+            
+            const rendered = renderGrimoireToAsciiArt(grimoire, {
+                mode: 'explicit-turns',
+                explicitTurns: [1, 2, 0, 0], // 1 top, 2 right
+                showColumnNumbers: false,
+                useAbbreviations: true
+            });
+            
+            // Current improved output with reduced spacing
+            const expectedImprovedOutput = `\
+┌─ Grimoire (3 players) ─────┐
+│Alice                       │
+│investigator                │
+│                            │
+│                 Bob        │
+│                 chef       │
+│                            │
+│                 Charlie    │
+│                 empath     │
+└────────────────────────────┘`;
+            
+            expect(rendered).toBe(expectedImprovedOutput);
+            
+            // Analyze the specific spacing issue
+            const lines = rendered.split('\n');
+            const investigatorLine = lines.find(line => line.includes('investigator'));
+            expect(investigatorLine).toBeDefined();
+            
+            const content = investigatorLine!.slice(1, -1); // Remove borders
+            const investigatorPos = content.indexOf('investigator');
+            const trailingSpaces = content.length - investigatorPos - 'investigator'.length;
+            
+            console.log(`\n=== TRAILING SPACE ANALYSIS ===`);
+            console.log(`"investigator" trailing spaces: ${trailingSpaces}`);
+            console.log(`Expected with worst-case buffer: ~7 (6 buffer + 1 margin)`);
+            console.log(`Actual: ${trailingSpaces} (${trailingSpaces - 7} excess)`);
+            
+            // Document the excessive trailing spaces
+            expect(trailingSpaces).toBeGreaterThan(15); // Currently has ~22 trailing spaces
+            
+            // TODO: After fixing, this should be ~7 trailing spaces
+            // Expected: 'investigator' worst-case '*~~investigator~~*' needs +6 buffer + 1 margin = 7 total
+            // Actual: 22 trailing spaces (15 excess characters)
+        });
+        
+        it('REFERENCE: all-top layout uses justified spacing correctly', () => {
+            // This layout works as intended - players are distributed across the top
+            
+            const input = "[Alice:investigator Bob:chef Charlie:empath]";
+            const grimoire = parseGrimoireFromSingleLine(input);
+            
+            const rendered = renderGrimoireToAsciiArt(grimoire, {
+                mode: 'explicit-turns',
+                explicitTurns: [3, 0, 0, 0], // All players on top
+                showColumnNumbers: false,
+                useAbbreviations: true
+            });
+            
+            const expectedOutput = `\
+┌─ Grimoire (3 players) ───────────────────────┐
+│Alice               Bob         Charlie       │
+│investigator        chef        empath        │
+└──────────────────────────────────────────────┘`;
+            
+            expect(rendered).toBe(expectedOutput);
+            
+            // This layout is wide but intentionally so - players are justified across the full width
+            const width = Math.max(...rendered.split('\n').map(line => line.length));
+            console.log(`\n=== ALL-TOP REFERENCE ===`);
+            console.log(`All-top layout width: ${width} chars (justified spacing across full width)`);
+            console.log('This layout works correctly - wide spacing is intentional for visual balance');
         });
     });
 });

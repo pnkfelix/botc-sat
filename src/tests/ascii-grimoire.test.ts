@@ -57,18 +57,18 @@ describe('ASCII Grimoire Rendering', () => {
             // Dave (3) on right  
             // Eve (4) -> Frank (5) on bottom (right to left)
             const expected = `\
-┌─ Grimoire (6 players) ────────────────────────────────────────────────────┐
-│   (4)                (23)             (40)                                │
-│   Alice              Bob              Charlie                             │
-│   washerwoman        librarian        investigator                        │
-│                                                                           │
-│                                                     Dave                  │
-│                                                     chef (54)             │
-│                                                                           │
-│Frank                                     Eve                              │
-│imp                                       butler                           │
-│(1)                                       (43)                             │
-└───────────────────────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (6 players) ──────────────────────────────────────────────┐
+│   (4)                (23)             (40)                          │
+│   Alice              Bob              Charlie                       │
+│   washerwoman        librarian        investigator                  │
+│                                                                     │
+│                                                        Dave         │
+│                                                        chef (57)    │
+│                                                                     │
+│Frank                                     Eve                        │
+│imp                                       butler                     │
+│(1)                                       (43)                       │
+└─────────────────────────────────────────────────────────────────────┘`;
             
             expect(result).toBe(expected);
         });
@@ -168,25 +168,25 @@ describe('ASCII Grimoire Rendering', () => {
             // Tokens should be on separate rows, not combined
             expect(result).not.toContain("(ww:townsfolk,poi:poisoned)");
             const expected = `\
-┌─ Grimoire (7 players) ───────────────────────────────────────────────────────────────────┐
-│                                                                                          │
-│    (ww:townsfolk)                                                                        │
-│    (poi:poisoned)                                                                        │
-│    ()                 (lib:outsider)                                                     │
-│    ()                 ()                                                                 │
-│    ()                 ()               (inv:minion)                                      │
-│    ()                 ()               ()                                                │
-│    (4)                (23)             (40)                (60)                          │
-│    Alice              Bob              Charlie             Dave                          │
-│    washerwoman        librarian        investigator        chef                          │
-│                                                                                          │
-│                                                                  Eve                     │
-│                                                                  empath (66)             │
-│                                                                                          │
-│ Grace                                               Frank                                │
-│ imp                                                 poisoner                             │
-│ (1)                                                 (53)                                 │
-└──────────────────────────────────────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (7 players) ─────────────────────────────────────────────────────────────┐
+│                                                                                    │
+│    (ww:townsfolk)                                                                  │
+│    (poi:poisoned)                                                                  │
+│    ()                 (lib:outsider)                                               │
+│    ()                 ()                                                           │
+│    ()                 ()               (inv:minion)                                │
+│    ()                 ()               ()                                          │
+│    (4)                (23)             (40)                (60)                    │
+│    Alice              Bob              Charlie             Dave                    │
+│    washerwoman        librarian        investigator        chef                    │
+│                                                                                    │
+│                                                                     Eve            │
+│                                                                     empath (69)    │
+│                                                                                    │
+│ Grace                                               Frank                          │
+│ imp                                                 poisoner                       │
+│ (1)                                                 (53)                           │
+└────────────────────────────────────────────────────────────────────────────────────┘`;
 
             expect(result).toBe(expected);
         });

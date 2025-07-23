@@ -10,6 +10,69 @@ import { RenderOptions, TurnBasedLayout, PlayerPosition, AbstractGrid, GridCell 
 import { formatReminderTokens } from './token-formatter';
 
 /**
+ * Structured formatting result with decoration boundaries
+ */
+interface FormattedText {
+    leftDeco: string;
+    content: string; 
+    rightDeco: string;
+    full: string; // Complete formatted string
+}
+
+/**
+ * Formats player name and role with structured decoration boundaries.
+ *
+ * @param player - The player to format
+ * @param options - Render options that may override formatting behavior
+ * @returns Object with structured formatted name and role
+ */
+function formatPlayerStructured(player: PlayerState, options?: RenderOptions): { name: FormattedText; role: FormattedText } {
+    const formatText = (text: string): FormattedText => {
+        // For layout evaluation, always use worst-case formatting to ensure robust layouts
+        if (options?._forceWorstCaseFormatting) {
+            return {
+                leftDeco: '*~~',
+                content: text,
+                rightDeco: '~~*',
+                full: `*~~${text}~~*`
+            };
+        }
+        
+        if (player.alive) {
+            // Living player - no formatting
+            return {
+                leftDeco: '',
+                content: text,
+                rightDeco: '',
+                full: text
+            };
+        } else if (player.ghost) {
+            // Dead with ghost vote available - use asterisks
+            return {
+                leftDeco: '*',
+                content: text,
+                rightDeco: '*',
+                full: `*${text}*`
+            };
+        } else {
+            // Dead with used ghost vote - use strikethrough
+            return {
+                leftDeco: '*~~',
+                content: text,
+                rightDeco: '~~*',
+                full: `*~~${text}~~*`
+            };
+        }
+    };
+    
+    return {
+        name: formatText(player.name),
+        role: formatText(player.role)
+    };
+}
+
+/**
+ * Legacy function for backward compatibility
  * Formats player name and role with visual indicators for dead players.
  * 
  * @param player - The player to format
@@ -17,21 +80,11 @@ import { formatReminderTokens } from './token-formatter';
  * @returns Object with formatted name and role strings
  */
 function formatPlayerDisplayText(player: PlayerState, options?: RenderOptions): { name: string; role: string } {
-    // For layout evaluation, always use worst-case formatting to ensure robust layouts
-    if (options?._forceWorstCaseFormatting) {
-        return { name: `*~~${player.name}~~*`, role: `*~~${player.role}~~*` };
-    }
-    
-    if (player.alive) {
-        // Living player - no formatting
-        return { name: player.name, role: player.role };
-    } else if (player.ghost) {
-        // Dead with ghost vote available - use asterisks like single-line format
-        return { name: `*${player.name}*`, role: `*${player.role}*` };
-    } else {
-        // Dead with used ghost vote - use strikethrough like single-line format
-        return { name: `*~~${player.name}~~*`, role: `*~~${player.role}~~*` };
-    }
+    const structured = formatPlayerStructured(player, options);
+    return {
+        name: structured.name.full,
+        role: structured.role.full
+    };
 }
 
 /**
@@ -112,8 +165,8 @@ function renderTurnBasedLayout(players: any[], layout: TurnBasedLayout, options:
     // 4. Use worst-case bounds but actual content for perfect stability
     const stableGrid = {
         ...actualGrid,
-        maxCol: worstCaseGrid.maxCol,  // Use worst-case width
-        maxRow: worstCaseGrid.maxRow   // Use worst-case height
+        maxCol: worstCaseGrid.maxCol,  // Use worst-case width for stability
+        maxRow: worstCaseGrid.maxRow   // Use worst-case height for stability
     };
     
     // 5. Convert to final ASCII art with stable dimensions
@@ -198,21 +251,31 @@ function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers
     const topDense = getDenseLayout(topPlayers, leftPadding + 2);
     const bottomDense = getDenseLayout(bottomPlayers, leftPadding - 1);
     
-    // Determine which side is naturally longer
-    const topIsLonger = topDense.totalWidth > bottomDense.totalWidth;
-    
-    // Keep the longer side dense, justify the shorter side to match
+    // Handle cases where one or both sides are empty
     let topPositions: number[];
     let bottomPositions: number[];
     
-    if (topIsLonger) {
-        // Top is longer - keep top dense, justify bottom to match top's width
-        topPositions = topDense.positions;
-        bottomPositions = justifyToWidth(bottomPlayers, leftPadding - 1, topDense.totalWidth, options);
-    } else {
-        // Bottom is longer - keep bottom dense, justify top to match bottom's width  
+    if (topPlayers.length === 0) {
+        // No top players - use dense layout for bottom only
+        topPositions = [];
         bottomPositions = bottomDense.positions;
-        topPositions = justifyToWidth(topPlayers, leftPadding + 2, bottomDense.totalWidth, options);
+    } else if (bottomPlayers.length === 0) {
+        // No bottom players - use dense layout for top only  
+        topPositions = topDense.positions;
+        bottomPositions = [];
+    } else {
+        // Both sides have players - use hybrid dense/justified algorithm
+        const topIsLonger = topDense.totalWidth > bottomDense.totalWidth;
+        
+        if (topIsLonger) {
+            // Top is longer - keep top dense, justify bottom to match top's width
+            topPositions = topDense.positions;
+            bottomPositions = justifyToWidth(bottomPlayers, leftPadding - 1, topDense.totalWidth, options);
+        } else {
+            // Bottom is longer - keep bottom dense, justify top to match bottom's width  
+            bottomPositions = bottomDense.positions;
+            topPositions = justifyToWidth(topPlayers, leftPadding + 2, bottomDense.totalWidth, options);
+        }
     }
     
     return {
@@ -383,8 +446,16 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
     }
     
     // Calculate dimensions based on placed top players and potential left side content
+    // Use content-based positioning: right-side players should start after top players' content ends
     const maxTopCol = topPlayers.length > 0 ? 
-        Math.max(...cells.filter(c => c.row <= roleRow).map(c => c.col + c.content.length)) : 4;
+        Math.max(...topPlayers.map((pos, i) => {
+            const currentCol = justifiedPositions.top[i];
+            const structured = formatPlayerStructured(pos.player, coordinateOptions);
+            // Calculate where the content ends (position + leftDeco + content)
+            const contentEnd = currentCol + structured.name.leftDeco.length + structured.name.content.length;
+            const roleContentEnd = currentCol + structured.role.leftDeco.length + structured.role.content.length;
+            return Math.max(contentEnd, roleContentEnd);
+        })) : 4;
     
     // Account for left side players that will be positioned in the same vertical space as right players
     // Find the maximum width needed by left side players (name, role, or tokens)
@@ -393,17 +464,21 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
     
     const rightStartCol = Math.max(maxTopCol + 2, 1 + maxLeftWidth + 3); // leftCol is 1
     
-    // Place right players
+    // Place right players using content-based positioning
     let currentRow = roleRow + 2; // Start below top players with spacing
     for (const pos of rightPlayers) {
         const { tokens } = pos.player;
-        const { name, role } = formatPlayerDisplayText(pos.player, actualTextOptions);
+        const structured = formatPlayerStructured(pos.player, actualTextOptions);
         
-        cells.push({ content: name, row: currentRow, col: rightStartCol });
+        // Calculate where to place the full string so that content starts at rightStartCol
+        const nameStartCol = rightStartCol - structured.name.leftDeco.length;
+        const roleStartCol = rightStartCol - structured.role.leftDeco.length;
+        
+        cells.push({ content: structured.name.full, row: currentRow, col: nameStartCol });
         if (actualTextOptions.showColumnNumbers) {
-            cells.push({ content: `${role} (${rightStartCol})`, row: currentRow + 1, col: rightStartCol });
+            cells.push({ content: `${structured.role.full} (${rightStartCol})`, row: currentRow + 1, col: roleStartCol });
         } else {
-            cells.push({ content: role, row: currentRow + 1, col: rightStartCol });
+            cells.push({ content: structured.role.full, row: currentRow + 1, col: roleStartCol });
         }
         
         if (tokens && tokens.length > 0) {
