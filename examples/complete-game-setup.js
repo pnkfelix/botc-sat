@@ -39,7 +39,7 @@ async function run() {
     
     console.log('\n🎨 ASCII art format:');
     console.log(validator.renderGrimoireAscii(gameState, { 
-        mode: 'auto', 
+        mode: 'squariness', 
         useAbbreviations: true,
         showColumnNumbers: false
     }));

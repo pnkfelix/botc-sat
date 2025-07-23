@@ -109,7 +109,7 @@ function getPlayerDisplayWidth(player: PlayerState, useAbbreviations: boolean, o
     return Math.max(nameWidth, roleWidth, longestTokenWidth);
 }
 
-export function renderGrimoireToAsciiArt(grimoire: GrimoireState, options: RenderOptions = { mode: 'auto', showColumnNumbers: true, useAbbreviations: true }): string {
+export function renderGrimoireToAsciiArt(grimoire: GrimoireState, options: RenderOptions = { mode: 'squariness', showColumnNumbers: true, useAbbreviations: true }): string {
     const players = grimoire.players;
     
     if (options.mode === 'explicit-turns') {
@@ -119,7 +119,7 @@ export function renderGrimoireToAsciiArt(grimoire: GrimoireState, options: Rende
         const [topCount, rightCount, bottomCount, leftCount] = options.explicitTurns;
         const layout: TurnBasedLayout = { topCount, rightCount, bottomCount, leftCount };
         return renderTurnBasedLayout(players, layout, options);
-    } else if (options.mode === 'auto') {
+    } else if (options.mode === 'squariness') {
         // Find the best turn configuration via exhaustive search
         const bestLayout = findBestTurnConfiguration(players, options);
         return renderTurnBasedLayout(players, bestLayout, options);

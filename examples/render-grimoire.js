@@ -12,17 +12,17 @@ async function run() {
         console.log('Arguments:');
         console.log('  script    - Script name (currently only "trouble-brewing" supported)');
         console.log('  grimoire  - Single-line grimoire format: [Player1:role1 Player2:role2 ...]');
-        console.log('  layout    - Layout selector (default: "auto")');
-        console.log('              - "auto": Automatic optimal layout selection');
+        console.log('  layout    - Layout selector (default: "squariness")');
+        console.log('              - "squariness": Squariness-based optimal layout selection');
         console.log('');
         console.log('Examples:');
         console.log('  node examples/render-grimoire.js trouble-brewing "[Alice:washerwoman Bob:imp]"');
-        console.log('  node examples/render-grimoire.js trouble-brewing "[Alice:washerwoman(ww:townsfolk) Bob:librarian *Charlie:imp*]" auto');
+        console.log('  node examples/render-grimoire.js trouble-brewing "[Alice:washerwoman(ww:townsfolk) Bob:librarian *Charlie:imp*]" squariness');
         console.log('  node examples/render-grimoire.js trouble-brewing "[Alice:investigator Bob:chef Charlie:empath Dave:librarian Eve:butler *Frank:imp*]"');
         process.exit(1);
     }
     
-    const [scriptName, grimoireInput, layoutSelector = 'auto'] = args;
+    const [scriptName, grimoireInput, layoutSelector = 'squariness'] = args;
     
     // Validate script name
     if (scriptName !== 'trouble-brewing') {
@@ -31,7 +31,7 @@ async function run() {
     }
     
     // Validate layout selector
-    const validLayouts = ['auto'];
+    const validLayouts = ['squariness'];
     if (!validLayouts.includes(layoutSelector)) {
         console.error(`❌ Error: Invalid layout selector "${layoutSelector}". Valid options: ${validLayouts.join(', ')}`);
         process.exit(1);
@@ -47,15 +47,15 @@ async function run() {
         const grimoire = parseGrimoireFromSingleLine(grimoireInput);
         console.log(`✅ Parsed ${grimoire.players.length} players successfully`);
         
-        // Create validator instance (auto-registers roles)
+        // Create validator instance (automatically registers roles)
         const validator = new BOTCValidator();
         
         // Configure render options based on layout selector
         let renderOptions;
         switch (layoutSelector) {
-            case 'auto':
+            case 'squariness':
                 renderOptions = {
-                    mode: 'auto',
+                    mode: 'squariness',
                     showColumnNumbers: false,
                     useAbbreviations: true
                 };

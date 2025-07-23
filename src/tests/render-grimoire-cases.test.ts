@@ -29,7 +29,7 @@ describe('Render Grimoire Command Test Cases', () => {
             expect(grimoire.players[1].alive).toBe(true);
             
             const rendered = renderGrimoireToAsciiArt(grimoire, {
-                mode: 'auto',
+                mode: 'squariness',
                 showColumnNumbers: false,
                 useAbbreviations: true
             });
@@ -59,7 +59,7 @@ describe('Render Grimoire Command Test Cases', () => {
             expect(grimoire.players[2].alive).toBe(false); // Charlie should be dead
             
             const rendered = renderGrimoireToAsciiArt(grimoire, {
-                mode: 'auto',
+                mode: 'squariness',
                 showColumnNumbers: false,
                 useAbbreviations: true
             });
@@ -79,7 +79,7 @@ describe('Render Grimoire Command Test Cases', () => {
             expect(grimoire.players[2].alive).toBe(false);
             
             const rendered = renderGrimoireToAsciiArt(grimoire, {
-                mode: 'auto',
+                mode: 'squariness',
                 showColumnNumbers: false,
                 useAbbreviations: true
             });
@@ -101,7 +101,7 @@ describe('Render Grimoire Command Test Cases', () => {
             expect(grimoire.players).toHaveLength(6);
             
             const rendered = renderGrimoireToAsciiArt(grimoire, {
-                mode: 'auto',
+                mode: 'squariness',
                 showColumnNumbers: false,
                 useAbbreviations: true
             });
@@ -151,7 +151,7 @@ describe('Render Grimoire Command Test Cases', () => {
             expect(grimoire.players).toHaveLength(8);
             
             const rendered = renderGrimoireToAsciiArt(grimoire, {
-                mode: 'auto',
+                mode: 'squariness',
                 showColumnNumbers: false,
                 useAbbreviations: true
             });
@@ -210,7 +210,7 @@ describe('Render Grimoire Command Test Cases', () => {
             expect(harold?.ghost).toBe(true); // Dead but ghost vote available
             
             const rendered = renderGrimoireToAsciiArt(grimoire, {
-                mode: 'auto',
+                mode: 'squariness',
                 showColumnNumbers: false,
                 useAbbreviations: true
             });
@@ -295,13 +295,13 @@ describe('Render Grimoire Command Test Cases', () => {
                     
                     // Render both and compare layout selection
                     const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, {
-                        mode: 'auto',
+                        mode: 'squariness',
                         showColumnNumbers: false,
                         useAbbreviations: true
                     });
                     
                     const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, {
-                        mode: 'auto',
+                        mode: 'squariness',
                         showColumnNumbers: false,
                         useAbbreviations: true
                     });
@@ -341,7 +341,7 @@ describe('Render Grimoire Command Test Cases', () => {
             
             if (layoutDifferences > 0) {
                 console.log('\n🐛 BUG CONFIRMED by exhaustive testing!');
-                console.log('Visual formatting definitively affects auto-layout selection');
+                console.log('Visual formatting definitively affects squariness-layout selection');
                 console.log('\nAll differences found:');
                 differences.forEach(diff => {
                     console.log(`  ${diff.playerCount} players, ${diff.nameLength}-char names: ${diff.aliveDims} → ${diff.deadDims}`);
@@ -370,8 +370,8 @@ describe('Render Grimoire Command Test Cases', () => {
                 "[*~~Alice~~:investigator* *~~Frank~~:chef* *~~Grace~~:empath* *~~David~~:librarian* *~~Sarah~~:butler* *~~Brian~~:fortune_teller* *~~Emily~~:imp*]"
             );
             
-            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
-            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
+            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
+            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
             
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
@@ -389,8 +389,8 @@ describe('Render Grimoire Command Test Cases', () => {
                 "[*~~Alice~~:investigator* *~~Frank~~:chef* *~~Grace~~:empath* *~~David~~:librarian* *~~Sarah~~:butler* *~~Brian~~:fortune_teller* *~~Carol~~:virgin* *~~Emily~~:imp*]"
             );
             
-            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
-            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
+            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
+            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
             
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
@@ -408,8 +408,8 @@ describe('Render Grimoire Command Test Cases', () => {
                 "[*~~Alice~~:investigator* *~~Frank~~:chef* *~~Grace~~:empath* *~~David~~:librarian* *~~Sarah~~:butler* *~~Brian~~:fortune_teller* *~~Carol~~:virgin* *~~Diana~~:slayer* *~~Emily~~:imp*]"
             );
             
-            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
-            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
+            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
+            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
             
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
@@ -427,8 +427,8 @@ describe('Render Grimoire Command Test Cases', () => {
                 "[*~~Alice~~:investigator* *~~Frank~~:chef* *~~Grace~~:empath* *~~David~~:librarian* *~~Sarah~~:butler* *~~Brian~~:fortune_teller* *~~Carol~~:virgin* *~~Diana~~:slayer* *~~James~~:soldier* *~~Emily~~:imp*]"
             );
             
-            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
-            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
+            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
+            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
             
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
@@ -446,8 +446,8 @@ describe('Render Grimoire Command Test Cases', () => {
                 "[*~~Alice~~:investigator* *~~Frank~~:chef* *~~Grace~~:empath* *~~David~~:librarian* *~~Sarah~~:butler* *~~Brian~~:fortune_teller* *~~Carol~~:virgin* *~~Diana~~:slayer* *~~James~~:soldier* *~~Helen~~:mayor* *~~Emily~~:imp*]"
             );
             
-            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
-            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
+            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
+            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
             
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
@@ -465,8 +465,8 @@ describe('Render Grimoire Command Test Cases', () => {
                 "[*~~Alice~~:investigator* *~~Frank~~:chef* *~~Grace~~:empath* *~~David~~:librarian* *~~Sarah~~:butler* *~~Brian~~:fortune_teller* *~~Carol~~:virgin* *~~Diana~~:slayer* *~~James~~:soldier* *~~Helen~~:mayor* *~~Peter~~:undertaker* *~~Emily~~:imp*]"
             );
             
-            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
-            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
+            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
+            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
             
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
@@ -484,8 +484,8 @@ describe('Render Grimoire Command Test Cases', () => {
                 "[*~~Alice~~:investigator* *~~Frank~~:chef* *~~Grace~~:empath* *~~David~~:librarian* *~~Sarah~~:butler* *~~Brian~~:fortune_teller* *~~Carol~~:virgin* *~~Diana~~:slayer* *~~James~~:soldier* *~~Helen~~:mayor* *~~Peter~~:undertaker* *~~Marie~~:monk* *~~Emily~~:imp*]"
             );
             
-            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
-            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
+            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
+            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
             
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
@@ -503,8 +503,8 @@ describe('Render Grimoire Command Test Cases', () => {
                 "[*~~Alice~~:investigator* *~~Frank~~:chef* *~~Grace~~:empath* *~~David~~:librarian* *~~Sarah~~:butler* *~~Brian~~:fortune_teller* *~~Carol~~:virgin* *~~Diana~~:slayer* *~~James~~:soldier* *~~Helen~~:mayor* *~~Peter~~:undertaker* *~~Marie~~:monk* *~~Louis~~:ravenkeeper* *~~Emily~~:imp*]"
             );
             
-            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
-            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
+            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
+            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
             
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
@@ -522,8 +522,8 @@ describe('Render Grimoire Command Test Cases', () => {
                 "[*~~Alice~~:investigator* *~~Frank~~:chef* *~~Grace~~:empath* *~~David~~:librarian* *~~Sarah~~:butler* *~~Brian~~:fortune_teller* *~~Carol~~:virgin* *~~Diana~~:slayer* *~~James~~:soldier* *~~Helen~~:mayor* *~~Peter~~:undertaker* *~~Marie~~:monk* *~~Louis~~:ravenkeeper* *~~Nancy~~:washerwoman* *~~Emily~~:imp*]"
             );
             
-            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
-            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
+            const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
+            const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'squariness', showColumnNumbers: false, useAbbreviations: true });
             
             // Expected layout: [3,12,0,1] configuration (3 top, 12 right, 0 bottom, 1 left)
             // Auto layout selects this as the most square-like arrangement for 15 players
@@ -579,7 +579,7 @@ describe('Render Grimoire Command Test Cases', () => {
             expect(aliveRendered).toBe(expectedOutput);
         });
 
-        it('EXPOSED: auto layout changes when ghost vote status changes (ghost vs used vote)', () => {
+        it('EXPOSED: squariness layout changes when ghost vote status changes (ghost vs used vote)', () => {
             // BUG #9: Ghost vote visual formatting affects layout selection
             
             // Test Case 1: Dead player with ghost vote available (*Frank*)
@@ -599,14 +599,14 @@ describe('Render Grimoire Command Test Cases', () => {
             expect(usedVoteGrimoire.players[5].ghost).toBe(false);   // Ghost vote used
             
             const ghostRendered = renderGrimoireToAsciiArt(ghostVoteGrimoire, {
-                mode: 'auto',
+                mode: 'squariness',
                 showColumnNumbers: false,
                 useAbbreviations: true,
                 _evaluationTitle: 'BUG9-GHOST'
             });
             
             const usedRendered = renderGrimoireToAsciiArt(usedVoteGrimoire, {
-                mode: 'auto',
+                mode: 'squariness',
                 showColumnNumbers: false, 
                 useAbbreviations: true,
                 _evaluationTitle: 'BUG9-USED'
@@ -629,11 +629,11 @@ describe('Render Grimoire Command Test Cases', () => {
             
             // The visual difference: "*Frank*" vs "*~~Frank~~*" 
             // Length difference: 7 chars vs 11 chars (4 extra characters for strikethrough)
-            // This could affect layout squareness scoring and change auto layout selection
+            // This could affect layout squareness scoring and change squariness layout selection
             
             if (ghostDimensions.width !== usedDimensions.width || ghostDimensions.height !== usedDimensions.height) {
                 console.log('🐛 BUG CONFIRMED: Ghost vote status affects layout selection!');
-                console.log('Visual formatting length difference changed auto layout choice');
+                console.log('Visual formatting length difference changed squariness layout choice');
             } else {
                 console.log('✅ NO BUG: Ghost vote status did not affect layout selection');
             }
@@ -645,24 +645,24 @@ describe('Render Grimoire Command Test Cases', () => {
     });
 
     describe('Edge Cases and Error Handling', () => {
-        it('BROKEN: empty grimoire crashes auto layout system', () => {
+        it('BROKEN: empty grimoire crashes squariness layout system', () => {
             const input = "[]";
             const grimoire = parseGrimoireFromSingleLine(input);
             
             expect(grimoire.players).toHaveLength(0);
             
-            // BUG: Auto layout system crashes on empty grimoire
+            // BUG: Squariness layout system crashes on empty grimoire
             // Error: Cannot read properties of undefined (reading 'topCount')
             expect(() => {
                 renderGrimoireToAsciiArt(grimoire, {
-                    mode: 'auto',
+                    mode: 'squariness',
                     showColumnNumbers: false,
                     useAbbreviations: true
                 });
             }).toThrow(); // Currently crashes - should be fixed to handle gracefully
             
             console.log('\n=== BUG: Empty Grimoire Crash ===');
-            console.log('Auto layout system crashes when given 0 players');
+            console.log('Squariness layout system crashes when given 0 players');
             console.log('Should handle empty grimoires gracefully');
         });
 
@@ -673,7 +673,7 @@ describe('Render Grimoire Command Test Cases', () => {
             expect(grimoire.players).toHaveLength(1);
             
             const rendered = renderGrimoireToAsciiArt(grimoire, {
-                mode: 'auto',
+                mode: 'squariness',
                 showColumnNumbers: false,
                 useAbbreviations: true
             });

@@ -63,7 +63,7 @@ function analyzeSquarenessScoring(): void {
     
     for (const test of testTitles) {
         const options: RenderOptions & { _evaluationTitle?: string } = {
-            mode: 'auto',
+            mode: 'squariness',
             showColumnNumbers: false,
             useAbbreviations: true,
             _evaluationTitle: test.title
@@ -97,7 +97,7 @@ function analyzeSquarenessScoring(): void {
         console.log(`${(index + 1).toString().padStart(2)}. ${result.name.padEnd(12)} | Score: ${result.squarenessScore.toFixed(3)} | ${result.dimensions.width}x${result.dimensions.height}`);
     });
     
-    // Let's understand why the auto mode picks what it picks
+    // Let's understand why the squariness mode picks what it picks
     console.log('\n=== WHY AUTO MODE PICKS EACH LAYOUT ===');
     
     // Group by actual layout (same dimensions)

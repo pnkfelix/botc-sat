@@ -1,5 +1,5 @@
 /**
- * Test auto mode with instrumentation to see why it fails to pick optimal layouts
+ * Test squariness mode with instrumentation to see why it fails to pick optimal layouts
  */
 
 import { renderGrimoireToAsciiArt } from '../rendering/ascii-grimoire';
@@ -37,7 +37,7 @@ function testInstrumentedAutoMode(): void {
         console.log(`\nTesting ${test.name} title: "${test.title}"`);
         
         const options: RenderOptions & { _evaluationTitle?: string } = {
-            mode: 'auto',
+            mode: 'squariness',
             showColumnNumbers: false,
             useAbbreviations: true,
             _evaluationTitle: test.title

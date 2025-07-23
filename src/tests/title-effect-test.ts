@@ -1,5 +1,5 @@
 /**
- * Test cases to explore how evaluation title affects auto mode layout selection
+ * Test cases to explore how evaluation title affects squariness mode layout selection
  */
 
 import { renderGrimoireToAsciiArt } from '../rendering/ascii-grimoire';
@@ -66,7 +66,7 @@ function extractPlayerCoordinates(rendered: string): Array<{ name: string; row: 
 function testAutoModeWithTitle(evaluationTitle: string): TestResult {
     // Create custom options that force the evaluation title
     const options: RenderOptions & { _evaluationTitle?: string } = {
-        mode: 'auto',
+        mode: 'squariness',
         showColumnNumbers: false,
         useAbbreviations: true,
         _evaluationTitle: evaluationTitle

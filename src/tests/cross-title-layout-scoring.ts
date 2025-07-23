@@ -45,7 +45,7 @@ function testLayoutWithTitle(layout: [number, number, number, number], title: st
     score: number;
     aspectRatio: number;
 } {
-    // Simulate the evaluation conditions exactly like auto mode does
+    // Simulate the evaluation conditions exactly like squariness mode does
     const options: RenderOptions & { _isEvaluation?: boolean; _evaluationTitle?: string } = {
         mode: 'explicit-turns',
         explicitTurns: layout,

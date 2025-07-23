@@ -16,14 +16,14 @@
  * - All counts in explicitTurns must be >= 0, with at least one side having >= 1 player
  * 
  * Abstract Mapping:
- * - mode determines the layout algorithm: auto-selection, constraint optimization, or manual specification
+ * - mode determines the layout algorithm: squariness-selection, constraint optimization, or manual specification
  * - targetWidth/targetHeight represent visual space constraints in character units
  * - showColumnNumbers controls debug information display
  * - useAbbreviations controls whether to use role abbreviations in reminder tokens
  * - explicitTurns maps to [top-side, right-side, bottom-side, left-side] player distribution
  */
 export interface RenderOptions {
-    mode: 'auto' | 'width-constrained' | 'height-constrained' | 'explicit-turns';
+    mode: 'squariness' | 'width-constrained' | 'height-constrained' | 'explicit-turns';
     targetWidth?: number;
     targetHeight?: number;
     showColumnNumbers?: boolean; // Whether to show (4), (12), etc.

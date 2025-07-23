@@ -1,5 +1,5 @@
 /**
- * Trace the actual auto mode decision process to understand why
+ * Trace the actual squariness mode decision process to understand why
  * longer titles cause narrower layouts (counterintuitive)
  */
 
@@ -41,7 +41,7 @@ function calculateSquarenessScore(dimensions: { width: number; height: number })
 }
 
 // Let's manually test different layout configurations with the same title
-// to see what auto mode is choosing between
+// to see what squariness mode is choosing between
 function testExplicitLayouts(evaluationTitle: string): void {
     console.log(`\n=== TESTING ALL POSSIBLE LAYOUTS WITH TITLE: "${evaluationTitle}" ===`);
     
@@ -116,29 +116,29 @@ function testExplicitLayouts(evaluationTitle: string): void {
     
     console.log(`\\nBEST LAYOUT: [${bestLayout.join(',')}] → ${bestDimensions.width}x${bestDimensions.height} (score: ${bestScore.toFixed(3)})`);
     
-    // Now let's see what auto mode actually picks
-    const autoOptions: RenderOptions & { _evaluationTitle?: string } = {
-        mode: 'auto',
+    // Now let's see what squariness mode actually picks
+    const squarinessOptions: RenderOptions & { _evaluationTitle?: string } = {
+        mode: 'squariness',
         showColumnNumbers: false,
         useAbbreviations: true,
         _evaluationTitle: evaluationTitle
     };
     
-    const autoResult = renderGrimoireToAsciiArt({ players: testPlayers }, autoOptions);
-    const autoDimensions = measureRenderedDimensions(autoResult);
-    const autoScore = calculateSquarenessScore(autoDimensions);
+    const squarinessResult = renderGrimoireToAsciiArt({ players: testPlayers }, squarinessOptions);
+    const squarinessDimensions = measureRenderedDimensions(squarinessResult);
+    const squarinessScore = calculateSquarenessScore(squarinessDimensions);
     
-    console.log(`AUTO MODE PICKED: ${autoDimensions.width}x${autoDimensions.height} (score: ${autoScore.toFixed(3)})`);
+    console.log(`SQUARINESS MODE PICKED: ${squarinessDimensions.width}x${squarinessDimensions.height} (score: ${squarinessScore.toFixed(3)})`);
     
-    if (autoDimensions.width === bestDimensions.width && autoDimensions.height === bestDimensions.height) {
-        console.log('✅ Auto mode picked the optimal layout');
+    if (squarinessDimensions.width === bestDimensions.width && squarinessDimensions.height === bestDimensions.height) {
+        console.log('✅ Squariness mode picked the optimal layout');
     } else {
-        console.log('❌ Auto mode did NOT pick the optimal layout!');
+        console.log('❌ Squariness mode did NOT pick the optimal layout!');
     }
 }
 
-function traceAutoModeDecisions(): void {
-    console.log('=== TRACING AUTO MODE DECISIONS ===');
+function traceSquarinessDecisions(): void {
+    console.log('=== TRACING SQUARINESS MODE DECISIONS ===');
     
     const testCases = [
         { name: 'Medium', title: '─ Grim ' },
@@ -153,9 +153,9 @@ function traceAutoModeDecisions(): void {
 }
 
 // Export for use in test runner
-export { traceAutoModeDecisions };
+export { traceSquarinessDecisions };
 
 // Run if called directly
 if (require.main === module) {
-    traceAutoModeDecisions();
+    traceSquarinessDecisions();
 }
