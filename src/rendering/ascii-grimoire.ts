@@ -475,18 +475,21 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
         const roleStartCol = rightStartCol - structured.role.leftDeco.length;
         
         cells.push({ content: structured.name.full, row: currentRow, col: nameStartCol });
+        cells.push({ content: structured.role.full, row: currentRow + 1, col: roleStartCol });
+        
         if (actualTextOptions.showColumnNumbers) {
-            cells.push({ content: `${structured.role.full} (${rightStartCol})`, row: currentRow + 1, col: roleStartCol });
-        } else {
-            cells.push({ content: structured.role.full, row: currentRow + 1, col: roleStartCol });
+            cells.push({ content: `(${rightStartCol})`, row: currentRow + 2, col: rightStartCol });
         }
         
         if (tokens && tokens.length > 0) {
             const formattedTokens = formatReminderTokens(tokens, actualTextOptions.useAbbreviations ?? true);
-            cells.push({ content: `(${formattedTokens.join(',')})`, row: currentRow + 2, col: rightStartCol });
+            const tokenRow = actualTextOptions.showColumnNumbers ? currentRow + 3 : currentRow + 2;
+            cells.push({ content: `(${formattedTokens.join(',')})`, row: tokenRow, col: rightStartCol });
         }
         
-        currentRow += 3; // Account for name, role, and space to next player
+        // Account for name, role, column number (if present), and space to next player
+        const spacingRows = actualTextOptions.showColumnNumbers ? 4 : 3;
+        currentRow += spacingRows;
     }
     
     // Place bottom players with justified spacing
