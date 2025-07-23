@@ -525,11 +525,58 @@ describe('Render Grimoire Command Test Cases', () => {
             const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
             const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
             
+            // Expected layout: [3,12,0,1] configuration (3 top, 12 right, 0 bottom, 1 left)
+            // Auto layout selects this as the most square-like arrangement for 15 players
+            const expectedOutput = `\
+┌─ Grimoire (15 players) ─────────────────────────────────────────┐
+│   Alice               Frank        Grace                        │
+│   investigator        chef         empath                       │
+│                                                                 │
+│                                               David             │
+│                                               librarian         │
+│                                                                 │
+│                                               Sarah             │
+│                                               butler            │
+│                                                                 │
+│                                               Brian             │
+│                                               fortune_teller    │
+│                                                                 │
+│                                               Carol             │
+│                                               virgin            │
+│                                                                 │
+│                                               Diana             │
+│                                               slayer            │
+│                                                                 │
+│                                               James             │
+│                                               soldier           │
+│                                                                 │
+│                                               Helen             │
+│                                               mayor             │
+│                                                                 │
+│                                               Peter             │
+│                                               undertaker        │
+│                                                                 │
+│                                               Marie             │
+│                                               monk              │
+│                                                                 │
+│                                               Louis             │
+│                                               ravenkeeper       │
+│                                                                 │
+│                                               Nancy             │
+│                                               washerwoman       │
+│                                                                 │
+│Emily                                                            │
+│imp                                                              │
+└─────────────────────────────────────────────────────────────────┘`;
+            
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
             
             console.log(`15 players: ${aliveDims} (alive) vs ${deadDims} (dead) - ✅ STABLE`);
             expect(aliveDims).toBe(deadDims); // Perfect border stability achieved!
+            
+            // Verify the actual rendered output matches expected (for code review visibility)
+            expect(aliveRendered).toBe(expectedOutput);
         });
 
         it('EXPOSED: auto layout changes when ghost vote status changes (ghost vs used vote)', () => {
