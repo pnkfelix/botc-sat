@@ -120,8 +120,28 @@ export function renderGrimoireToAsciiArt(grimoire: GrimoireState, options: Rende
         const layout: TurnBasedLayout = { topCount, rightCount, bottomCount, leftCount };
         return renderTurnBasedLayout(players, layout, options);
     } else if (options.mode === 'squariness') {
-        // Find the best turn configuration via exhaustive search
+        // Find the best turn configuration via exhaustive search (squareness-based)
         const bestLayout = findBestTurnConfiguration(players, options);
+        return renderTurnBasedLayout(players, bestLayout, options);
+    } else if (options.mode === 'min-area') {
+        // Find the best turn configuration via area minimization
+        const bestLayout = findBestTurnConfigurationByArea(players, options);
+        return renderTurnBasedLayout(players, bestLayout, options);
+    } else if (options.mode === 'min-max-dim') {
+        // Find the best turn configuration via maximum dimension minimization
+        const bestLayout = findBestTurnConfigurationByMaxDim(players, options);
+        return renderTurnBasedLayout(players, bestLayout, options);
+    } else if (options.mode === 'min-perimeter') {
+        // Find the best turn configuration via perimeter minimization
+        const bestLayout = findBestTurnConfigurationByPerimeter(players, options);
+        return renderTurnBasedLayout(players, bestLayout, options);
+    } else if (options.mode === 'max-area-perimeter-ratio') {
+        // Find the best turn configuration via area-to-perimeter ratio maximization
+        const bestLayout = findBestTurnConfigurationByAreaPerimeterRatio(players, options);
+        return renderTurnBasedLayout(players, bestLayout, options);
+    } else if (options.mode === 'max-area-perimeter2-ratio') {
+        // Find the best turn configuration via area-to-perimeter-squared ratio maximization  
+        const bestLayout = findBestTurnConfigurationByAreaPerimeter2Ratio(players, options);
         return renderTurnBasedLayout(players, bestLayout, options);
     } else {
         // For constrained modes, we'll implement this later
@@ -704,6 +724,361 @@ function findBestTurnConfiguration(players: any[], options: RenderOptions): Turn
     return bestConfig;
 }
 
+function findBestTurnConfigurationByArea(players: any[], options: RenderOptions): TurnBasedLayout {
+    const playerCount = players.length;
+    const allTurnConfigs = generateAllTurnConfigurations(playerCount);
+    
+    // Debug: Check if we're using a custom evaluation title
+    const evaluationTitle = (options as any)._evaluationTitle;
+    const isInstrumented = evaluationTitle && (evaluationTitle.includes('Grim') || evaluationTitle.includes('long title'));
+    
+    if (isInstrumented) {
+        console.log(`\n=== FINDBESTAREA DEBUG: title="${evaluationTitle}" ===`);
+        console.log(`Generated ${allTurnConfigs.length} configurations for ${playerCount} players`);
+    }
+    
+    // Evaluate each configuration by rendering and measuring total area
+    let bestConfig = allTurnConfigs[0];
+    let bestArea = Number.POSITIVE_INFINITY;
+    let evaluationResults: Array<{config: TurnBasedLayout, area: number, success: boolean, error?: string}> = [];
+    
+    for (const config of allTurnConfigs) {
+        try {
+            const area = evaluateLayoutArea(players, config, options);
+            evaluationResults.push({config, area, success: true});
+            
+            if (area < bestArea) {
+                bestArea = area;
+                bestConfig = config;
+            }
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] area: ${area} ${area === bestArea ? '← NEW BEST' : ''}`);
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            evaluationResults.push({config, area: Number.POSITIVE_INFINITY, success: false, error: errorMessage});
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] FAILED: ${errorMessage}`);
+            }
+        }
+    }
+    
+    if (isInstrumented) {
+        const successfulEvals = evaluationResults.filter(r => r.success);
+        const failedEvals = evaluationResults.filter(r => !r.success);
+        
+        console.log(`\nSUMMARY:`);
+        console.log(`  Total configurations: ${allTurnConfigs.length}`);
+        console.log(`  Successful evaluations: ${successfulEvals.length}`);
+        console.log(`  Failed evaluations: ${failedEvals.length}`);
+        console.log(`  Selected best: [${bestConfig.topCount},${bestConfig.rightCount},${bestConfig.bottomCount},${bestConfig.leftCount}] area: ${bestArea}`);
+        
+        // Check if we missed any obviously good configurations
+        const sortedByArea = successfulEvals.sort((a, b) => a.area - b.area);
+        console.log(`  Top 3 areas:`);
+        for (let i = 0; i < Math.min(3, sortedByArea.length); i++) {
+            const result = sortedByArea[i];
+            console.log(`    ${i+1}. [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}] area: ${result.area}`);
+        }
+        
+        if (failedEvals.length > 0) {
+            console.log(`  Failed configurations:`);
+            failedEvals.forEach(result => {
+                console.log(`    [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}]: ${result.error}`);
+            });
+        }
+        console.log(`=== END FINDBESTAREA DEBUG ===\n`);
+    }
+    
+    return bestConfig;
+}
+
+function findBestTurnConfigurationByMaxDim(players: any[], options: RenderOptions): TurnBasedLayout {
+    const playerCount = players.length;
+    const allTurnConfigs = generateAllTurnConfigurations(playerCount);
+    
+    // Debug: Check if we're using a custom evaluation title
+    const evaluationTitle = (options as any)._evaluationTitle;
+    const isInstrumented = evaluationTitle && (evaluationTitle.includes('Grim') || evaluationTitle.includes('long title'));
+    
+    if (isInstrumented) {
+        console.log(`\n=== FINDBESTMAXDIM DEBUG: title="${evaluationTitle}" ===`);
+        console.log(`Generated ${allTurnConfigs.length} configurations for ${playerCount} players`);
+    }
+    
+    // Evaluate each configuration by rendering and measuring maximum dimension
+    let bestConfig = allTurnConfigs[0];
+    let bestMaxDim = Number.POSITIVE_INFINITY;
+    let evaluationResults: Array<{config: TurnBasedLayout, maxDim: number, success: boolean, error?: string}> = [];
+    
+    for (const config of allTurnConfigs) {
+        try {
+            const maxDim = evaluateLayoutMaxDimension(players, config, options);
+            evaluationResults.push({config, maxDim, success: true});
+            
+            if (maxDim < bestMaxDim) {
+                bestMaxDim = maxDim;
+                bestConfig = config;
+            }
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] maxDim: ${maxDim} ${maxDim === bestMaxDim ? '← NEW BEST' : ''}`);
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            evaluationResults.push({config, maxDim: Number.POSITIVE_INFINITY, success: false, error: errorMessage});
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] FAILED: ${errorMessage}`);
+            }
+        }
+    }
+    
+    if (isInstrumented) {
+        const successfulEvals = evaluationResults.filter(r => r.success);
+        const failedEvals = evaluationResults.filter(r => !r.success);
+        
+        console.log(`\nSUMMARY:`);
+        console.log(`  Total configurations: ${allTurnConfigs.length}`);
+        console.log(`  Successful evaluations: ${successfulEvals.length}`);
+        console.log(`  Failed evaluations: ${failedEvals.length}`);
+        console.log(`  Selected best: [${bestConfig.topCount},${bestConfig.rightCount},${bestConfig.bottomCount},${bestConfig.leftCount}] maxDim: ${bestMaxDim}`);
+        
+        // Check if we missed any obviously good configurations
+        const sortedByMaxDim = successfulEvals.sort((a, b) => a.maxDim - b.maxDim);
+        console.log(`  Top 3 maxDims:`);
+        for (let i = 0; i < Math.min(3, sortedByMaxDim.length); i++) {
+            const result = sortedByMaxDim[i];
+            console.log(`    ${i+1}. [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}] maxDim: ${result.maxDim}`);
+        }
+        
+        if (failedEvals.length > 0) {
+            console.log(`  Failed configurations:`);
+            failedEvals.forEach(result => {
+                console.log(`    [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}]: ${result.error}`);
+            });
+        }
+        console.log(`=== END FINDBESTMAXDIM DEBUG ===\n`);
+    }
+    
+    return bestConfig;
+}
+
+function findBestTurnConfigurationByPerimeter(players: any[], options: RenderOptions): TurnBasedLayout {
+    const playerCount = players.length;
+    const allTurnConfigs = generateAllTurnConfigurations(playerCount);
+    
+    // Debug: Check if we're using a custom evaluation title
+    const evaluationTitle = (options as any)._evaluationTitle;
+    const isInstrumented = evaluationTitle && (evaluationTitle.includes('Grim') || evaluationTitle.includes('long title'));
+    
+    if (isInstrumented) {
+        console.log(`\n=== FINDBESTPERIMETER DEBUG: title="${evaluationTitle}" ===`);
+        console.log(`Generated ${allTurnConfigs.length} configurations for ${playerCount} players`);
+    }
+    
+    // Evaluate each configuration by rendering and measuring perimeter (width + height)
+    let bestConfig = allTurnConfigs[0];
+    let bestPerimeter = Number.POSITIVE_INFINITY;
+    let evaluationResults: Array<{config: TurnBasedLayout, perimeter: number, success: boolean, error?: string}> = [];
+    
+    for (const config of allTurnConfigs) {
+        try {
+            const perimeter = evaluateLayoutPerimeter(players, config, options);
+            evaluationResults.push({config, perimeter, success: true});
+            
+            if (perimeter < bestPerimeter) {
+                bestPerimeter = perimeter;
+                bestConfig = config;
+            }
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] perimeter: ${perimeter} ${perimeter === bestPerimeter ? '← NEW BEST' : ''}`);
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            evaluationResults.push({config, perimeter: Number.POSITIVE_INFINITY, success: false, error: errorMessage});
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] FAILED: ${errorMessage}`);
+            }
+        }
+    }
+    
+    if (isInstrumented) {
+        const successfulEvals = evaluationResults.filter(r => r.success);
+        const failedEvals = evaluationResults.filter(r => !r.success);
+        
+        console.log(`\nSUMMARY:`);
+        console.log(`  Total configurations: ${allTurnConfigs.length}`);
+        console.log(`  Successful evaluations: ${successfulEvals.length}`);
+        console.log(`  Failed evaluations: ${failedEvals.length}`);
+        console.log(`  Selected best: [${bestConfig.topCount},${bestConfig.rightCount},${bestConfig.bottomCount},${bestConfig.leftCount}] perimeter: ${bestPerimeter}`);
+        
+        // Check if we missed any obviously good configurations
+        const sortedByPerimeter = successfulEvals.sort((a, b) => a.perimeter - b.perimeter);
+        console.log(`  Top 3 perimeters:`);
+        for (let i = 0; i < Math.min(3, sortedByPerimeter.length); i++) {
+            const result = sortedByPerimeter[i];
+            console.log(`    ${i+1}. [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}] perimeter: ${result.perimeter}`);
+        }
+        
+        if (failedEvals.length > 0) {
+            console.log(`  Failed configurations:`);
+            failedEvals.forEach(result => {
+                console.log(`    [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}]: ${result.error}`);
+            });
+        }
+        console.log(`=== END FINDBESTPERIMETER DEBUG ===\n`);
+    }
+    
+    return bestConfig;
+}
+
+function findBestTurnConfigurationByAreaPerimeterRatio(players: any[], options: RenderOptions): TurnBasedLayout {
+    const playerCount = players.length;
+    const allTurnConfigs = generateAllTurnConfigurations(playerCount);
+    
+    // Debug: Check if we're using a custom evaluation title
+    const evaluationTitle = (options as any)._evaluationTitle;
+    const isInstrumented = evaluationTitle && (evaluationTitle.includes('Grim') || evaluationTitle.includes('long title'));
+    
+    if (isInstrumented) {
+        console.log(`\n=== FINDBESTAREARATIO DEBUG: title="${evaluationTitle}" ===`);
+        console.log(`Generated ${allTurnConfigs.length} configurations for ${playerCount} players`);
+    }
+    
+    // Evaluate each configuration by rendering and measuring area-to-perimeter ratio
+    let bestConfig = allTurnConfigs[0];
+    let bestRatio = 0; // Higher ratio is better (more efficient)
+    let evaluationResults: Array<{config: TurnBasedLayout, ratio: number, success: boolean, error?: string}> = [];
+    
+    for (const config of allTurnConfigs) {
+        try {
+            const ratio = evaluateLayoutAreaPerimeterRatio(players, config, options);
+            evaluationResults.push({config, ratio, success: true});
+            
+            if (ratio > bestRatio) {
+                bestRatio = ratio;
+                bestConfig = config;
+            }
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] ratio: ${ratio.toFixed(3)} ${ratio === bestRatio ? '← NEW BEST' : ''}`);
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            evaluationResults.push({config, ratio: 0, success: false, error: errorMessage});
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] FAILED: ${errorMessage}`);
+            }
+        }
+    }
+    
+    if (isInstrumented) {
+        const successfulEvals = evaluationResults.filter(r => r.success);
+        const failedEvals = evaluationResults.filter(r => !r.success);
+        
+        console.log(`\nSUMMARY:`);
+        console.log(`  Total configurations: ${allTurnConfigs.length}`);
+        console.log(`  Successful evaluations: ${successfulEvals.length}`);
+        console.log(`  Failed evaluations: ${failedEvals.length}`);
+        console.log(`  Selected best: [${bestConfig.topCount},${bestConfig.rightCount},${bestConfig.bottomCount},${bestConfig.leftCount}] ratio: ${bestRatio.toFixed(3)}`);
+        
+        // Check if we missed any obviously good configurations
+        const sortedByRatio = successfulEvals.sort((a, b) => b.ratio - a.ratio); // Descending order (higher is better)
+        console.log(`  Top 3 ratios:`);
+        for (let i = 0; i < Math.min(3, sortedByRatio.length); i++) {
+            const result = sortedByRatio[i];
+            console.log(`    ${i+1}. [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}] ratio: ${result.ratio.toFixed(3)}`);
+        }
+        
+        if (failedEvals.length > 0) {
+            console.log(`  Failed configurations:`);
+            failedEvals.forEach(result => {
+                console.log(`    [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}]: ${result.error}`);
+            });
+        }
+        console.log(`=== END FINDBESTAREARATIO DEBUG ===\n`);
+    }
+    
+    return bestConfig;
+}
+
+function findBestTurnConfigurationByAreaPerimeter2Ratio(players: any[], options: RenderOptions): TurnBasedLayout {
+    const playerCount = players.length;
+    const allTurnConfigs = generateAllTurnConfigurations(playerCount);
+    
+    // Debug: Check if we're using a custom evaluation title
+    const evaluationTitle = (options as any)._evaluationTitle;
+    const isInstrumented = evaluationTitle && (evaluationTitle.includes('Grim') || evaluationTitle.includes('long title'));
+    
+    if (isInstrumented) {
+        console.log(`\n=== FINDBESTAREA2RATIO DEBUG: title="${evaluationTitle}" ===`);
+        console.log(`Generated ${allTurnConfigs.length} configurations for ${playerCount} players`);
+    }
+    
+    // Evaluate each configuration by rendering and measuring area-to-perimeter-squared ratio
+    let bestConfig = allTurnConfigs[0];
+    let bestRatio = 0; // Higher ratio is better (more efficient)
+    let evaluationResults: Array<{config: TurnBasedLayout, ratio: number, success: boolean, error?: string}> = [];
+    
+    for (const config of allTurnConfigs) {
+        try {
+            const ratio = evaluateLayoutAreaPerimeter2Ratio(players, config, options);
+            evaluationResults.push({config, ratio, success: true});
+            
+            if (ratio > bestRatio) {
+                bestRatio = ratio;
+                bestConfig = config;
+            }
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] ratio: ${ratio.toFixed(3)} ${ratio === bestRatio ? '← NEW BEST' : ''}`);
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            evaluationResults.push({config, ratio: 0, success: false, error: errorMessage});
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] FAILED: ${errorMessage}`);
+            }
+        }
+    }
+    
+    if (isInstrumented) {
+        const successfulEvals = evaluationResults.filter(r => r.success);
+        const failedEvals = evaluationResults.filter(r => !r.success);
+        
+        console.log(`\nSUMMARY:`);
+        console.log(`  Total configurations: ${allTurnConfigs.length}`);
+        console.log(`  Successful evaluations: ${successfulEvals.length}`);
+        console.log(`  Failed evaluations: ${failedEvals.length}`);
+        console.log(`  Selected best: [${bestConfig.topCount},${bestConfig.rightCount},${bestConfig.bottomCount},${bestConfig.leftCount}] ratio: ${bestRatio.toFixed(3)}`);
+        
+        // Check if we missed any obviously good configurations
+        const sortedByRatio = successfulEvals.sort((a, b) => b.ratio - a.ratio); // Descending order (higher is better)
+        console.log(`  Top 3 ratios:`);
+        for (let i = 0; i < Math.min(3, sortedByRatio.length); i++) {
+            const result = sortedByRatio[i];
+            console.log(`    ${i+1}. [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}] ratio: ${result.ratio.toFixed(3)}`);
+        }
+        
+        if (failedEvals.length > 0) {
+            console.log(`  Failed configurations:`);
+            failedEvals.forEach(result => {
+                console.log(`    [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}]: ${result.error}`);
+            });
+        }
+        console.log(`=== END FINDBESTAREA2RATIO DEBUG ===\n`);
+    }
+    
+    return bestConfig;
+}
+
 /**
  * Evaluates how "square-like" a layout configuration is by measuring actual rendered dimensions.
  * Returns a score where lower is better (0 = perfect square).
@@ -751,6 +1126,245 @@ function evaluateLayoutSquareness(players: any[], layout: TurnBasedLayout, optio
     } catch (error) {
         // If rendering fails, return a very high score (worst possible)
         return Number.POSITIVE_INFINITY;
+    }
+}
+
+/**
+ * Evaluates the total 2D area (width × height) of a layout configuration.
+ * Returns the area in character units, where lower is better (more compact).
+ * 
+ * @param players - The players to layout
+ * @param layout - The turn configuration to evaluate  
+ * @param options - Render options (without tokens for layout evaluation)
+ * @returns Area in character units (width × height)
+ */
+function evaluateLayoutArea(players: any[], layout: TurnBasedLayout, options: RenderOptions): number {
+    // Create a copy of options that uses worst-case formatting for robust layout measurement
+    const layoutOptions: RenderOptions = {
+        ...options,
+        mode: 'explicit-turns',
+        explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount],
+        // Flag to ensure title logic doesn't affect layout evaluation
+        _isEvaluation: true,
+        // Use worst-case formatting (*~~player~~*) to ensure layouts are robust to all future game states
+        _forceWorstCaseFormatting: true,
+        // Pass through evaluation title if specified
+        _evaluationTitle: (options as any)._evaluationTitle
+    };
+    
+    // Create players without tokens for layout measurement, but keep original alive/ghost state
+    // The worst-case formatting will be handled by formatPlayerDisplayText()
+    const playersWithoutTokens = players.map(player => ({
+        ...player,
+        tokens: [] // Remove tokens for pure layout evaluation
+    }));
+    
+    const grimoire = { players: playersWithoutTokens };
+    
+    // Render this configuration and measure dimensions
+    try {
+        const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
+        const dimensions = measureRenderedDimensions(rendered);
+        
+        // Calculate total area: width × height
+        const area = dimensions.width * dimensions.height;
+        
+        return area;
+    } catch (error) {
+        // If rendering fails, return a very high area (worst possible)
+        return Number.POSITIVE_INFINITY;
+    }
+}
+
+/**
+ * Evaluates the maximum dimension (max of width or height) of a layout configuration.
+ * Returns the maximum dimension in character units, where lower is better (more balanced).
+ * 
+ * @param players - The players to layout
+ * @param layout - The turn configuration to evaluate  
+ * @param options - Render options (without tokens for layout evaluation)
+ * @returns Maximum dimension in character units (max(width, height))
+ */
+function evaluateLayoutMaxDimension(players: any[], layout: TurnBasedLayout, options: RenderOptions): number {
+    // Create a copy of options that uses worst-case formatting for robust layout measurement
+    const layoutOptions: RenderOptions = {
+        ...options,
+        mode: 'explicit-turns',
+        explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount],
+        // Flag to ensure title logic doesn't affect layout evaluation
+        _isEvaluation: true,
+        // Use worst-case formatting (*~~player~~*) to ensure layouts are robust to all future game states
+        _forceWorstCaseFormatting: true,
+        // Pass through evaluation title if specified
+        _evaluationTitle: (options as any)._evaluationTitle
+    };
+    
+    // Create players without tokens for layout measurement, but keep original alive/ghost state
+    // The worst-case formatting will be handled by formatPlayerDisplayText()
+    const playersWithoutTokens = players.map(player => ({
+        ...player,
+        tokens: [] // Remove tokens for pure layout evaluation
+    }));
+    
+    const grimoire = { players: playersWithoutTokens };
+    
+    // Render this configuration and measure dimensions
+    try {
+        const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
+        const dimensions = measureRenderedDimensions(rendered);
+        
+        // Calculate maximum dimension: max(width, height)
+        const maxDimension = Math.max(dimensions.width, dimensions.height);
+        
+        return maxDimension;
+    } catch (error) {
+        // If rendering fails, return a very high max dimension (worst possible)
+        return Number.POSITIVE_INFINITY;
+    }
+}
+
+/**
+ * Evaluates the perimeter (width + height) of a layout configuration.
+ * Returns the perimeter in character units, where lower is better (more compact).
+ * 
+ * @param players - The players to layout
+ * @param layout - The turn configuration to evaluate  
+ * @param options - Render options (without tokens for layout evaluation)
+ * @returns Perimeter in character units (width + height)
+ */
+function evaluateLayoutPerimeter(players: any[], layout: TurnBasedLayout, options: RenderOptions): number {
+    // Create a copy of options that uses worst-case formatting for robust layout measurement
+    const layoutOptions: RenderOptions = {
+        ...options,
+        mode: 'explicit-turns',
+        explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount],
+        // Flag to ensure title logic doesn't affect layout evaluation
+        _isEvaluation: true,
+        // Use worst-case formatting (*~~player~~*) to ensure layouts are robust to all future game states
+        _forceWorstCaseFormatting: true,
+        // Pass through evaluation title if specified
+        _evaluationTitle: (options as any)._evaluationTitle
+    };
+    
+    // Create players without tokens for layout measurement, but keep original alive/ghost state
+    // The worst-case formatting will be handled by formatPlayerDisplayText()
+    const playersWithoutTokens = players.map(player => ({
+        ...player,
+        tokens: [] // Remove tokens for pure layout evaluation
+    }));
+    
+    const grimoire = { players: playersWithoutTokens };
+    
+    // Render this configuration and measure dimensions
+    try {
+        const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
+        const dimensions = measureRenderedDimensions(rendered);
+        
+        // Calculate perimeter: width + height
+        const perimeter = dimensions.width + dimensions.height;
+        
+        return perimeter;
+    } catch (error) {
+        // If rendering fails, return a very high perimeter (worst possible)
+        return Number.POSITIVE_INFINITY;
+    }
+}
+
+/**
+ * Evaluates the area-to-perimeter ratio of a layout configuration.
+ * Returns the ratio (area / perimeter), where higher is better (more efficient).
+ * 
+ * @param players - The players to layout
+ * @param layout - The turn configuration to evaluate  
+ * @param options - Render options (without tokens for layout evaluation)
+ * @returns Area-to-perimeter ratio (higher = more efficient)
+ */
+function evaluateLayoutAreaPerimeterRatio(players: any[], layout: TurnBasedLayout, options: RenderOptions): number {
+    // Create a copy of options that uses worst-case formatting for robust layout measurement
+    const layoutOptions: RenderOptions = {
+        ...options,
+        mode: 'explicit-turns',
+        explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount],
+        // Flag to ensure title logic doesn't affect layout evaluation
+        _isEvaluation: true,
+        // Use worst-case formatting (*~~player~~*) to ensure layouts are robust to all future game states
+        _forceWorstCaseFormatting: true,
+        // Pass through evaluation title if specified
+        _evaluationTitle: (options as any)._evaluationTitle
+    };
+    
+    // Create players without tokens for layout measurement, but keep original alive/ghost state
+    // The worst-case formatting will be handled by formatPlayerDisplayText()
+    const playersWithoutTokens = players.map(player => ({
+        ...player,
+        tokens: [] // Remove tokens for pure layout evaluation
+    }));
+    
+    const grimoire = { players: playersWithoutTokens };
+    
+    // Render this configuration and measure dimensions
+    try {
+        const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
+        const dimensions = measureRenderedDimensions(rendered);
+        
+        // Calculate area-to-perimeter ratio: area / perimeter
+        const area = dimensions.width * dimensions.height;
+        const perimeter = dimensions.width + dimensions.height;
+        const ratio = perimeter > 0 ? area / perimeter : 0;
+        
+        return ratio;
+    } catch (error) {
+        // If rendering fails, return a very low ratio (worst possible)
+        return 0;
+    }
+}
+
+/**
+ * Evaluates the area-to-perimeter-squared ratio of a layout configuration.
+ * Returns the ratio (area / perimeter^2), where higher is better (more compact).
+ * 
+ * @param players - The players to layout
+ * @param layout - The turn configuration to evaluate  
+ * @param options - Render options (without tokens for layout evaluation)
+ * @returns Area-to-perimeter-squared ratio (higher = more compact)
+ */
+function evaluateLayoutAreaPerimeter2Ratio(players: any[], layout: TurnBasedLayout, options: RenderOptions): number {
+    // Create a copy of options that uses worst-case formatting for robust layout measurement
+    const layoutOptions: RenderOptions = {
+        ...options,
+        mode: 'explicit-turns',
+        explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount],
+        // Flag to ensure title logic doesn't affect layout evaluation
+        _isEvaluation: true,
+        // Use worst-case formatting (*~~player~~*) to ensure layouts are robust to all future game states
+        _forceWorstCaseFormatting: true,
+        // Pass through evaluation title if specified
+        _evaluationTitle: (options as any)._evaluationTitle
+    };
+    
+    // Create players without tokens for layout measurement, but keep original alive/ghost state
+    // The worst-case formatting will be handled by formatPlayerDisplayText()
+    const playersWithoutTokens = players.map(player => ({
+        ...player,
+        tokens: [] // Remove tokens for pure layout evaluation
+    }));
+    
+    const grimoire = { players: playersWithoutTokens };
+    
+    // Render this configuration and measure dimensions
+    try {
+        const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
+        const dimensions = measureRenderedDimensions(rendered);
+        
+        // Calculate area-to-perimeter-squared ratio: area / perimeter^2
+        const area = dimensions.width * dimensions.height;
+        const perimeter = dimensions.width + dimensions.height;
+        const ratio = perimeter > 0 ? area / (perimeter * perimeter) : 0;
+        
+        return ratio;
+    } catch (error) {
+        // If rendering fails, return a very low ratio (worst possible)
+        return 0;
     }
 }
 
