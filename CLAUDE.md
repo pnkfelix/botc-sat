@@ -36,6 +36,7 @@ This project is a prototype for domain-specific logical languages, specifically 
 - Break down complex features into manageable, trackable tasks
 - Prefer editing existing files over creating new ones unless necessary
 - Never create documentation files unless explicitly requested
+- **Periodically clean workspace** - evaluate temporary/debug files against existing tests and experiments before preserving
 
 ### 🔍 MANDATORY: Code Navigation with cclsp LSP Tools
 **ALWAYS USE THESE TOOLS FIRST** when investigating code structure, bugs, or implementing features:
@@ -48,15 +49,17 @@ This project is a prototype for domain-specific logical languages, specifically 
 **When to use cclsp tools**:
 - ✅ BEFORE editing any function or class
 - ✅ When investigating bugs (find all references to understand impact)
-- ✅ When understanding code flow (trace function calls)
+- ✅ When understanding code flow (trace function calls)  
 - ✅ When refactoring (find all usage sites)
 - ✅ When exploring unfamiliar code areas
+- ✅ When looking for existing functionality that might already solve your problem
 
-**Default pattern**:
+**Default investigation pattern**:
 1. `mcp__cclsp__find_definition` to locate the code
-2. `mcp__cclsp__find_references` to understand usage
-3. Read relevant files based on LSP results
-4. Make informed changes
+2. `mcp__cclsp__find_references` to understand usage and discover related functionality
+3. Read relevant files based on LSP results to understand existing capabilities
+4. Check if existing functions already compute what you need before building new solutions
+5. Make informed changes
 
 **Do NOT default to basic file reading and grep** - use the sophisticated LSP tools available!
 
@@ -109,6 +112,9 @@ Based on development sessions, these patterns lead to better outcomes:
 ### Problem Investigation Approach
 - **Question initial hypotheses** - if something seems wrong, investigate rather than assume
 - **Create minimal test cases** - isolate the specific behavior being tested
+- **Use explicit-turns mode for bug isolation** - separate rendering bugs from layout optimization logic
+- **Add explicit expected outputs to tests** - include exact string literals showing current buggy behavior for clear visual debugging
+- **Look inside existing functions first** - often the data you need is already computed but not exposed via API
 - **Verify actual vs. expected behavior** - don't rely on high-level descriptions
 - **Capture both successful patterns and false paths** - document what didn't work and why
 
