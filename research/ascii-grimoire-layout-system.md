@@ -415,3 +415,159 @@ The system's modular design with clear abstractions (PlayerPosition, FormattedTe
 **Key Achievement**: 100% layout stability (135/135 test cases) combined with significant space efficiency improvements (~25% width reduction) demonstrates that complex constraint satisfaction is achievable through thoughtful architectural design.
 
 **Foundation for Future Work**: The abstractions and algorithms described here provide a solid foundation for extending the system to handle additional game elements (Traveler roles, custom scripts, night phases) while maintaining the core guarantees of stability and visual appeal.
+
+## Addendum: Ensuring unique column for each player
+
+Consider the test currently labelled: 'FIXED: 15 players with realistic names - perfect border stability'
+
+with the grimoire single line:
+                "[Alice:investigator Frank:chef Grace:empath David:librarian Sarah:butler Brian:fortune_teller Carol:virgin Diana:slayer James:soldier Helen:mayor Peter:undertaker Marie:monk Louis:ravenkeeper Nancy:washerwoman Emily:imp]"
+
+We should change its expected output to look something like this:
+
+```
+            const expectedOutput = `\
+┌─ Grimoire (15 players) ──────────────────────────┐
+│                Alice                             │
+│                investigator                      │
+│                                                  │
+│                                          Frank   │
+│            James                         chef    │
+│            soldier                               │
+│                                      Grace       │
+│        Helen                         empath      │
+│        mayor                                     │
+│                                  David           │
+│    Peter                         librarian       │ 
+│    undertaker                                    │
+│                              Sarah               │
+│Marie                         butler              │
+│monk                                              │
+│                                  Brian           │
+│    Louis                         fortune_teller  │
+│    ravenkeeper                                   │
+│                                      Carol       │
+│        Nancy                         virgin      │
+│        washerwoman                               │
+│                                          Diana   │
+│            Emily                         slayer  │
+│            imp                                   │
+└──────────────────────────────────────────────────┘`;
+```
+
+(where we work out the fine-grained details later; the point is to place the players on the sides at a tilt.)
+
+The reason to do this is to provide an esay way to add reminder tokens of arbitrary length without perturbing the player layout:
+
+```
+            const expectedOutputWithRemindersAttached = `\
+┌─ Grimoire (15 players) ─────────────────────────────────────────┐
+│        (reminder_for_helen)                                     │
+│        ()                    (reminder_for_sarah)               │
+│        ()                    ()                                 │
+│        ()                    ()  (reminder_for_david)           │
+│        ()                    ()  ()                             │
+│        ()                    ()  ()  (reminder_for_grace)       │
+│        ()                    ()  ()  ()                         │
+│        ()                    ()  ()  ()  (remdinder_for_frank)  │
+│        ()                    ()  ()  ()  ()                     │
+│        ()      Alice         ()  ()  ()  ()                     │
+│        ()      investigator  ()  ()  ()  ()                     │
+│        ()                    ()  ()  ()  ()                     │
+│        ()                    ()  ()  ()  Frank                  │
+│        ()  James             ()  ()  ()  chef                   │
+│        ()  soldier           ()  ()  ()                         │
+│        ()                    ()  ()  Grace                      │
+│        Helen                 ()  ()  empath                     │
+│        mayor                 ()  ()                             │
+│                              ()  David                          │
+│    Peter                     ()  librarian                      │ 
+│    undertaker                ()                                 │
+│                              Sarah                              │
+│Marie                         butler                             │
+│monk                                                             │
+│                                  Brian                          │
+│    Louis                         fortune_teller                 │
+│    ravenkeeper                   ()                             │
+│                                  ()  Carol                      │
+│        Nancy                     ()  virgin                     │
+│        washerwoman               ()                             │
+│                                  ()      Diana                  │
+│            Emily                 ()      slayer                 │
+│            imp                   ()      ()                     │
+|                                  ()      (reminder_for_diana)   |
+|                                  ()                             |
+|                                  ()                             |
+│                                  (reminder_for_brian)           │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘`;
+```
+
+## Implementation Notes: V-Shaped Side Positioning
+
+### Key Geometry: Inverted V (^) Shape for Both Sides
+
+**CRITICAL**: Both left and right sides use an **inverted V (^)** pattern, NOT a regular V:
+
+```
+LEFT SIDE PATTERN:          RIGHT SIDE PATTERN:
+    top players                        top players  
+        more indented                      more indented
+            |                                  |
+            | positive slope                   | positive slope  
+            | (receding from edge)             | (receding from edge)
+            |                                  |
+        MIDDLE PLAYER                      MIDDLE PLAYER
+        (LEAST indented)                   (LEAST indented)
+        (closest to edge)                  (closest to edge)  
+            |                                  |
+            | negative slope                   | negative slope
+            | (approaching edge)               | (approaching edge)
+            |                                  |
+        more indented                      more indented
+    bottom players                     bottom players
+```
+
+### Side Positioning Algorithm
+
+For each side with `n` players:
+1. **Find middle index**: `middleIndex = floor(n / 2)`
+2. **Middle player**: Least indented (closest to side edge)
+3. **Bottom half** (indices 0 to middleIndex): **Negative slope** - progressive indentation toward middle
+4. **Top half** (indices middleIndex+1 to n-1): **Positive slope** - progressive indentation away from middle
+
+### CORRECTED Example: Complete Left Side with 7 players
+
+The V-shape exists WITHIN each individual side. For the left side:
+
+```
+Alice    (index 6, top):    more indented     ← TOP SECTION
+James    (index 5):         less indented     ← positive slope  
+Helen    (index 4):         less indented     ← (moving toward left edge)
+Peter    (index 3):         less indented     ← 
+
+Marie    (index 2, MIDDLE): LEAST indented    ← APEX (closest to left edge)
+
+Louis    (index 1):         less indented     ← BOTTOM SECTION  
+Emily    (index 0, bottom): more indented     ← negative slope
+                                              ← (moving away from left edge)
+```
+
+**Key insight**: Marie (middle player) is the apex of the inverted V within the left side itself.
+- **Above Marie**: Players get progressively MORE indented as you go toward the top
+- **Below Marie**: Players get progressively MORE indented as you go toward the bottom  
+- **Marie**: Sticks out furthest left (least indented from left edge)
+
+This same inverted-V pattern applies to the right side, with the middle player of the right side being least indented (sticking out furthest right).
+
+### Why This Works:
+- **Unique columns**: Each player gets their own column position
+- **Maximum edge clearance**: Middle players extend furthest, avoiding border conflicts
+- **Bubble space**: Vertical () lines have room between columns
+- **Visual appeal**: Creates natural arc-like appearance without geometric complexity
+- **Both sides identical**: Same ^ pattern prevents asymmetry issues
+
+### Implementation Priority:
+1. Modify `positionPlayersOnSides()` to use inverted-V indentation formula
+2. Ensure unique column assignment with spacing for bubble lines
+3. Test with explicit turn sequence cases [1,0,1,1] and [1,0,0,2]
