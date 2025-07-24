@@ -23,7 +23,7 @@
  * - explicitTurns maps to [top-side, right-side, bottom-side, left-side] player distribution
  */
 export interface RenderOptions {
-    mode: 'squariness' | 'min-area' | 'min-max-dim' | 'min-perimeter' | 'max-area-perimeter-ratio' | 'max-area-perimeter2-ratio' | 'width-constrained' | 'height-constrained' | 'explicit-turns';
+    mode: 'auto' | 'squariness' | 'min-area' | 'min-max-dim' | 'min-perimeter' | 'max-area-perimeter-ratio' | 'max-area-perimeter2-ratio' | 'width-constrained' | 'height-constrained' | 'explicit-turns';
     targetWidth?: number;
     targetHeight?: number;
     showColumnNumbers?: boolean; // Whether to show (4), (12), etc.

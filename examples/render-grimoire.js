@@ -12,8 +12,9 @@ async function run() {
         console.log('Arguments:');
         console.log('  script    - Script name (currently only "trouble-brewing" supported)');
         console.log('  grimoire  - Single-line grimoire format: [Player1:role1 Player2:role2 ...]');
-        console.log('  layout    - Layout selector (default: "squariness")');
-        console.log('              - "squariness": Squariness-based optimal layout selection');
+        console.log('  layout    - Layout selector (default: "auto")');
+        console.log('              - "auto": Automatic dense layout optimization');
+        console.log('              - "squariness": Squareness-based optimal layout selection');
         console.log('');
         console.log('Examples:');
         console.log('  node examples/render-grimoire.js trouble-brewing "[Alice:washerwoman Bob:imp]"');
@@ -22,7 +23,7 @@ async function run() {
         process.exit(1);
     }
     
-    const [scriptName, grimoireInput, layoutSelector = 'squariness'] = args;
+    const [scriptName, grimoireInput, layoutSelector = 'auto'] = args;
     
     // Validate script name
     if (scriptName !== 'trouble-brewing') {
@@ -31,7 +32,7 @@ async function run() {
     }
     
     // Validate layout selector
-    const validLayouts = ['squariness'];
+    const validLayouts = ['auto', 'squariness'];
     if (!validLayouts.includes(layoutSelector)) {
         console.error(`❌ Error: Invalid layout selector "${layoutSelector}". Valid options: ${validLayouts.join(', ')}`);
         process.exit(1);
@@ -53,6 +54,13 @@ async function run() {
         // Configure render options based on layout selector
         let renderOptions;
         switch (layoutSelector) {
+            case 'auto':
+                renderOptions = {
+                    mode: 'auto',
+                    showColumnNumbers: false,
+                    useAbbreviations: true
+                };
+                break;
             case 'squariness':
                 renderOptions = {
                     mode: 'squariness',

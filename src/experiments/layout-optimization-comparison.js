@@ -26,9 +26,9 @@ async function testOptimizationModes() {
     
     const gameState = validator.generateInitialGameState(roles, playerNames, { seed: 12345 });
     
-    console.log(`🧪 Testing all six layout optimization modes with ${playerCount} players...\n`);
+    console.log(`🧪 Testing all seven layout optimization modes with ${playerCount} players...\n`);
     
-    const modes = ['squariness', 'min-area', 'min-max-dim', 'min-perimeter', 'max-area-perimeter-ratio', 'max-area-perimeter2-ratio'];
+    const modes = ['auto', 'squariness', 'min-area', 'min-max-dim', 'min-perimeter', 'max-area-perimeter-ratio', 'max-area-perimeter2-ratio'];
     
     for (const mode of modes) {
         try {
