@@ -89,6 +89,114 @@ describe('Render Grimoire Command Test Cases', () => {
         });
     });
 
+    describe('Explicit Turn Sequence Bug Isolation', () => {
+        // These tests isolate the specific turn sequences that cause rendering bugs
+        // in the 'multiple tokens example' to separate layout bugs from optimization logic
+        
+        it('BUG: Layout [1,0,1,1] missing Alice tokens (matches squariness mode)', () => {
+            const input = "[Alice:washerwoman(ww:townsfolk) Bob:librarian(lib:outsider) *Charlie:imp*]";
+            const grimoire = parseGrimoireFromSingleLine(input);
+            
+            // This is the exact layout chosen by 'squariness' mode for this input
+            const rendered = renderGrimoireToAsciiArt(grimoire, {
+                mode: 'explicit-turns',
+                explicitTurns: [1, 0, 1, 1], // [top, right, bottom, left]
+                showColumnNumbers: false,
+                useAbbreviations: true
+            });
+            
+            // Current buggy output (Alice's token missing)
+            const expectedBuggyOutput = `\
+┌─ Grim ───────────────┐
+│                      │
+│                      │
+│                      │
+│                      │
+│                      │
+│                      │
+│                      │
+│                      │
+│    Alice             │
+│    washerwoman       │
+│                      │
+│                      │
+│ *Charlie*            │
+│ *imp*                │
+│                      │
+│                      │
+│ Bob                  │
+│ librarian            │
+│                      │
+│ (lib:outsider)       │
+└──────────────────────┘`;
+            
+            expect(rendered).toBe(expectedBuggyOutput);
+            
+            // Layout: Alice(top), Charlie(bottom), Bob(left)
+            expect(rendered).toContain('Alice');
+            expect(rendered).toContain('Bob');
+            expect(rendered).toContain('*Charlie*');
+            
+            // BUG: Alice's token should appear but doesn't
+            expect(rendered).toContain('lib:outsider'); // Bob's token works
+            expect(rendered).not.toContain('ww:townsfolk'); // Alice's token missing - BUG!
+            
+            // Expected: Alice's token should appear like Bob's does
+            // TODO: Fix missing token bug for top-positioned players
+        });
+        
+        it('BUG: Layout [1,0,0,2] text corruption (matches auto mode)', () => {
+            const input = "[Alice:washerwoman(ww:townsfolk) Bob:librarian(lib:outsider) *Charlie:imp*]";
+            const grimoire = parseGrimoireFromSingleLine(input);
+            
+            // This is the exact layout chosen by 'auto' mode for this input  
+            const rendered = renderGrimoireToAsciiArt(grimoire, {
+                mode: 'explicit-turns',
+                explicitTurns: [1, 0, 0, 2], // [top, right, bottom, left]
+                showColumnNumbers: false,
+                useAbbreviations: true
+            });
+            
+            // Current buggy output (text corruption + missing token)
+            const expectedBuggyOutput = `\
+┌─ Grim ───────────────┐
+│                      │
+│                      │
+│                      │
+│                      │
+│                      │
+│                      │
+│                      │
+│                      │
+│    Alice             │
+│    washerwoman       │
+│                      │
+│                      │
+│ Bob                  │
+│ librarian            │
+│                      │
+│ *Charlie*ider)       │
+│ *imp*                │
+└──────────────────────┘`;
+            
+            expect(rendered).toBe(expectedBuggyOutput);
+            
+            // Layout: Alice(top), Bob(left), Charlie(left)
+            expect(rendered).toContain('Alice');
+            expect(rendered).toContain('Bob');
+            
+            // BUG: Text corruption in Charlie's name
+            expect(rendered).toContain('*Charlie*ider)'); // Text corruption - BUG!
+            expect(rendered).not.toContain('*Charlie*\n*imp*'); // Proper formatting missing
+            
+            // BUG: Alice's token missing again
+            expect(rendered).not.toContain('ww:townsfolk'); // Alice's token missing - BUG!
+            
+            // Expected: Charlie should be "*Charlie*" and Alice's token should appear
+            // TODO: Fix text corruption bug and missing token bug for this layout
+        });
+    });
+
     describe('Fixed - Left Side Positioning', () => {
         it('FIXED: six-player layout shows correct left side positioning', () => {
             // BUG #7 FIXED: Left side players now appear in proper clockwise arc position
