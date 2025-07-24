@@ -107,28 +107,28 @@ describe('Render Grimoire Command Test Cases', () => {
             
             // Current buggy output (Alice's token missing)
             const expectedBuggyOutput = `\
-┌─ Grim ───────────────┐
-│                      │
-│                      │
-│                      │
-│                      │
-│                      │
-│                      │
-│                      │
-│                      │
-│    Alice             │
-│    washerwoman       │
-│                      │
-│                      │
-│ *Charlie*            │
-│ *imp*                │
-│                      │
-│                      │
-│ Bob                  │
-│ librarian            │
-│                      │
-│ (lib:outsider)       │
-└──────────────────────┘`;
+┌─ Grimoire (3 players) ───────────┐
+│                                  │
+│                                  │
+│                                  │
+│                                  │
+│                                  │
+│                                  │
+│                                  │
+│                                  │
+│                Alice             │
+│                washerwoman       │
+│                                  │
+│                                  │
+│ *Charlie*                        │
+│ *imp*                            │
+│                                  │
+│                                  │
+│                Bob               │
+│                librarian         │
+│                                  │
+│                (lib:outsider)    │
+└──────────────────────────────────┘`;
             
             expect(rendered).toBe(expectedBuggyOutput);
             
@@ -159,25 +159,25 @@ describe('Render Grimoire Command Test Cases', () => {
             
             // Current buggy output (text corruption + missing token)
             const expectedBuggyOutput = `\
-┌─ Grim ───────────────┐
-│                      │
-│                      │
-│                      │
-│                      │
-│                      │
-│                      │
-│                      │
-│                      │
-│    Alice             │
-│    washerwoman       │
-│                      │
-│                      │
-│ Bob                  │
-│ librarian            │
-│                      │
-│ *Charlie*ider)       │
-│ *imp*                │
-└──────────────────────┘`;
+┌─ Grimoire (3 players) ────────────────┐
+│                                       │
+│                                       │
+│                                       │
+│                                       │
+│                                       │
+│                                       │
+│                                       │
+│                                       │
+│                     Alice             │
+│                     washerwoman       │
+│                                       │
+│                                       │
+│    Bob                                │
+│    librarian                          │
+│                                       │
+│ *Charlie*utsider)                     │
+│ *imp*                                 │
+└───────────────────────────────────────┘`;
             
             expect(rendered).toBe(expectedBuggyOutput);
             
@@ -646,32 +646,34 @@ describe('Render Grimoire Command Test Cases', () => {
             
             // Expected layout: auto mode selects compact layout for 15 players
             const expectedOutput = `\
-┌─ Grimoire (15 players) ──────────────┐
-│   Alice                              │
-│   investigator                       │
-│                                      │
-│                    Frank             │
-│James               chef              │
-│soldier                               │
-│                    Grace             │
-│Helen               empath            │
-│mayor                                 │
-│                    David             │
-│Peter               librarian         │
-│undertaker                            │
-│                    Sarah             │
-│Marie               butler            │
-│monk                                  │
-│                    Brian             │
-│Louis               fortune_teller    │
-│ravenkeeper                           │
-│                    Carol             │
-│Nancy               virgin            │
-│washerwoman                           │
-│                    Diana             │
-│Emily               slayer            │
-│imp                                   │
-└──────────────────────────────────────┘`;
+┌─ Grimoire (15 players) ──────────────────────────────────┐
+│                       Alice                              │
+│                       investigator                       │
+│                                                          │
+│                                                Frank     │
+│        Helen                                   chef      │
+│        mayor                                             │
+│                                              Grace       │
+│     Peter                                    empath      │
+│     undertaker                                           │
+│                                            David         │
+│   Marie                                    librarian     │
+│   monk                                                   │
+│                                          Sarah           │
+│Louis                                     butler          │
+│ravenkeeper                                               │
+│                                        Brian             │
+│   Nancy                                fortune_teller    │
+│   washerwoman                                            │
+│                                          Carol           │
+│     Emily                                virgin          │
+│     imp                                                  │
+│                                            Diana         │
+│                                            slayer        │
+│                                                          │
+│                                              James       │
+│                                              soldier     │
+└──────────────────────────────────────────────────────────┘`;
             
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;

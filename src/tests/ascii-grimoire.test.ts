@@ -25,18 +25,18 @@ describe('ASCII Grimoire Rendering', () => {
             // Bottom row (2 players): Justified to match top row width for visual balance
             // No tokens, so no "()" - just column numbers
             const expected = `\
-┌─ Grimoire (5 players) ───────────────────────────────────┐
-│   (4)                (23)             (40)               │
-│   Alice              Bob              Charlie            │
-│   washerwoman        librarian        investigator       │
-│                                                          │
-│                                                          │
-│                                                          │
-│                                                          │
-│Eve                                     Dave              │
-│imp                                     poisoner          │
-│(1)                                     (41)              │
-└──────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (5 players) ────────────────────────────────┐
+│(4)                (23)             (40)               │
+│Alice              Bob              Charlie            │
+│washerwoman        librarian        investigator       │
+│                                                       │
+│                                                       │
+│                                                       │
+│                                                       │
+│Eve                                     Dave           │
+│imp                                     poisoner       │
+│(4)                                     (44)           │
+└───────────────────────────────────────────────────────┘`;
             
             expect(result).toBe(expected);
         });
@@ -57,19 +57,18 @@ describe('ASCII Grimoire Rendering', () => {
             // Dave (3) on right  
             // Eve (4) -> Frank (5) on bottom (right to left)
             const expected = `\
-┌─ Grimoire (6 players) ─────────────────────────────────────────┐
-│   (4)                (23)             (40)                     │
-│   Alice              Bob              Charlie                  │
-│   washerwoman        librarian        investigator             │
-│                                                                │
-│                                                        Dave    │
-│                                                        chef    │
-│                                                        (57)    │
-│                                                                │
-│Frank                                     Eve                   │
-│imp                                       butler                │
-│(1)                                       (43)                  │
-└────────────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (6 players) ───────────────────────────────────────┐
+│(4)                (23)             (40)                      │
+│Alice              Bob              Charlie                   │
+│washerwoman        librarian        investigator              │
+│                                                              │
+│                                                      Dave    │
+│                                                      chef    │
+│                                                      (58)    │
+│Frank                                     Eve                 │
+│imp                                       butler              │
+│(4)                                       (46)                │
+└──────────────────────────────────────────────────────────────┘`;
             
             expect(result).toBe(expected);
         });

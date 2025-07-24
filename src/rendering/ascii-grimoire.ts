@@ -120,8 +120,8 @@ export function renderGrimoireToAsciiArt(grimoire: GrimoireState, options: Rende
         const layout: TurnBasedLayout = { topCount, rightCount, bottomCount, leftCount };
         return renderTurnBasedLayout(players, layout, options);
     } else if (options.mode === 'auto') {
-        // Auto mode: Use min-perimeter for dense, compact layouts
-        const bestLayout = findBestTurnConfigurationByPerimeter(players, options);
+        // Auto mode: Balance compactness and squareness for optimal visual layouts
+        const bestLayout = findBestTurnConfigurationByCompactnessAndSquareness(players, options);
         return renderTurnBasedLayout(players, bestLayout, options);
     } else if (options.mode === 'squariness') {
         // Find the best turn configuration via exhaustive search (squareness-based)
@@ -197,6 +197,57 @@ function renderTurnBasedLayout(players: any[], layout: TurnBasedLayout, options:
     return renderAbstractGrid(stableGrid, players.length, options);
 }
 
+/**
+ * Calculate V-shaped column positions for side players.
+ * Creates inverted-V (^) pattern where middle player is least indented (closest to edge).
+ * 
+ * @param playerCount - Number of players on this side
+ * @param baseColumn - Base column position (edge position)
+ * @param maxIndentation - Maximum indentation from base column
+ * @param isLeftSide - If true, indents inward from left edge; if false, indents inward from right edge
+ * @returns Array of column positions, one per player
+ */
+function calculateVShapedColumns(playerCount: number, baseColumn: number, maxIndentation: number, isLeftSide: boolean): number[] {
+    if (playerCount === 0) return [];
+    if (playerCount === 1) return [baseColumn];
+    
+    const positions: number[] = [];
+    const middleIndex = Math.floor(playerCount / 2);
+    
+    for (let i = 0; i < playerCount; i++) {
+        let indentation: number;
+        
+        // For normal symmetry: 
+        // Left side: middle players closest to left edge (min indentation)
+        // Right side: middle players closest to left edge (max indentation from right)
+        
+        const distanceFromMiddle = Math.abs(i - middleIndex);
+        const maxDistance = Math.max(middleIndex, playerCount - middleIndex - 1);
+        
+        if (maxDistance === 0) {
+            // Only one player (middle)
+            indentation = isLeftSide ? 0 : maxIndentation;
+        } else {
+            if (isLeftSide) {
+                // Left side: middle players have min indentation (closest to left edge)
+                indentation = maxIndentation * distanceFromMiddle / maxDistance;
+            } else {
+                // Right side: middle players have max indentation (furthest from right edge)
+                indentation = maxIndentation * (1 - distanceFromMiddle / maxDistance);
+            }
+        }
+        
+        // Apply indentation direction based on side
+        if (isLeftSide) {
+            positions.push(baseColumn + Math.round(indentation));
+        } else {
+            positions.push(baseColumn - Math.round(indentation));
+        }
+    }
+    
+    return positions;
+}
+
 function assignPlayersToSides(players: any[], layout: TurnBasedLayout): PlayerPosition[] {
     const result: PlayerPosition[] = [];
     let playerIndex = 0;
@@ -244,9 +295,25 @@ function assignPlayersToSides(players: any[], layout: TurnBasedLayout): PlayerPo
     return result;
 }
 
-function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers: PlayerPosition[], bottomPlayers: PlayerPosition[], _leftPlayers: PlayerPosition[], options: RenderOptions): { top: number[]; right: number[]; bottom: number[]; left: number[] } {
+function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers: PlayerPosition[], bottomPlayers: PlayerPosition[], leftPlayers: PlayerPosition[], options: RenderOptions): { top: number[]; right: number[]; bottom: number[]; left: number[] } {
     const minGap = 2; // Minimum gap between players
     const leftPadding = 2; // Space from left edge
+    
+    // Calculate the maximum rightmost extent of left-side players to avoid overlap
+    let maxLeftExtent = leftPadding; // Default if no left players
+    if (leftPlayers.length > 0) {
+        // Calculate V-shaped positions for left players
+        const leftBaseCol = 1;
+        const leftMaxIndent = Math.min(8, Math.floor(leftPlayers.length * 1.5));
+        const leftColumns = calculateVShapedColumns(leftPlayers.length, leftBaseCol, leftMaxIndent, true);
+        
+        // Find the maximum extent (position + player width)
+        maxLeftExtent = Math.max(...leftPlayers.map((pos, i) => {
+            const leftCol = leftColumns[i];
+            const playerWidth = getPlayerDisplayWidth(pos.player, options.useAbbreviations ?? true, options);
+            return leftCol + playerWidth;
+        }));
+    }
     
     // Calculate dense (minimum) layout for each side
     const getDenseLayout = (players: PlayerPosition[], startCol: number) => {
@@ -271,9 +338,12 @@ function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers
         return { positions, totalWidth };
     };
     
-    // Calculate dense layouts for top and bottom
-    const topDense = getDenseLayout(topPlayers, leftPadding + 2);
-    const bottomDense = getDenseLayout(bottomPlayers, leftPadding - 1);
+    // Calculate dense layouts for top and bottom, ensuring they start right of left players
+    const topStartCol = Math.max(leftPadding + 2, maxLeftExtent + minGap);
+    const bottomStartCol = Math.max(leftPadding - 1, maxLeftExtent + minGap);
+    
+    const topDense = getDenseLayout(topPlayers, topStartCol);
+    const bottomDense = getDenseLayout(bottomPlayers, bottomStartCol);
     
     // Handle cases where one or both sides are empty
     let topPositions: number[];
@@ -294,11 +364,11 @@ function calculateJustifiedPositions(topPlayers: PlayerPosition[], _rightPlayers
         if (topIsLonger) {
             // Top is longer - keep top dense, justify bottom to match top's width
             topPositions = topDense.positions;
-            bottomPositions = justifyToWidth(bottomPlayers, leftPadding - 1, topDense.totalWidth, options);
+            bottomPositions = justifyToWidth(bottomPlayers, bottomStartCol, topDense.totalWidth, options);
         } else {
             // Bottom is longer - keep bottom dense, justify top to match bottom's width  
             bottomPositions = bottomDense.positions;
-            topPositions = justifyToWidth(topPlayers, leftPadding + 2, bottomDense.totalWidth, options);
+            topPositions = justifyToWidth(topPlayers, topStartCol, bottomDense.totalWidth, options);
         }
     }
     
@@ -486,34 +556,53 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
     const maxLeftWidth = leftPlayers.length > 0 ? 
         Math.max(...leftPlayers.map(pos => getPlayerDisplayWidth(pos.player, coordinateOptions.useAbbreviations ?? true, coordinateOptions))) : 0;
     
-    const rightStartCol = Math.max(maxTopCol + 2, 1 + maxLeftWidth + 3); // leftCol is 1
+    // Calculate V-shaped indentation for right side first to account for overlap
+    const rightMaxIndent = Math.min(8, Math.floor(rightPlayers.length * 1.5)); // Progressive indentation
     
-    // Place right players using content-based positioning
-    let currentRow = roleRow + 2; // Start below top players with spacing
-    for (const pos of rightPlayers) {
+    // Calculate rightStartCol accounting for the maximum left indentation of right players
+    // The most indented right player will be at rightStartCol - rightMaxIndent
+    // This needs to be far enough right to avoid overlap with left/top/bottom players
+    const minRightStartCol = Math.max(maxTopCol + 2, 1 + maxLeftWidth + 3); // leftCol is 1
+    const rightStartCol = minRightStartCol + rightMaxIndent; // Add buffer for maximum indentation
+    
+    // Place right players using V-shaped positioning (inverted-V pattern)
+    const rightStartRow = roleRow + 2; // Start below top players with spacing
+    
+    // Calculate V-shaped column positions for right side
+    const rightBaseCol = rightStartCol; // Right edge position (content starts here)
+    
+    // Ensure V-shaped positioning doesn't create negative columns
+    // The furthest indented position should be at least at column 1 (inside border)
+    const safeRightMaxIndent = Math.min(rightMaxIndent, rightBaseCol - 1);
+    const rightColumns = calculateVShapedColumns(rightPlayers.length, rightBaseCol, safeRightMaxIndent, false);
+    
+    let currentRightRow = rightStartRow;
+    
+    for (let i = 0; i < rightPlayers.length; i++) {
+        const pos = rightPlayers[i];
+        const rightCol = rightColumns[i];
         const { tokens } = pos.player;
         const structured = formatPlayerStructured(pos.player, actualTextOptions);
         
-        // Calculate where to place the full string so that content starts at rightStartCol
-        const nameStartCol = rightStartCol - structured.name.leftDeco.length;
-        const roleStartCol = rightStartCol - structured.role.leftDeco.length;
+        // Calculate where to place the full string so that content starts at rightCol
+        // Ensure we never place text at negative column positions
+        const nameStartCol = Math.max(0, rightCol - structured.name.leftDeco.length);
+        const roleStartCol = Math.max(0, rightCol - structured.role.leftDeco.length);
         
-        cells.push({ content: structured.name.full, row: currentRow, col: nameStartCol });
-        cells.push({ content: structured.role.full, row: currentRow + 1, col: roleStartCol });
+        cells.push({ content: structured.name.full, row: currentRightRow, col: nameStartCol });
+        cells.push({ content: structured.role.full, row: currentRightRow + 1, col: roleStartCol });
         
         if (actualTextOptions.showColumnNumbers) {
-            cells.push({ content: `(${rightStartCol})`, row: currentRow + 2, col: rightStartCol });
+            cells.push({ content: `(${rightCol})`, row: currentRightRow + 2, col: rightCol });
         }
         
         if (tokens && tokens.length > 0) {
             const formattedTokens = formatReminderTokens(tokens, actualTextOptions.useAbbreviations ?? true);
-            const tokenRow = actualTextOptions.showColumnNumbers ? currentRow + 3 : currentRow + 2;
-            cells.push({ content: `(${formattedTokens.join(',')})`, row: tokenRow, col: rightStartCol });
+            const tokenRow = actualTextOptions.showColumnNumbers ? currentRightRow + 3 : currentRightRow + 2;
+            cells.push({ content: `(${formattedTokens.join(',')})`, row: tokenRow, col: rightCol });
         }
         
-        // Account for name, role, column number (if present), and space to next player
-        const spacingRows = actualTextOptions.showColumnNumbers ? 4 : 3;
-        currentRow += spacingRows;
+        currentRightRow += 3; // Account for name, role, and space to next player
     }
     
     // Place bottom players with justified spacing
@@ -521,8 +610,8 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
     const leftPlayersNeeded = leftPlayers.length * 3; // Each left player needs 3 rows (name, role, spacing)
     const leftEndRow = roleRow + 3 + leftPlayersNeeded; // Where left players will end
     const bottomRow = rightPlayers.length > 0 ? 
-        Math.max(currentRow, leftEndRow + 1) : 
-        Math.max(currentRow, leftEndRow + 1, 8);
+        Math.max(currentRightRow, leftEndRow + 1) : 
+        Math.max(currentRightRow, leftEndRow + 1, 8);
     for (let i = 0; i < bottomPlayers.length; i++) {
         const pos = bottomPlayers[i];
         const { tokens } = pos.player;
@@ -544,18 +633,20 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
         }
     }
     
-    // Place left players on proper clockwise arc between top and bottom players
-    // Left players should appear in the vertical space between top and bottom areas,
-    // creating a visual arc: bottom players → left players → top players
-    // Start after top players with adequate spacing, and ensure no overlap with bottom
+    // Place left players using V-shaped positioning (inverted-V pattern)
+    // Middle player closest to left edge, top/bottom players indented inward
     const leftStartRow = roleRow + 3; // Start below top players with spacing
     
-    // DEBUG: Log coordinate values (removed after testing)
+    // Calculate V-shaped column positions for left side
+    const leftBaseCol = 1; // Left edge position (inside border)
+    const leftMaxIndent = Math.min(8, Math.floor(leftPlayers.length * 1.5)); // Progressive indentation
+    const leftColumns = calculateVShapedColumns(leftPlayers.length, leftBaseCol, leftMaxIndent, true);
     
-    const leftCol = 1; // Left edge position (inside border)
     let currentLeftRow = leftStartRow;
     
-    for (const pos of leftPlayers) {
+    for (let i = 0; i < leftPlayers.length; i++) {
+        const pos = leftPlayers[i];
+        const leftCol = leftColumns[i];
         const { tokens } = pos.player;
         const { name, role } = formatPlayerDisplayText(pos.player, actualTextOptions);
         
@@ -581,6 +672,7 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
     
     // Calculate maxCol based on actual content (stability handled at higher level)
     const maxCol = cells.length > 0 ? Math.max(...cells.map(c => c.col + c.content.length - 1)) : 0;
+    
     
     return { cells, minRow, maxRow, minCol, maxCol };
 }
@@ -1083,6 +1175,77 @@ function findBestTurnConfigurationByAreaPerimeter2Ratio(players: any[], options:
     return bestConfig;
 }
 
+function findBestTurnConfigurationByCompactnessAndSquareness(players: any[], options: RenderOptions): TurnBasedLayout {
+    const playerCount = players.length;
+    const allTurnConfigs = generateAllTurnConfigurations(playerCount);
+    
+    // Debug: Check if we're using a custom evaluation title
+    const evaluationTitle = (options as any)._evaluationTitle;
+    const isInstrumented = evaluationTitle && (evaluationTitle.includes('Grim') || evaluationTitle.includes('long title'));
+    
+    if (isInstrumented) {
+        console.log(`\n=== FINDBESTCOMPACT+SQUARE DEBUG: title="${evaluationTitle}" ===`);
+        console.log(`Generated ${allTurnConfigs.length} configurations for ${playerCount} players`);
+    }
+    
+    // Evaluate each configuration using a weighted combination of compactness and squareness
+    let bestConfig = allTurnConfigs[0];
+    let bestScore = Number.POSITIVE_INFINITY;
+    let evaluationResults: Array<{config: TurnBasedLayout, score: number, success: boolean, error?: string, details?: any}> = [];
+    
+    for (const config of allTurnConfigs) {
+        try {
+            const combinedScore = evaluateLayoutCompactnessAndSquareness(players, config, options);
+            evaluationResults.push({config, score: combinedScore.combined, success: true, details: combinedScore});
+            
+            if (combinedScore.combined < bestScore) {
+                bestScore = combinedScore.combined;
+                bestConfig = config;
+            }
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] combined: ${combinedScore.combined.toFixed(3)} (area: ${combinedScore.area}, square: ${combinedScore.squareness.toFixed(3)}) ${combinedScore.combined === bestScore ? '← NEW BEST' : ''}`);
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            evaluationResults.push({config, score: Number.POSITIVE_INFINITY, success: false, error: errorMessage});
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] FAILED: ${errorMessage}`);
+            }
+        }
+    }
+    
+    if (isInstrumented) {
+        const successfulEvals = evaluationResults.filter(r => r.success);
+        const failedEvals = evaluationResults.filter(r => !r.success);
+        
+        console.log(`\nSUMMARY:`);
+        console.log(`  Total configurations: ${allTurnConfigs.length}`);
+        console.log(`  Successful evaluations: ${successfulEvals.length}`);
+        console.log(`  Failed evaluations: ${failedEvals.length}`);
+        console.log(`  Selected best: [${bestConfig.topCount},${bestConfig.rightCount},${bestConfig.bottomCount},${bestConfig.leftCount}] score: ${bestScore.toFixed(3)}`);
+        
+        // Check if we missed any obviously good configurations
+        const sortedByScore = successfulEvals.sort((a, b) => a.score - b.score);
+        console.log(`  Top 3 scores:`);
+        for (let i = 0; i < Math.min(3, sortedByScore.length); i++) {
+            const result = sortedByScore[i];
+            console.log(`    ${i+1}. [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}] score: ${result.score.toFixed(3)}`);
+        }
+        
+        if (failedEvals.length > 0) {
+            console.log(`  Failed configurations:`);
+            failedEvals.forEach(result => {
+                console.log(`    [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}]: ${result.error}`);
+            });
+        }
+        console.log(`=== END FINDBESTCOMPACT+SQUARE DEBUG ===\n`);
+    }
+    
+    return bestConfig;
+}
+
 /**
  * Evaluates how "square-like" a layout configuration is by measuring actual rendered dimensions.
  * Returns a score where lower is better (0 = perfect square).
@@ -1118,7 +1281,7 @@ function evaluateLayoutSquareness(players: any[], layout: TurnBasedLayout, optio
     // Render this configuration and measure dimensions
     try {
         const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
-        const dimensions = measureRenderedDimensions(rendered);
+        const dimensions = measureContentDimensions(rendered);
         
         // Calculate "squareness" score: how far the visual aspect ratio is from 1.0
         // Character dimensions: 6 points wide, 10 points tall (1.67:1 height:width ratio)
@@ -1168,7 +1331,7 @@ function evaluateLayoutArea(players: any[], layout: TurnBasedLayout, options: Re
     // Render this configuration and measure dimensions
     try {
         const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
-        const dimensions = measureRenderedDimensions(rendered);
+        const dimensions = measureContentDimensions(rendered);
         
         // Calculate total area: width × height
         const area = dimensions.width * dimensions.height;
@@ -1215,7 +1378,7 @@ function evaluateLayoutMaxDimension(players: any[], layout: TurnBasedLayout, opt
     // Render this configuration and measure dimensions
     try {
         const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
-        const dimensions = measureRenderedDimensions(rendered);
+        const dimensions = measureContentDimensions(rendered);
         
         // Calculate maximum dimension: max(width, height)
         const maxDimension = Math.max(dimensions.width, dimensions.height);
@@ -1262,7 +1425,7 @@ function evaluateLayoutPerimeter(players: any[], layout: TurnBasedLayout, option
     // Render this configuration and measure dimensions
     try {
         const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
-        const dimensions = measureRenderedDimensions(rendered);
+        const dimensions = measureContentDimensions(rendered);
         
         // Calculate perimeter: width + height
         const perimeter = dimensions.width + dimensions.height;
@@ -1309,7 +1472,7 @@ function evaluateLayoutAreaPerimeterRatio(players: any[], layout: TurnBasedLayou
     // Render this configuration and measure dimensions
     try {
         const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
-        const dimensions = measureRenderedDimensions(rendered);
+        const dimensions = measureContentDimensions(rendered);
         
         // Calculate area-to-perimeter ratio: area / perimeter
         const area = dimensions.width * dimensions.height;
@@ -1358,7 +1521,7 @@ function evaluateLayoutAreaPerimeter2Ratio(players: any[], layout: TurnBasedLayo
     // Render this configuration and measure dimensions
     try {
         const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
-        const dimensions = measureRenderedDimensions(rendered);
+        const dimensions = measureContentDimensions(rendered);
         
         // Calculate area-to-perimeter-squared ratio: area / perimeter^2
         const area = dimensions.width * dimensions.height;
@@ -1373,15 +1536,135 @@ function evaluateLayoutAreaPerimeter2Ratio(players: any[], layout: TurnBasedLayo
 }
 
 /**
- * Measures the actual width and height of rendered ASCII art.
+ * Evaluates a layout configuration using a weighted combination of compactness and squareness.
+ * Balances the desire for compact layouts with visually pleasing square-like proportions.
+ * 
+ * @param players - The players to layout
+ * @param layout - The turn configuration to evaluate
+ * @param options - Render options (without tokens for layout evaluation)
+ * @returns Object with combined score and individual metrics (lower combined score is better)
+ */
+function evaluateLayoutCompactnessAndSquareness(players: any[], layout: TurnBasedLayout, options: RenderOptions): {
+    combined: number; 
+    area: number; 
+    squareness: number; 
+    normalizedArea: number; 
+    normalizedSquareness: number;
+} {
+    // Create a copy of options that uses worst-case formatting for robust layout measurement
+    const layoutOptions: RenderOptions = {
+        ...options,
+        mode: 'explicit-turns',
+        explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount],
+        // Flag to ensure title logic doesn't affect layout evaluation
+        _isEvaluation: true,
+        // Use worst-case formatting (*~~player~~*) to ensure layouts are robust to all future game states
+        _forceWorstCaseFormatting: true,
+        // Pass through evaluation title if specified
+        _evaluationTitle: (options as any)._evaluationTitle
+    };
+    
+    // Create players without tokens for layout measurement, but keep original alive/ghost state
+    // The worst-case formatting will be handled by formatPlayerDisplayText()
+    const playersWithoutTokens = players.map(player => ({
+        ...player,
+        tokens: [] // Remove tokens for pure layout evaluation
+    }));
+    
+    const grimoire = { players: playersWithoutTokens };
+    
+    // Render this configuration and measure dimensions
+    try {
+        const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
+        const dimensions = measureContentDimensions(rendered);
+        
+        // Calculate raw metrics
+        const area = dimensions.width * dimensions.height;
+        
+        // Calculate squareness score: how far the visual aspect ratio is from 1.0
+        // Character dimensions: 6 points wide, 10 points tall (1.67:1 height:width ratio)
+        const characterAspectRatio = 10 / 6; // 1.67
+        const visualAspectRatio = dimensions.width / (dimensions.height * characterAspectRatio);
+        const squareness = Math.abs(visualAspectRatio - 1.0);
+        
+        // Normalize scores to make them comparable and combinable
+        // For area: normalize relative to theoretical minimum (all players in a single row)
+        const playerCount = players.length;
+        const minPossibleArea = playerCount * 20; // rough estimate: 20 chars per player minimum
+        const normalizedArea = area / minPossibleArea;
+        
+        // For squareness: already normalized (0 = perfect, higher = worse)
+        // Scale it to be in similar range as normalized area
+        const normalizedSquareness = squareness * 2; // Scale factor to balance with area
+        
+        // Combine scores with weighting: 60% compactness, 40% squareness
+        // This favors compact layouts but still considers visual appeal
+        const areaWeight = 0.6;
+        const squarenessWeight = 0.4;
+        const combined = (areaWeight * normalizedArea) + (squarenessWeight * normalizedSquareness);
+        
+        return {
+            combined,
+            area,
+            squareness,
+            normalizedArea,
+            normalizedSquareness
+        };
+    } catch (error) {
+        // If rendering fails, return very high scores (worst possible)
+        return {
+            combined: Number.POSITIVE_INFINITY,
+            area: Number.POSITIVE_INFINITY,
+            squareness: Number.POSITIVE_INFINITY,
+            normalizedArea: Number.POSITIVE_INFINITY,
+            normalizedSquareness: Number.POSITIVE_INFINITY
+        };
+    }
+}
+
+/**
+ * Measures the actual width and height of rendered ASCII art including borders and titles.
+ * Used for testing complete output formatting and final display measurements.
  * 
  * @param rendered - The rendered ASCII art string
  * @returns Object with width and height in characters
  */
-function measureRenderedDimensions(rendered: string): { width: number; height: number } {
+export function measureRenderedDimensions(rendered: string): { width: number; height: number } {
     const lines = rendered.split('\n');
     const height = lines.length;
     const width = Math.max(...lines.map(line => line.length));
+    
+    return { width, height };
+}
+
+/**
+ * Measures only the content area of rendered ASCII art, excluding borders and titles.
+ * This provides more accurate layout comparisons by focusing on actual content dimensions.
+ * 
+ * @param rendered - The rendered ASCII art string with borders
+ * @returns Object with content-only width and height in characters
+ */
+export function measureContentDimensions(rendered: string): { width: number; height: number } {
+    const lines = rendered.split('\n');
+    
+    // Skip top and bottom border lines (first and last)
+    const contentLines = lines.slice(1, -1);
+    
+    if (contentLines.length === 0) {
+        return { width: 0, height: 0 };
+    }
+    
+    // Calculate content height (excluding borders)
+    const height = contentLines.length;
+    
+    // Calculate content width by finding max width excluding side borders
+    // Each content line has format: '│<content>│' so we exclude first and last characters
+    const contentWidths = contentLines.map(line => {
+        if (line.length <= 2) return 0; // Handle edge case of very short lines
+        return line.substring(1, line.length - 1).length; // Remove left and right borders
+    });
+    
+    const width = Math.max(0, ...contentWidths);
     
     return { width, height };
 }
