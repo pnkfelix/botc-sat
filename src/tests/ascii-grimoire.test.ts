@@ -91,16 +91,16 @@ describe('ASCII Grimoire Rendering', () => {
             expect(result).toContain("Alice");
             expect(result).toContain("washerwoman");
             const expected = `\
-┌─ Grimoire (5 players) ───────────────────────────────────┐
-│   Alice              Bob              Charlie            │
-│   washerwoman        librarian        investigator       │
-│                                                          │
-│                                                          │
-│                                                          │
-│                                                          │
-│Eve                                     Dave              │
-│imp                                     poisoner          │
-└──────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (5 players) ────────────────────────────────┐
+│Alice              Bob              Charlie            │
+│washerwoman        librarian        investigator       │
+│                                                       │
+│                                                       │
+│                                                       │
+│                                                       │
+│Eve                                     Dave           │
+│imp                                     poisoner       │
+└───────────────────────────────────────────────────────┘`;
             expect(result).toBe(expected);
         });
     });
@@ -168,26 +168,25 @@ describe('ASCII Grimoire Rendering', () => {
             // Tokens should be on separate rows, not combined
             expect(result).not.toContain("(ww:townsfolk,poi:poisoned)");
             const expected = `\
-┌─ Grimoire (7 players) ────────────────────────────────────────────────────────┐
-│                                                                               │
-│    (ww:townsfolk)                                                             │
-│    (poi:poisoned)                                                             │
-│    ()                 (lib:outsider)                                          │
-│    ()                 ()                                                      │
-│    ()                 ()               (inv:minion)                           │
-│    ()                 ()               ()                                     │
-│    (4)                (23)             (40)                (60)               │
-│    Alice              Bob              Charlie             Dave               │
-│    washerwoman        librarian        investigator        chef               │
-│                                                                               │
-│                                                                     Eve       │
-│                                                                     empath    │
-│                                                                     (69)      │
-│                                                                               │
-│ Grace                                               Frank                     │
-│ imp                                                 poisoner                  │
-│ (1)                                                 (53)                      │
-└───────────────────────────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (7 players) ─────────────────────────────────────────────────────────┐
+│                                                                                │
+│    (ww:townsfolk)     (lib:outsider)   (inv:minion)                            │
+│    (poi:poisoned)     ()               ()                                      │
+│    ()                 ()               ()                                      │
+│    ()                 ()               ()                                      │
+│    ()                 ()               ()                                      │
+│    ()                 ()               ()                                      │
+│    (4)                (23)             (40)                (60)                │
+│    Alice              Bob              Charlie             Dave                │
+│    washerwoman        librarian        investigator        chef                │
+│                                                                                │
+│                                                                      Eve       │
+│                                                                      empath    │
+│                                                                      (70)      │
+│    Grace                                               Frank                   │
+│    imp                                                 poisoner                │
+│    (4)                                                 (56)                    │
+└────────────────────────────────────────────────────────────────────────────────┘`;
 
             expect(result).toBe(expected);
         });

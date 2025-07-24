@@ -412,6 +412,281 @@ function justifyToWidth(players: PlayerPosition[], startCol: number, targetWidth
     return positions;
 }
 
+/**
+ * Groups players into top-set and bottom-set for token bubble line rendering.
+ * Top-set: top side + upper half of left/right sides
+ * Bottom-set: bottom side + lower half of left/right sides
+ */
+function groupPlayersIntoSets(topPlayers: PlayerPosition[], rightPlayers: PlayerPosition[], 
+                             bottomPlayers: PlayerPosition[], leftPlayers: PlayerPosition[]) {
+    const topSet: PlayerPosition[] = [];
+    const bottomSet: PlayerPosition[] = [];
+    
+    // Top side players go to top-set
+    topSet.push(...topPlayers);
+    
+    // Bottom side players go to bottom-set
+    bottomSet.push(...bottomPlayers);
+    
+    // Left side: upper half to top-set, lower half to bottom-set
+    const leftMidpoint = Math.floor(leftPlayers.length / 2);
+    topSet.push(...leftPlayers.slice(0, leftMidpoint));
+    bottomSet.push(...leftPlayers.slice(leftMidpoint));
+    
+    // Right side: upper half to top-set, lower half to bottom-set
+    const rightMidpoint = Math.floor(rightPlayers.length / 2);
+    topSet.push(...rightPlayers.slice(0, rightMidpoint));
+    bottomSet.push(...rightPlayers.slice(rightMidpoint));
+    
+    return { topSet, bottomSet };
+}
+
+/**
+ * Creates token bubble lines using right-to-left scanning with collision avoidance.
+ * Draws vertical () lines extending upward for top-set, downward for bottom-set.
+ * 
+ * CRITICAL: Ensures unique column constraint within each set by detecting and resolving conflicts.
+ */
+function createTokenBubbleLines(topSet: PlayerPosition[], bottomSet: PlayerPosition[], 
+                               positions: any, tokenStartRow: number, _tokenRows: number, bottomRow: number,
+                               nameRow: number, roleRow: number, leftStartRow: number,
+                               options: RenderOptions): GridCell[] {
+    const cells: GridCell[] = [];
+    
+    // Get all players with tokens and their column positions, detecting conflicts
+    const topSetPlayersWithTokens: Array<{
+        player: PlayerPosition;
+        column: number;
+        tokens: string[];
+    }> = [];
+    
+    const bottomSetPlayersWithTokens: Array<{
+        player: PlayerPosition;
+        column: number;
+        tokens: string[];
+    }> = [];
+    
+    // Process top-set players with tokens
+    topSet.forEach(pos => {
+        if (pos.player.tokens.length > 0) {
+            const column = getPlayerColumn(pos, positions);
+            topSetPlayersWithTokens.push({
+                player: pos,
+                column,
+                tokens: formatReminderTokens(pos.player.tokens, options.useAbbreviations ?? true)
+            });
+        }
+    });
+    
+    // Process bottom-set players with tokens  
+    bottomSet.forEach(pos => {
+        if (pos.player.tokens.length > 0) {
+            const column = getPlayerColumn(pos, positions);
+            bottomSetPlayersWithTokens.push({
+                player: pos,
+                column,
+                tokens: formatReminderTokens(pos.player.tokens, options.useAbbreviations ?? true)
+            });
+        }
+    });
+    
+    // Resolve column conflicts within top-set (unique column constraint)
+    const resolvedTopSet = resolveColumnConflicts(topSetPlayersWithTokens);
+    
+    // Resolve column conflicts within bottom-set (unique column constraint)  
+    const resolvedBottomSet = resolveColumnConflicts(bottomSetPlayersWithTokens);
+    
+    // Combine and sort by column position for right-to-left scanning
+    const allPlayersWithTokens = [
+        ...resolvedTopSet.map(p => ({ ...p, isTopSet: true })),
+        ...resolvedBottomSet.map(p => ({ ...p, isTopSet: false }))
+    ];
+    allPlayersWithTokens.sort((a, b) => b.column - a.column);
+    
+    // Track occupied positions to avoid collisions between different players' bubble lines
+    const occupiedPositions = new Set<string>();
+    
+    // Right-to-left scan to place bubble lines
+    for (const playerData of allPlayersWithTokens) {
+        const { column, isTopSet, tokens } = playerData;
+        
+        if (isTopSet) {
+            // For top-set: Draw upward from the player's position
+            // Find where this player is positioned
+            const playerRow = getPlayerRow(playerData.player, positions, nameRow, roleRow, leftStartRow, bottomRow);
+            
+            // Start from above the player's position, accounting for column numbers
+            // If column numbers are shown, start from above the column number annotation
+            // Otherwise, start from above the player's name
+            const columnNumberOffset = options.showColumnNumbers ? 1 : 0;
+            const bubbleStartRow = playerRow - 1 - columnNumberOffset; // Start above column number or name
+            const targetTopRow = tokenStartRow; // Draw up to the token area
+            
+            let currentRow = bubbleStartRow;
+            
+            // First, place () placeholders going upward from player to token area
+            while (currentRow >= targetTopRow + tokens.length) {
+                if (!occupiedPositions.has(`${currentRow},${column}`)) {
+                    cells.push({ content: '()', row: currentRow, col: column });
+                    occupiedPositions.add(`${currentRow},${column}`);
+                }
+                currentRow--;
+            }
+            
+            // Then place actual tokens at the TOP (near targetTopRow)
+            for (let i = tokens.length - 1; i >= 0; i--) {
+                const token = tokens[i];
+                if (currentRow >= targetTopRow) {
+                    while (occupiedPositions.has(`${currentRow},${column}`) && currentRow >= targetTopRow) {
+                        currentRow--;
+                    }
+                    
+                    if (currentRow >= targetTopRow) {
+                        cells.push({ content: `(${token})`, row: currentRow, col: column });
+                        occupiedPositions.add(`${currentRow},${column}`);
+                        currentRow--;
+                    }
+                }
+            }
+        } else {
+            // For bottom-set: Draw downward from the player's position
+            // Find where this player is positioned  
+            const playerRow = getPlayerRow(playerData.player, positions, nameRow, roleRow, leftStartRow, bottomRow);
+            
+            // Start from below the player's position, accounting for column numbers
+            // If column numbers are shown, start from below the column number annotation
+            // Otherwise, start from below the player's role
+            const columnNumberOffset = options.showColumnNumbers ? 1 : 0;
+            const bubbleStartRow = playerRow + 2 + columnNumberOffset; // Start below role + optional column number
+            const bottomBubbleRows = 4; // How many rows to extend downward
+            const targetBottomRow = bubbleStartRow + bottomBubbleRows - 1;
+            
+            let currentRow = bubbleStartRow;
+            
+            // First, place () placeholders going downward, leaving space for tokens at the end
+            const placeholderRows = bottomBubbleRows - tokens.length;
+            for (let i = 0; i < placeholderRows; i++) {
+                if (!occupiedPositions.has(`${currentRow},${column}`)) {
+                    cells.push({ content: '()', row: currentRow, col: column });
+                    occupiedPositions.add(`${currentRow},${column}`);
+                }
+                currentRow++;
+            }
+            
+            // Then place actual tokens at the BOTTOM (end of the bubble line)
+            for (let i = 0; i < tokens.length; i++) {
+                const token = tokens[i];
+                while (occupiedPositions.has(`${currentRow},${column}`) && currentRow <= targetBottomRow) {
+                    currentRow++;
+                }
+                
+                if (currentRow <= targetBottomRow) {
+                    cells.push({ content: `(${token})`, row: currentRow, col: column });
+                    occupiedPositions.add(`${currentRow},${column}`);
+                    currentRow++;
+                }
+            }
+        }
+    }
+    
+    return cells;
+}
+
+/**
+ * Resolves column conflicts within a set by adjusting positions to ensure uniqueness.
+ * This is critical for the user's specified invariant that each player in a set gets a unique column.
+ */
+function resolveColumnConflicts(playersWithTokens: Array<{
+    player: PlayerPosition;
+    column: number;
+    tokens: string[];
+}>): Array<{
+    player: PlayerPosition;
+    column: number;
+    tokens: string[];
+}> {
+    if (playersWithTokens.length <= 1) {
+        return playersWithTokens; // No conflicts possible
+    }
+    
+    // Sort by original column position
+    const sorted = [...playersWithTokens].sort((a, b) => a.column - b.column);
+    
+    // Check for conflicts and resolve by spreading players apart
+    const resolved = [sorted[0]]; // First player keeps original position
+    
+    for (let i = 1; i < sorted.length; i++) {
+        const currentPlayer = sorted[i];
+        const previousPlayer = resolved[resolved.length - 1];
+        
+        // Ensure minimum separation of 3 columns to avoid overlap
+        const minColumn = previousPlayer.column + 3;
+        const adjustedColumn = Math.max(currentPlayer.column, minColumn);
+        
+        resolved.push({
+            ...currentPlayer,
+            column: adjustedColumn
+        });
+    }
+    
+    return resolved;
+}
+
+/**
+ * Gets the row position where a player's name is displayed
+ */
+function getPlayerRow(player: PlayerPosition, _positions: any, nameRow: number, roleRow: number, leftStartRow: number, bottomRow: number): number {
+    switch (player.side) {
+        case 'top':
+            return nameRow;
+        case 'bottom':
+            // Bottom players are positioned at the actual bottomRow that was calculated
+            return bottomRow + (player.sideIndex * 0); // All bottom players at same row, different columns
+        case 'left':
+            // Left players start at leftStartRow and each takes 3 rows (name, role, spacing)
+            return leftStartRow + (player.sideIndex * 3);
+        case 'right':
+            // Right players start at rightStartRow and each takes 3 rows
+            return roleRow + 2 + (player.sideIndex * 3);
+        default:
+            return nameRow;
+    }
+}
+
+/**
+ * Gets the column position for a player based on their side and position in justified layout
+ */
+function getPlayerColumn(player: PlayerPosition, positions: any): number {
+    switch (player.side) {
+        case 'top':
+            return positions.top[player.sideIndex];
+        case 'bottom':  
+            return positions.bottom[player.sideIndex];
+        case 'left': {
+            // Calculate V-shaped positioning for left side
+            const leftBaseCol = 1;
+            const leftMaxIndent = Math.min(8, Math.floor(positions.leftPlayerCount * 1.5));
+            const leftColumns = calculateVShapedColumns(positions.leftPlayerCount, leftBaseCol, leftMaxIndent, true);
+            return leftColumns[player.sideIndex];
+        }
+        case 'right': {
+            // Calculate V-shaped positioning for right side
+            // Need to reproduce the same logic as in createAbstractGrid
+            const maxTopCol = positions.maxTopCol || 40; // fallback value
+            const maxLeftWidth = positions.maxLeftWidth || 10; // fallback value
+            const rightMaxIndent = Math.min(8, Math.floor(positions.rightPlayerCount * 1.5));
+            const minRightStartCol = Math.max(maxTopCol + 2, 1 + maxLeftWidth + 3);
+            const rightStartCol = minRightStartCol + rightMaxIndent;
+            const rightBaseCol = rightStartCol;
+            const safeRightMaxIndent = Math.max(1, rightMaxIndent); // Avoid division by zero
+            const rightColumns = calculateVShapedColumns(positions.rightPlayerCount, rightBaseCol, safeRightMaxIndent, false);
+            return rightColumns[player.sideIndex];
+        }
+        default:
+            return 0;
+    }
+}
+
 function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions: RenderOptions, textOptions?: RenderOptions): AbstractGrid {
     const cells: GridCell[] = [];
     
@@ -467,94 +742,42 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
         cells.push({ content: role, row: roleRow, col: currentCol });
     }
     
-    // Process tokens using bubble column format - simple approach
-    if (hasTokens) {
-        // Based on expected output, create the exact pattern:
-        // Row 2: Alice token 1, placeholder, placeholder, placeholder  
-        // Row 3: Alice token 2, placeholder, placeholder, placeholder
-        // Row 4: placeholder, Bob token 1, placeholder, placeholder
-        // Row 5: placeholder, placeholder, placeholder, placeholder  
-        // Row 6: placeholder, placeholder, Charlie token 1, placeholder
-        // Row 7: placeholder, placeholder, placeholder, placeholder
-        
-        const tokenMatrix: string[][] = [];
-        
-        // Initialize matrix with empty strings
-        for (let row = 0; row < 6; row++) {
-            tokenMatrix[row] = [];
-            for (let col = 0; col < topPlayers.length; col++) {
-                tokenMatrix[row][col] = '';
-            }
-        }
-        
-        // Place tokens and placeholders based on expected pattern
-        for (let i = 0; i < topPlayers.length; i++) {
-            const pos = topPlayers[i];
-            const { tokens } = pos.player;
-            
-            if (tokens.length > 0) {
-                // Format tokens with abbreviations if enabled
-                const formattedTokens = formatReminderTokens(tokens, actualTextOptions.useAbbreviations ?? true);
-                
-                // Place actual tokens first, then placeholders below them
-                if (i === 0 && tokens.length >= 2) { // Alice - 2 tokens
-                    tokenMatrix[0][i] = `(${formattedTokens[0]})`; // washerwoman:townsfolk -> ww:townsfolk
-                    tokenMatrix[1][i] = `(${formattedTokens[1]})`; // poisoner:poisoned -> poi:poisoned
-                    // Placeholders below tokens (rows 2-5 for Alice)
-                    tokenMatrix[2][i] = '()';
-                    tokenMatrix[3][i] = '()';
-                    tokenMatrix[4][i] = '()';
-                    tokenMatrix[5][i] = '()';
-                } else if (i === 1 && tokens.length >= 1) { // Bob - 1 token  
-                    tokenMatrix[2][i] = `(${formattedTokens[0]})`; // librarian:outsider -> lib:outsider
-                    // Placeholders below token (rows 3-5 for Bob)
-                    tokenMatrix[3][i] = '()';
-                    tokenMatrix[4][i] = '()';
-                    tokenMatrix[5][i] = '()';
-                } else if (i === 2 && tokens.length >= 1) { // Charlie - 1 token
-                    tokenMatrix[4][i] = `(${formattedTokens[0]})`; // investigator:minion -> inv:minion
-                    // Placeholders below token (row 5 for Charlie)
-                    tokenMatrix[5][i] = '()';
-                }
-            }
-            
-            // Only players with tokens get a placeholder in the bottom row to maintain visual connection
-            // Players without tokens (like Dave) should have completely empty columns
-        }
-        
-        // Place the matrix into cells (only non-empty content)
-        for (let row = 0; row < 6; row++) {
-            for (let col = 0; col < topPlayers.length; col++) {
-                const content = tokenMatrix[row][col];
-                if (content !== '') {
-                    const actualRow = tokenStartRow + row;
-                    const playerCol = justifiedPositions.top[col];
-                    cells.push({ 
-                        content: content, 
-                        row: actualRow, 
-                        col: playerCol 
-                    });
-                }
-            }
-        }
-    }
-    
-    // Calculate dimensions based on placed top players and potential left side content
-    // Use content-based positioning: right-side players should start after top players' content ends
+    // Calculate dimensions for V-shaped positioning (needed for both tokens and layout)
     const maxTopCol = topPlayers.length > 0 ? 
         Math.max(...topPlayers.map((pos, i) => {
             const currentCol = justifiedPositions.top[i];
             const structured = formatPlayerStructured(pos.player, coordinateOptions);
-            // Calculate where the content ends (position + leftDeco + content)
             const contentEnd = currentCol + structured.name.leftDeco.length + structured.name.content.length;
             const roleContentEnd = currentCol + structured.role.leftDeco.length + structured.role.content.length;
             return Math.max(contentEnd, roleContentEnd);
         })) : 4;
     
-    // Account for left side players that will be positioned in the same vertical space as right players
-    // Find the maximum width needed by left side players (name, role, or tokens)
     const maxLeftWidth = leftPlayers.length > 0 ? 
         Math.max(...leftPlayers.map(pos => getPlayerDisplayWidth(pos.player, coordinateOptions.useAbbreviations ?? true, coordinateOptions))) : 0;
+
+    // Store bubble line data for later processing (after bottom player positioning)
+    let bubbleLineData: { topSet: PlayerPosition[]; bottomSet: PlayerPosition[]; enhancedPositions: any; } | null = null;
+    
+    if (hasTokens) {
+        // Group players into top-set and bottom-set as specified by user
+        const { topSet, bottomSet } = groupPlayersIntoSets(topPlayers, rightPlayers, bottomPlayers, leftPlayers);
+        
+        // Enhanced positions object with V-shaped calculation context
+        const enhancedPositions = {
+            ...justifiedPositions,
+            leftPlayerCount: leftPlayers.length,
+            rightPlayerCount: rightPlayers.length,
+            maxTopCol,
+            maxLeftWidth
+        };
+        
+        // Store for processing after bottom players are positioned
+        bubbleLineData = { topSet, bottomSet, enhancedPositions };
+    }
+    
+    // Calculate dimensions based on placed top players and potential left side content
+    // Use content-based positioning: right-side players should start after top players' content ends
+    // (maxTopCol and maxLeftWidth already calculated above for token bubble lines)
     
     // Calculate V-shaped indentation for right side first to account for overlap
     const rightMaxIndent = Math.min(8, Math.floor(rightPlayers.length * 1.5)); // Progressive indentation
@@ -581,7 +804,6 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
     for (let i = 0; i < rightPlayers.length; i++) {
         const pos = rightPlayers[i];
         const rightCol = rightColumns[i];
-        const { tokens } = pos.player;
         const structured = formatPlayerStructured(pos.player, actualTextOptions);
         
         // Calculate where to place the full string so that content starts at rightCol
@@ -596,11 +818,7 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
             cells.push({ content: `(${rightCol})`, row: currentRightRow + 2, col: rightCol });
         }
         
-        if (tokens && tokens.length > 0) {
-            const formattedTokens = formatReminderTokens(tokens, actualTextOptions.useAbbreviations ?? true);
-            const tokenRow = actualTextOptions.showColumnNumbers ? currentRightRow + 3 : currentRightRow + 2;
-            cells.push({ content: `(${formattedTokens.join(',')})`, row: tokenRow, col: rightCol });
-        }
+        // Token rendering now handled by bubble line system above
         
         currentRightRow += 3; // Account for name, role, and space to next player
     }
@@ -614,7 +832,6 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
         Math.max(currentRightRow, leftEndRow + 1, 8);
     for (let i = 0; i < bottomPlayers.length; i++) {
         const pos = bottomPlayers[i];
-        const { tokens } = pos.player;
         const { name, role } = formatPlayerDisplayText(pos.player, actualTextOptions);
         const currentCol = justifiedPositions.bottom[i];
         
@@ -627,10 +844,7 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
             cells.push({ content: `(${currentCol})`, row: bottomRow + 2, col: currentCol });
         }
         
-        if (tokens && tokens.length > 0) {
-            const formattedTokens = formatReminderTokens(tokens, actualTextOptions.useAbbreviations ?? true);
-            cells.push({ content: `(${formattedTokens.join(',')})`, row: bottomRow + 3, col: currentCol });
-        }
+        // Token rendering now handled by bubble line system above
     }
     
     // Place left players using V-shaped positioning (inverted-V pattern)
@@ -647,7 +861,6 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
     for (let i = 0; i < leftPlayers.length; i++) {
         const pos = leftPlayers[i];
         const leftCol = leftColumns[i];
-        const { tokens } = pos.player;
         const { name, role } = formatPlayerDisplayText(pos.player, actualTextOptions);
         
         cells.push({ content: name, row: currentLeftRow, col: leftCol });
@@ -657,12 +870,23 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
             cells.push({ content: `(${leftCol})`, row: currentLeftRow + 2, col: leftCol });
         }
         
-        if (tokens && tokens.length > 0) {
-            const formattedTokens = formatReminderTokens(tokens, actualTextOptions.useAbbreviations ?? true);
-            cells.push({ content: `(${formattedTokens.join(',')})`, row: currentLeftRow + 3, col: leftCol });
-        }
+        // Token rendering now handled by bubble line system above
         
         currentLeftRow += 3; // Account for name, role, and space to next player
+    }
+    
+    // Process token bubble lines after all players are positioned
+    if (bubbleLineData) {
+        const { topSet, bottomSet, enhancedPositions } = bubbleLineData;
+        
+        // Now we have access to the actual bottomRow that was calculated above
+        const actualBottomRow = bottomPlayers.length > 0 ? bottomRow : 0;
+        
+        // Create token bubble lines using right-to-left scanning
+        const bubbleLines = createTokenBubbleLines(topSet, bottomSet, enhancedPositions, tokenStartRow, tokenRows, actualBottomRow, nameRow, roleRow, leftStartRow, actualTextOptions);
+        
+        // Add bubble line cells to the main cell array
+        cells.push(...bubbleLines);
     }
     
     // Calculate grid bounds using worst-case text widths for stable layout dimensions
