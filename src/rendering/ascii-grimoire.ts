@@ -155,6 +155,13 @@ export function renderGrimoireToAsciiArt(grimoire: GrimoireState, options: Rende
         }
         const bestLayout = findBestTurnConfigurationByWidthConstraint(players, options);
         return renderTurnBasedLayout(players, bestLayout, options);
+    } else if (options.mode === 'height-constrained') {
+        // Find the best turn configuration that maximizes height usage without exceeding target
+        if (!options.targetHeight) {
+            throw new Error('targetHeight must be provided when mode is height-constrained');
+        }
+        const bestLayout = findBestTurnConfigurationByHeightConstraint(players, options);
+        return renderTurnBasedLayout(players, bestLayout, options);
     } else {
         // For constrained modes, we'll implement this later
         throw new Error(`${options.mode} mode not yet implemented`);
@@ -1567,6 +1574,125 @@ function findBestTurnConfigurationByWidthConstraint(players: any[], options: Ren
     }
     
     // Return the best configuration within constraint, or narrowest as fallback
+    const validEvals = evaluationResults.filter(r => r.success && r.withinConstraint);
+    return validEvals.length > 0 ? bestConfig : fallbackConfig;
+}
+
+function findBestTurnConfigurationByHeightConstraint(players: any[], options: RenderOptions): TurnBasedLayout {
+    const playerCount = players.length;
+    const allTurnConfigs = generateAllTurnConfigurations(playerCount);
+    const targetHeight = options.targetHeight!;
+    
+    // Debug: Check if we're using a custom evaluation title
+    const evaluationTitle = (options as any)._evaluationTitle;
+    const isInstrumented = evaluationTitle && (evaluationTitle.includes('Grim') || evaluationTitle.includes('long title'));
+    
+    if (isInstrumented) {
+        console.log(`\n=== FINDBESTHEIGHT-CONSTRAINED DEBUG: title="${evaluationTitle}" ===`);
+        console.log(`Generated ${allTurnConfigs.length} configurations for ${playerCount} players`);
+        console.log(`Target height constraint: ${targetHeight} characters`);
+    }
+    
+    // Evaluate each configuration and find the one that maximizes height usage without exceeding target
+    let bestConfig = allTurnConfigs[0];
+    let bestHeight = 0; // We want to maximize height usage within constraint
+    let bestWidth = Number.POSITIVE_INFINITY; // Secondary: minimize width
+    let bestTopCount = 0; // Tertiary: maximize top-side players
+    let fallbackConfig = allTurnConfigs[0];
+    let fallbackHeight = Number.POSITIVE_INFINITY; // Track shortest layout as fallback
+    let evaluationResults: any[] = [];
+    
+    for (const config of allTurnConfigs) {
+        try {
+            const width = evaluateLayoutWidth(players, config, options);
+            const height = evaluateLayoutHeight(players, config, options);
+            const withinConstraint = height <= targetHeight;
+            
+            evaluationResults.push({ config, width, height, withinConstraint, success: true });
+            
+            // Track the shortest layout as fallback (in case nothing fits)
+            if (height < fallbackHeight) {
+                fallbackHeight = height;
+                fallbackConfig = config;
+            }
+            
+            // Only consider configurations that fit within the constraint for best choice
+            if (withinConstraint) {
+                let isBetter = false;
+                
+                if (height > bestHeight) {
+                    // Primary criterion: maximize height
+                    isBetter = true;
+                } else if (height === bestHeight) {
+                    if (width < bestWidth) {
+                        // Secondary criterion: minimize width (when heights are equal)
+                        isBetter = true;
+                    } else if (width === bestWidth) {
+                        if (config.topCount > bestTopCount) {
+                            // Tertiary criterion: maximize top-side players (when both height and width are equal)
+                            isBetter = true;
+                        }
+                    }
+                }
+                
+                if (isBetter) {
+                    bestHeight = height;
+                    bestWidth = width;
+                    bestTopCount = config.topCount;
+                    bestConfig = config;
+                }
+            }
+            
+            if (isInstrumented) {
+                const status = withinConstraint ? (height === bestHeight ? '← NEW BEST' : '✓') : '✗ TOO TALL';
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] height: ${height} ${status}`);
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            evaluationResults.push({ config, width: Number.POSITIVE_INFINITY, height: Number.POSITIVE_INFINITY, withinConstraint: false, success: false, error: errorMessage });
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] FAILED: ${errorMessage}`);
+            }
+        }
+    }
+    
+    if (isInstrumented) {
+        const successfulEvals = evaluationResults.filter(r => r.success);
+        const validEvals = successfulEvals.filter(r => r.withinConstraint);
+        const tooTallEvals = successfulEvals.filter(r => !r.withinConstraint);
+        const failedEvals = evaluationResults.filter(r => !r.success);
+        
+        console.log(`\nSUMMARY:`);
+        console.log(`  Total configurations: ${allTurnConfigs.length}`);
+        console.log(`  Successful evaluations: ${successfulEvals.length}`);
+        console.log(`  Within height constraint: ${validEvals.length}`);
+        console.log(`  Too tall (exceeds ${targetHeight}): ${tooTallEvals.length}`);
+        console.log(`  Failed evaluations: ${failedEvals.length}`);
+        const finalConfig = validEvals.length > 0 ? bestConfig : fallbackConfig;
+        const finalHeight = validEvals.length > 0 ? bestHeight : fallbackHeight;
+        const fallbackUsed = validEvals.length === 0;
+        
+        console.log(`  Selected best: [${finalConfig.topCount},${finalConfig.rightCount},${finalConfig.bottomCount},${finalConfig.leftCount}] height: ${finalHeight}${fallbackUsed ? ' (FALLBACK - shortest available)' : ''}`);
+        
+        // Show top valid configurations
+        const sortedValid = validEvals.sort((a, b) => b.height - a.height); // Descending (tallest first)
+        console.log(`  Top 3 valid heights:`);
+        for (let i = 0; i < Math.min(3, sortedValid.length); i++) {
+            const result = sortedValid[i];
+            console.log(`    ${i + 1}. [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}] height: ${result.height}`);
+        }
+        
+        if (failedEvals.length > 0) {
+            console.log(`  Failed configurations:`);
+            failedEvals.forEach(result => {
+                console.log(`    [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}]: ${result.error}`);
+            });
+        }
+        console.log(`=== END FINDBESTHEIGHT-CONSTRAINED DEBUG ===\n`);
+    }
+    
+    // Return the best configuration within constraint, or shortest as fallback
     const validEvals = evaluationResults.filter(r => r.success && r.withinConstraint);
     return validEvals.length > 0 ? bestConfig : fallbackConfig;
 }

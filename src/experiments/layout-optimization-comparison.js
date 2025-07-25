@@ -39,14 +39,18 @@ async function testOptimizationModes() {
         '40-char-width-constrained',
         '80-char-width-constrained', 
         '100-char-width-constrained',
-        '200-char-width-constrained'
+        '200-char-width-constrained',
+        '8-line-height-constrained',
+        '12-line-height-constrained',
+        '20-line-height-constrained',
+        '40-line-height-constrained'
     ];
     
     for (const mode of modes) {
         try {
             console.log(`--- ${mode.toUpperCase()} MODE ---`);
             
-            // Handle width-constrained modes
+            // Handle constrained modes
             let renderOptions = { 
                 useAbbreviations: true,
                 showColumnNumbers: false
@@ -56,6 +60,10 @@ async function testOptimizationModes() {
                 const targetWidth = parseInt(mode.split('-')[0]);
                 renderOptions.mode = 'width-constrained';
                 renderOptions.targetWidth = targetWidth;
+            } else if (mode.includes('height-constrained')) {
+                const targetHeight = parseInt(mode.split('-')[0]);
+                renderOptions.mode = 'height-constrained';
+                renderOptions.targetHeight = targetHeight;
             } else {
                 renderOptions.mode = mode;
             }
@@ -80,6 +88,11 @@ async function testOptimizationModes() {
                 const targetWidth = parseInt(mode.split('-')[0]);
                 const withinConstraint = width <= targetWidth;
                 constraintInfo = `, target=${targetWidth}, ${withinConstraint ? '✅ within constraint' : '❌ exceeds constraint'}`;
+                ratioDisplay = `area/perimeter=${ratio}`;
+            } else if (mode.includes('height-constrained')) {
+                const targetHeight = parseInt(mode.split('-')[0]);
+                const withinConstraint = height <= targetHeight;
+                constraintInfo = `, target=${targetHeight}, ${withinConstraint ? '✅ within constraint' : '❌ exceeds constraint'}`;
                 ratioDisplay = `area/perimeter=${ratio}`;
             } else if (mode === 'max-area-perimeter2-ratio') {
                 ratioDisplay = `area/perimeter^2=${ratio2}`;

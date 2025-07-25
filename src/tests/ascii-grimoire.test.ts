@@ -164,7 +164,7 @@ describe('ASCII Grimoire Rendering', () => {
     });
     
     describe('Height-constrained mode', () => {
-        it.skip('should render within specified height constraint', () => {
+        it('should render within specified height constraint', () => {
             
             const example = getExampleByName("5-player basic");
             if (!example) throw new Error("5-player basic example not found");
@@ -172,14 +172,93 @@ describe('ASCII Grimoire Rendering', () => {
             const result = renderGrimoireToAsciiArt(example.grimoire, { 
                 mode: 'height-constrained', 
                 targetHeight: 8,
-                showColumnNumbers: true
+                showColumnNumbers: false,
+                useAbbreviations: true
             });
             
-            // Should use a flatter layout
+            // Should maximize height usage without exceeding constraint
             const lines = result.split('\n');
             
             expect(lines.length).toBeLessThanOrEqual(8);
-            expect(result).toBe('PLACEHOLDER - click to see actual output');
+            expect(result).toContain('Alice');
+            expect(result).toContain('washerwoman');
+            expect(result).toContain('Dave');
+            expect(result).toContain('poisoner');
+            
+            // Should produce a valid grimoire layout
+            expect(result).toMatch(/^┌─ Grimoire \(\d+ players\)/);
+            expect(result).toMatch(/└─+┘$/);
+        });
+
+        it('should render 12-player grimoire optimally within 20-line height constraint', () => {
+            
+            const example = getExampleByName("12-player basic");
+            if (!example) throw new Error("12-player basic example not found");
+            
+            const result = renderGrimoireToAsciiArt(example.grimoire, { 
+                mode: 'height-constrained', 
+                targetHeight: 20,
+                showColumnNumbers: false,
+                useAbbreviations: true
+            });
+            
+            // Should maximize height usage without exceeding constraint
+            const lines = result.split('\n');
+            expect(lines.length).toBeLessThanOrEqual(20);
+            expect(lines.length).toBeGreaterThan(15); // Should use substantial height
+            
+            // Expected layout: optimized for height usage with vertical player arrangement
+            const expected = `\
+┌─ Grimoire (12 players) ────────────────────────────────────────────────────┐
+│                     Alice                 Bob                              │
+│                     fortune_teller        undertaker                       │
+│                                                                            │
+│                                                                 Charlie    │
+│       Hannah                                                    monk       │
+│       butler                                                               │
+│                                                             Dave           │
+│    Ian                                                      ravenkeeper    │
+│    drunk                                                                   │
+│                                                          Eve               │
+│Julia                                                     virgin            │
+│poisoner                                                                    │
+│                                                             Frank          │
+│    Kate                                                     slayer         │
+│    spy                                                                     │
+│                                                                 Grace      │
+│       Leo                                                       soldier    │
+│       imp                                                                  │
+└────────────────────────────────────────────────────────────────────────────┘`;
+            
+            expect(result).toBe(expected);
+        });
+
+        it('should use shortest layout when constraint cannot be met', () => {
+            
+            const example = getExampleByName("5-player basic");
+            if (!example) throw new Error("5-player basic example not found");
+            
+            // Use an impossibly tight constraint
+            const result = renderGrimoireToAsciiArt(example.grimoire, { 
+                mode: 'height-constrained', 
+                targetHeight: 3, // Too short for any 5-player layout
+                showColumnNumbers: false,
+                useAbbreviations: true
+            });
+            
+            // Should still produce a valid layout (the shortest available)
+            expect(result).toContain('Alice');
+            expect(result).toContain('washerwoman');
+            expect(result).toContain('Dave');
+            expect(result).toContain('poisoner');
+            
+            // Should produce a valid grimoire layout
+            expect(result).toMatch(/^┌─ Grimoire \(\d+ players\)/);
+            expect(result).toMatch(/└─+┘$/);
+            
+            // Height will exceed the constraint, but should be the shortest possible
+            const lines = result.split('\n');
+            expect(lines.length).toBeGreaterThan(3); // Constraint cannot be met
         });
     });
     
