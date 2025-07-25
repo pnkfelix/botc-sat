@@ -78,10 +78,18 @@
 - ✅ **Left-side player placement** - complete four-sided layout support with proper coordinate separation
 - ✅ **Intelligent auto mode** - exhaustive evaluation with visual squareness scoring (6:10 aspect ratio)
 - ✅ **Text overlap bug fix** - resolved coordinate collision between layout quadrants
+- ✅ **Auto mode redefinition** - changed from compactness+squareness algorithm to 80-character width-constrained alias
+- ✅ **Test reminder system** - added automated reminders to run full test suite before commits
+
+**✅ COMPLETED CONSTRAINT-BASED LAYOUT MODES**:
+- ✅ **Width-constrained layout** - maximize width usage within character limit constraints
+- ✅ **Height-constrained layout** - maximize height usage within line limit constraints  
+- ✅ **Multi-criteria optimization** - primary constraint satisfaction + secondary optimization (minimize other dimension) + tertiary tie-breaking (maximize top-side players)
+- ✅ **Graceful fallback** - when constraints impossible to meet, selects narrowest/shortest available layout
+- ✅ **Comprehensive testing** - explicit expected output validation for 12-player/20-line height constraint scenario
+- ✅ **Layout comparison experiment** - extended to include width/height constraint variants (40/80/100/200-char, 8/12/20/40-line)
 
 **🚧 IN PROGRESS**:
-- [ ] **Column number toggle** - update expected output for `showColumnNumbers: false`
-- [ ] **Constrained rendering modes** - implement width/height-constrained layouts  
 - [ ] **Extended player counts** - support 7-15 players with hybrid spacing
 
 **✅ COMPLETED REFACTORING**:
