@@ -28,6 +28,18 @@ function showClaudeCodeReminder() {
     }
 }
 
+// Test suite reminder for comprehensive testing before commits
+function showTestSuiteReminder() {
+    if (process.env.CLAUDECODE === '1' || process.env.CLAUDE_CODE_ENTRYPOINT) {
+        console.log("\n🧪 CLAUDE CODE TEST REMINDER:");
+        console.log("   This test runner only covers RESEARCH/SAT SOLVER tests!");
+        console.log("   Before committing changes, ALWAYS run the full test suite:");
+        console.log("   → npm test (runs unit tests via vitest)");
+        console.log("   → npm run dev (runs this research test runner)");
+        console.log("   Both test suites must pass before committing changes.\n");
+    }
+}
+
 export async function main() {
     console.log("Blood on the Clocktower DSL prototype starting...");
     
@@ -66,8 +78,10 @@ export async function main() {
     // Test generative setup  
     await testGenerativeSetup();
     
+    // Show test suite reminder for Claude Code
+    showTestSuiteReminder();
     
-    console.log("\n✅ Ready for BOTC modeling!");
+    console.log("✅ Ready for BOTC modeling!");
 }
 
 async function testBagLegality() {
