@@ -106,7 +106,7 @@ describe('ASCII Grimoire Rendering', () => {
     });
     
     describe('Width-constrained mode', () => {
-        it.skip('should render within specified width constraint', () => {
+        it('should render within specified width constraint', () => {
             
             const example = getExampleByName("5-player basic");
             if (!example) throw new Error("5-player basic example not found");
@@ -114,16 +114,52 @@ describe('ASCII Grimoire Rendering', () => {
             const result = renderGrimoireToAsciiArt(example.grimoire, { 
                 mode: 'width-constrained', 
                 targetWidth: 40,
-                showColumnNumbers: true
+                showColumnNumbers: false,
+                useAbbreviations: true
             });
             
-            // Should use a narrower layout, possibly more vertical
-            // This might force a different turn pattern
+            // Should maximize width usage without exceeding constraint
             const lines = result.split('\n');
             const maxLineLength = Math.max(...lines.map(line => line.length));
             
             expect(maxLineLength).toBeLessThanOrEqual(40);
-            expect(result).toBe('PLACEHOLDER - click to see actual output');
+            expect(result).toContain('Alice');
+            expect(result).toContain('washerwoman');
+            expect(result).toContain('Dave');
+            expect(result).toContain('poisoner');
+            
+            // Should produce a valid grimoire layout
+            expect(result).toMatch(/^┌─ Grimoire \(\d+ players\)/);
+            expect(result).toMatch(/└─+┘$/);
+        });
+
+        it('should use narrowest layout when constraint cannot be met', () => {
+            
+            const example = getExampleByName("5-player basic");
+            if (!example) throw new Error("5-player basic example not found");
+            
+            // Use an impossibly tight constraint
+            const result = renderGrimoireToAsciiArt(example.grimoire, { 
+                mode: 'width-constrained', 
+                targetWidth: 20, // Too narrow for any 5-player layout
+                showColumnNumbers: false,
+                useAbbreviations: true
+            });
+            
+            // Should still produce a valid layout (the narrowest available)
+            expect(result).toContain('Alice');
+            expect(result).toContain('washerwoman');
+            expect(result).toContain('Dave');
+            expect(result).toContain('poisoner');
+            
+            // Should produce a valid grimoire layout
+            expect(result).toMatch(/^┌─ Grimoire \(\d+ players\)/);
+            expect(result).toMatch(/└─+┘$/);
+            
+            // Width will exceed the constraint, but should be the narrowest possible
+            const lines = result.split('\n');
+            const maxLineLength = Math.max(...lines.map(line => line.length));
+            expect(maxLineLength).toBeGreaterThan(20); // Constraint cannot be met
         });
     });
     

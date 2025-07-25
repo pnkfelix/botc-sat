@@ -26,18 +26,41 @@ async function testOptimizationModes() {
     
     const gameState = validator.generateInitialGameState(roles, playerNames, { seed: 12345 });
     
-    console.log(`🧪 Testing all seven layout optimization modes with ${playerCount} players...\n`);
+    console.log(`🧪 Testing all layout optimization modes with ${playerCount} players...\n`);
     
-    const modes = ['auto', 'squariness', 'min-area', 'min-max-dim', 'min-perimeter', 'max-area-perimeter-ratio', 'max-area-perimeter2-ratio'];
+    const modes = [
+        'auto', 
+        'squariness', 
+        'min-area', 
+        'min-max-dim', 
+        'min-perimeter', 
+        'max-area-perimeter-ratio', 
+        'max-area-perimeter2-ratio',
+        '40-char-width-constrained',
+        '80-char-width-constrained', 
+        '100-char-width-constrained',
+        '200-char-width-constrained'
+    ];
     
     for (const mode of modes) {
         try {
             console.log(`--- ${mode.toUpperCase()} MODE ---`);
-            const rendered = validator.renderGrimoireAscii(gameState, { 
-                mode: mode, 
+            
+            // Handle width-constrained modes
+            let renderOptions = { 
                 useAbbreviations: true,
                 showColumnNumbers: false
-            });
+            };
+            
+            if (mode.includes('width-constrained')) {
+                const targetWidth = parseInt(mode.split('-')[0]);
+                renderOptions.mode = 'width-constrained';
+                renderOptions.targetWidth = targetWidth;
+            } else {
+                renderOptions.mode = mode;
+            }
+            
+            const rendered = validator.renderGrimoireAscii(gameState, renderOptions);
             
             // Measure dimensions
             const lines = rendered.split('\n');
@@ -51,7 +74,14 @@ async function testOptimizationModes() {
             
             // Show appropriate formula based on mode
             let ratioDisplay;
-            if (mode === 'max-area-perimeter2-ratio') {
+            let constraintInfo = '';
+            
+            if (mode.includes('width-constrained')) {
+                const targetWidth = parseInt(mode.split('-')[0]);
+                const withinConstraint = width <= targetWidth;
+                constraintInfo = `, target=${targetWidth}, ${withinConstraint ? '✅ within constraint' : '❌ exceeds constraint'}`;
+                ratioDisplay = `area/perimeter=${ratio}`;
+            } else if (mode === 'max-area-perimeter2-ratio') {
                 ratioDisplay = `area/perimeter^2=${ratio2}`;
             } else if (mode === 'max-area-perimeter-ratio') {
                 ratioDisplay = `area/perimeter=${ratio}`;
@@ -59,7 +89,7 @@ async function testOptimizationModes() {
                 ratioDisplay = `area/perimeter=${ratio}`;
             }
             
-            console.log(`Dimensions: ${width}×${height} (area=${area}, maxDim=${maxDim}, perimeter=${perimeter}, ${ratioDisplay})`);
+            console.log(`Dimensions: ${width}×${height} (area=${area}, maxDim=${maxDim}, perimeter=${perimeter}, ${ratioDisplay}${constraintInfo})`);
             console.log(rendered);
             console.log('');
         } catch (error) {

@@ -147,6 +147,13 @@ export function renderGrimoireToAsciiArt(grimoire: GrimoireState, options: Rende
         // Find the best turn configuration via area-to-perimeter-squared ratio maximization  
         const bestLayout = findBestTurnConfigurationByAreaPerimeter2Ratio(players, options);
         return renderTurnBasedLayout(players, bestLayout, options);
+    } else if (options.mode === 'width-constrained') {
+        // Find the best turn configuration that maximizes width usage without exceeding target
+        if (!options.targetWidth) {
+            throw new Error('targetWidth must be provided when mode is width-constrained');
+        }
+        const bestLayout = findBestTurnConfigurationByWidthConstraint(players, options);
+        return renderTurnBasedLayout(players, bestLayout, options);
     } else {
         // For constrained modes, we'll implement this later
         throw new Error(`${options.mode} mode not yet implemented`);
@@ -1514,6 +1521,125 @@ function findBestTurnConfigurationByCompactnessAndSquareness(players: any[], opt
     return bestConfig;
 }
 
+function findBestTurnConfigurationByWidthConstraint(players: any[], options: RenderOptions): TurnBasedLayout {
+    const playerCount = players.length;
+    const allTurnConfigs = generateAllTurnConfigurations(playerCount);
+    const targetWidth = options.targetWidth!;
+    
+    // Debug: Check if we're using a custom evaluation title
+    const evaluationTitle = (options as any)._evaluationTitle;
+    const isInstrumented = evaluationTitle && (evaluationTitle.includes('Grim') || evaluationTitle.includes('long title'));
+    
+    if (isInstrumented) {
+        console.log(`\n=== FINDBESTWIDTH-CONSTRAINED DEBUG: title="${evaluationTitle}" ===`);
+        console.log(`Generated ${allTurnConfigs.length} configurations for ${playerCount} players`);
+        console.log(`Target width constraint: ${targetWidth} characters`);
+    }
+    
+    // Evaluate each configuration and find the one that maximizes width usage without exceeding target
+    let bestConfig = allTurnConfigs[0];
+    let bestWidth = 0; // We want to maximize width usage within constraint
+    let bestHeight = Number.POSITIVE_INFINITY; // Secondary: minimize height
+    let bestTopCount = 0; // Tertiary: maximize top-side players
+    let fallbackConfig = allTurnConfigs[0];
+    let fallbackWidth = Number.POSITIVE_INFINITY; // Track narrowest layout as fallback
+    let evaluationResults: any[] = [];
+    
+    for (const config of allTurnConfigs) {
+        try {
+            const width = evaluateLayoutWidth(players, config, options);
+            const height = evaluateLayoutHeight(players, config, options);
+            const withinConstraint = width <= targetWidth;
+            
+            evaluationResults.push({ config, width, height, withinConstraint, success: true });
+            
+            // Track the narrowest layout as fallback (in case nothing fits)
+            if (width < fallbackWidth) {
+                fallbackWidth = width;
+                fallbackConfig = config;
+            }
+            
+            // Only consider configurations that fit within the constraint for best choice
+            if (withinConstraint) {
+                let isBetter = false;
+                
+                if (width > bestWidth) {
+                    // Primary criterion: maximize width
+                    isBetter = true;
+                } else if (width === bestWidth) {
+                    if (height < bestHeight) {
+                        // Secondary criterion: minimize height (when widths are equal)
+                        isBetter = true;
+                    } else if (height === bestHeight) {
+                        if (config.topCount > bestTopCount) {
+                            // Tertiary criterion: maximize top-side players (when width and height are equal)
+                            isBetter = true;
+                        }
+                    }
+                }
+                
+                if (isBetter) {
+                    bestWidth = width;
+                    bestHeight = height;
+                    bestTopCount = config.topCount;
+                    bestConfig = config;
+                }
+            }
+            
+            if (isInstrumented) {
+                const status = withinConstraint ? (width === bestWidth ? '← NEW BEST' : '✓') : '✗ TOO WIDE';
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] width: ${width} ${status}`);
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            evaluationResults.push({ config, width: Number.POSITIVE_INFINITY, withinConstraint: false, success: false, error: errorMessage });
+            
+            if (isInstrumented) {
+                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] FAILED: ${errorMessage}`);
+            }
+        }
+    }
+    
+    if (isInstrumented) {
+        const successfulEvals = evaluationResults.filter(r => r.success);
+        const validEvals = successfulEvals.filter(r => r.withinConstraint);
+        const tooWideEvals = successfulEvals.filter(r => !r.withinConstraint);
+        const failedEvals = evaluationResults.filter(r => !r.success);
+        
+        console.log(`\nSUMMARY:`);
+        console.log(`  Total configurations: ${allTurnConfigs.length}`);
+        console.log(`  Successful evaluations: ${successfulEvals.length}`);
+        console.log(`  Within width constraint: ${validEvals.length}`);
+        console.log(`  Too wide (exceeds ${targetWidth}): ${tooWideEvals.length}`);
+        console.log(`  Failed evaluations: ${failedEvals.length}`);
+        const finalConfig = validEvals.length > 0 ? bestConfig : fallbackConfig;
+        const finalWidth = validEvals.length > 0 ? bestWidth : fallbackWidth;
+        const fallbackUsed = validEvals.length === 0;
+        
+        console.log(`  Selected best: [${finalConfig.topCount},${finalConfig.rightCount},${finalConfig.bottomCount},${finalConfig.leftCount}] width: ${finalWidth}${fallbackUsed ? ' (FALLBACK - narrowest available)' : ''}`);
+        
+        // Show top valid configurations
+        const sortedValid = validEvals.sort((a, b) => b.width - a.width); // Descending (widest first)
+        console.log(`  Top 3 valid widths:`);
+        for (let i = 0; i < Math.min(3, sortedValid.length); i++) {
+            const result = sortedValid[i];
+            console.log(`    ${i + 1}. [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}] width: ${result.width}`);
+        }
+        
+        if (failedEvals.length > 0) {
+            console.log(`  Failed configurations:`);
+            failedEvals.forEach(result => {
+                console.log(`    [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}]: ${result.error}`);
+            });
+        }
+        console.log(`=== END FINDBESTWIDTH-CONSTRAINED DEBUG ===\n`);
+    }
+    
+    // Return the best configuration within constraint, or narrowest as fallback
+    const validEvals = evaluationResults.filter(r => r.success && r.withinConstraint);
+    return validEvals.length > 0 ? bestConfig : fallbackConfig;
+}
+
 /**
  * Evaluates how "square-like" a layout configuration is by measuring actual rendered dimensions.
  * Returns a score where lower is better (0 = perfect square).
@@ -1887,6 +2013,96 @@ function evaluateLayoutCompactnessAndSquareness(players: any[], layout: TurnBase
             normalizedArea: Number.POSITIVE_INFINITY,
             normalizedSquareness: Number.POSITIVE_INFINITY
         };
+    }
+}
+
+/**
+ * Evaluates the total width of a layout configuration.
+ * Returns the width in character units (including borders and title).
+ *
+ * @param players - The players to layout
+ * @param layout - The turn configuration to evaluate
+ * @param options - Render options (without tokens for layout evaluation)
+ * @returns Width in character units
+ */
+function evaluateLayoutWidth(players: any[], layout: TurnBasedLayout, options: RenderOptions): number {
+    // Create a copy of options that uses worst-case formatting for robust layout measurement
+    const layoutOptions: RenderOptions = {
+        ...options,
+        mode: 'explicit-turns',
+        explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount],
+        // Flag to ensure title logic doesn't affect layout evaluation
+        _isEvaluation: true,
+        // Use worst-case formatting (*~~player~~*) to ensure layouts are robust to all future game states
+        _forceWorstCaseFormatting: true,
+        // Pass through evaluation title if specified
+        _evaluationTitle: (options as any)._evaluationTitle
+    };
+    
+    // Create players without tokens for layout measurement, but keep original alive/ghost state
+    // The worst-case formatting will be handled by formatPlayerDisplayText()
+    const playersWithoutTokens = players.map(player => ({
+        ...player, 
+        tokens: [] // Remove tokens for pure layout evaluation
+    }));
+    
+    const grimoire = { players: playersWithoutTokens };
+    
+    // Render this configuration and measure dimensions
+    try {
+        const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
+        const dimensions = measureRenderedDimensions(rendered);
+        
+        // Return the total width (including borders and title)
+        return dimensions.width;
+    } catch (error) {
+        // If rendering fails, return a very high width (worst possible)
+        return Number.POSITIVE_INFINITY;
+    }
+}
+
+/**
+ * Evaluates the total height of a layout configuration.
+ * Returns the height in character units (including borders and title).
+ *
+ * @param players - The players to layout
+ * @param layout - The turn configuration to evaluate
+ * @param options - Render options (without tokens for layout evaluation)
+ * @returns Height in character units
+ */
+function evaluateLayoutHeight(players: any[], layout: TurnBasedLayout, options: RenderOptions): number {
+    // Create a copy of options that uses worst-case formatting for robust layout measurement
+    const layoutOptions: RenderOptions = {
+        ...options,
+        mode: 'explicit-turns',
+        explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount],
+        // Flag to ensure title logic doesn't affect layout evaluation
+        _isEvaluation: true,
+        // Use worst-case formatting (*~~player~~*) to ensure layouts are robust to all future game states
+        _forceWorstCaseFormatting: true,
+        // Pass through evaluation title if specified
+        _evaluationTitle: (options as any)._evaluationTitle
+    };
+    
+    // Create players without tokens for layout measurement, but keep original alive/ghost state
+    // The worst-case formatting will be handled by formatPlayerDisplayText()
+    const playersWithoutTokens = players.map(player => ({
+        ...player, 
+        tokens: [] // Remove tokens for pure layout evaluation
+    }));
+    
+    const grimoire = { players: playersWithoutTokens };
+    
+    // Render this configuration and measure dimensions
+    try {
+        const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
+        const dimensions = measureRenderedDimensions(rendered);
+        
+        // Return the total height (including borders and title)
+        return dimensions.height;
+    } catch (error) {
+        // If rendering fails, return a very high height (worst possible)
+        return Number.POSITIVE_INFINITY;
     }
 }
 
