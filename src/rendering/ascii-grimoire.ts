@@ -444,11 +444,12 @@ function groupPlayersIntoSets(topPlayers: PlayerPosition[], rightPlayers: Player
 /**
  * Creates token bubble lines using right-to-left scanning with collision avoidance.
  * Draws vertical () lines extending upward for top-set, downward for bottom-set.
+ * Places tokens as close as possible to players, only extending further when conflicts arise.
  * 
  * CRITICAL: Ensures unique column constraint within each set by detecting and resolving conflicts.
  */
 function createTokenBubbleLines(topSet: PlayerPosition[], bottomSet: PlayerPosition[], 
-                               positions: any, tokenStartRow: number, _tokenRows: number, bottomRow: number,
+                               positions: any, _tokenStartRow: number, _tokenRows: number, bottomRow: number,
                                nameRow: number, roleRow: number, leftStartRow: number,
                                options: RenderOptions): GridCell[] {
     const cells: GridCell[] = [];
@@ -496,100 +497,143 @@ function createTokenBubbleLines(topSet: PlayerPosition[], bottomSet: PlayerPosit
     // Resolve column conflicts within bottom-set (unique column constraint)  
     const resolvedBottomSet = resolveColumnConflicts(bottomSetPlayersWithTokens);
     
-    // Combine and sort by column position for right-to-left scanning
-    const allPlayersWithTokens = [
-        ...resolvedTopSet.map(p => ({ ...p, isTopSet: true })),
-        ...resolvedBottomSet.map(p => ({ ...p, isTopSet: false }))
-    ];
-    allPlayersWithTokens.sort((a, b) => b.column - a.column);
-    
     // Track occupied positions to avoid collisions between different players' bubble lines
     const occupiedPositions = new Set<string>();
     
-    // Right-to-left scan to place bubble lines
-    for (const playerData of allPlayersWithTokens) {
-        const { column, isTopSet, tokens } = playerData;
+    // RIGHT-TO-LEFT SCAN: Process top-set players from right to left so rightmost get shortest lines
+    const topSetSorted = resolvedTopSet.sort((a, b) => b.column - a.column);
+    for (const playerData of topSetSorted) {
+        const { column, tokens } = playerData;
         
-        if (isTopSet) {
-            // For top-set: Draw upward from the player's position
-            // Find where this player is positioned
-            const playerRow = getPlayerRow(playerData.player, positions, nameRow, roleRow, leftStartRow, bottomRow);
-            
-            // Start from above the player's position, accounting for column numbers
-            // If column numbers are shown, start from above the column number annotation
-            // Otherwise, start from above the player's name
-            const columnNumberOffset = options.showColumnNumbers ? 1 : 0;
-            const bubbleStartRow = playerRow - 1 - columnNumberOffset; // Start above column number or name
-            const targetTopRow = tokenStartRow; // Draw up to the token area
-            
-            let currentRow = bubbleStartRow;
-            
-            // First, place () placeholders going upward from player to token area
-            while (currentRow >= targetTopRow + tokens.length) {
-                if (!occupiedPositions.has(`${currentRow},${column}`)) {
-                    cells.push({ content: '()', row: currentRow, col: column });
-                    occupiedPositions.add(`${currentRow},${column}`);
-                }
-                currentRow--;
+        // Find where this player is positioned
+        const playerRow = getPlayerRow(playerData.player, positions, nameRow, roleRow, leftStartRow, bottomRow);
+        
+        // Start bubble line from just above the player (or column number if shown)
+        const columnNumberOffset = options.showColumnNumbers ? 1 : 0;
+        const bubbleStartRow = playerRow - 1 - columnNumberOffset; // Start above column number or name
+        
+        let currentRow = bubbleStartRow;
+        
+        // Place tokens first, starting as close as possible to the player
+        const tokenStartRow = findFirstAvailableTokenPosition(currentRow, column, tokens.length, occupiedPositions, 'upward');
+        
+        // Place actual tokens starting from the closest available position
+        let tokenRow = tokenStartRow;
+        for (let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];  
+            // Find next available row for this token
+            while (occupiedPositions.has(`${tokenRow},${column}`)) {
+                tokenRow--;
             }
-            
-            // Then place actual tokens at the TOP (near targetTopRow)
-            for (let i = tokens.length - 1; i >= 0; i--) {
-                const token = tokens[i];
-                if (currentRow >= targetTopRow) {
-                    while (occupiedPositions.has(`${currentRow},${column}`) && currentRow >= targetTopRow) {
-                        currentRow--;
-                    }
-                    
-                    if (currentRow >= targetTopRow) {
-                        cells.push({ content: `(${token})`, row: currentRow, col: column });
-                        occupiedPositions.add(`${currentRow},${column}`);
-                        currentRow--;
-                    }
-                }
+            cells.push({ content: `(${token})`, row: tokenRow, col: column });
+            occupiedPositions.add(`${tokenRow},${column}`);
+            tokenRow--;
+        }
+        
+        // Now place () placeholders to connect player to tokens (if needed)
+        let connectRow = bubbleStartRow;
+        const highestTokenRow = tokenStartRow - tokens.length + 1;
+        while (connectRow > highestTokenRow) {
+            if (!occupiedPositions.has(`${connectRow},${column}`)) {
+                cells.push({ content: '()', row: connectRow, col: column });
+                occupiedPositions.add(`${connectRow},${column}`);
             }
-        } else {
-            // For bottom-set: Draw downward from the player's position
-            // Find where this player is positioned  
-            const playerRow = getPlayerRow(playerData.player, positions, nameRow, roleRow, leftStartRow, bottomRow);
-            
-            // Start from below the player's position, accounting for column numbers
-            // If column numbers are shown, start from below the column number annotation
-            // Otherwise, start from below the player's role
-            const columnNumberOffset = options.showColumnNumbers ? 1 : 0;
-            const bubbleStartRow = playerRow + 2 + columnNumberOffset; // Start below role + optional column number
-            const bottomBubbleRows = 4; // How many rows to extend downward
-            const targetBottomRow = bubbleStartRow + bottomBubbleRows - 1;
-            
-            let currentRow = bubbleStartRow;
-            
-            // First, place () placeholders going downward, leaving space for tokens at the end
-            const placeholderRows = bottomBubbleRows - tokens.length;
-            for (let i = 0; i < placeholderRows; i++) {
-                if (!occupiedPositions.has(`${currentRow},${column}`)) {
-                    cells.push({ content: '()', row: currentRow, col: column });
-                    occupiedPositions.add(`${currentRow},${column}`);
-                }
-                currentRow++;
+            connectRow--;
+        }
+    }
+    
+    // RIGHT-TO-LEFT SCAN: Process bottom-set players from right to left  
+    const bottomSetSorted = resolvedBottomSet.sort((a, b) => b.column - a.column);
+    for (const playerData of bottomSetSorted) {
+        const { column, tokens } = playerData;
+        
+        // Find where this player is positioned  
+        const playerRow = getPlayerRow(playerData.player, positions, nameRow, roleRow, leftStartRow, bottomRow);
+        
+        // Start bubble line from just below the player (or column number if shown)
+        const columnNumberOffset = options.showColumnNumbers ? 1 : 0;
+        const bubbleStartRow = playerRow + 2 + columnNumberOffset; // Start below role + optional column number
+        
+        let currentRow = bubbleStartRow;
+        
+        // Place tokens first, starting as close as possible to the player
+        const tokenStartRow = findFirstAvailableTokenPosition(currentRow, column, tokens.length, occupiedPositions, 'downward');
+        
+        // Place actual tokens starting from the closest available position
+        let tokenRow = tokenStartRow;
+        for (let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];  
+            // Find next available row for this token
+            while (occupiedPositions.has(`${tokenRow},${column}`)) {
+                tokenRow++;
             }
-            
-            // Then place actual tokens at the BOTTOM (end of the bubble line)
-            for (let i = 0; i < tokens.length; i++) {
-                const token = tokens[i];
-                while (occupiedPositions.has(`${currentRow},${column}`) && currentRow <= targetBottomRow) {
-                    currentRow++;
-                }
-                
-                if (currentRow <= targetBottomRow) {
-                    cells.push({ content: `(${token})`, row: currentRow, col: column });
-                    occupiedPositions.add(`${currentRow},${column}`);
-                    currentRow++;
-                }
+            cells.push({ content: `(${token})`, row: tokenRow, col: column });
+            occupiedPositions.add(`${tokenRow},${column}`);
+            tokenRow++;
+        }
+        
+        // Now place () placeholders to connect player to tokens (if needed)
+        let connectRow = bubbleStartRow;
+        const lowestTokenRow = tokenStartRow + tokens.length - 1;
+        while (connectRow < lowestTokenRow) {
+            if (!occupiedPositions.has(`${connectRow},${column}`)) {
+                cells.push({ content: '()', row: connectRow, col: column });
+                occupiedPositions.add(`${connectRow},${column}`);
             }
+            connectRow++;
         }
     }
     
     return cells;
+}
+
+/**
+ * Finds the first available position to start placing tokens, going in the specified direction.
+ * This ensures tokens are placed as close as possible to the player.
+ */
+function findFirstAvailableTokenPosition(startRow: number, column: number, tokenCount: number, 
+                                       occupiedPositions: Set<string>, direction: 'upward' | 'downward'): number {
+    let candidateRow = startRow;
+    
+    if (direction === 'upward') {
+        // For upward direction, find the highest position where we can fit all tokens
+        // Check if we can fit tokenCount consecutive rows starting from candidateRow going up
+        while (true) {
+            let canFitAll = true;
+            for (let i = 0; i < tokenCount; i++) {
+                const checkRow = candidateRow - i;
+                if (occupiedPositions.has(`${checkRow},${column}`)) {
+                    canFitAll = false;
+                    break;
+                }
+            }
+            
+            if (canFitAll) {
+                return candidateRow; // Return the highest row where tokens will start
+            }
+            
+            candidateRow--; // Try one row higher
+        }
+    } else {
+        // For downward direction, find the lowest position where we can fit all tokens
+        // Check if we can fit tokenCount consecutive rows starting from candidateRow going down
+        while (true) {
+            let canFitAll = true;
+            for (let i = 0; i < tokenCount; i++) {
+                const checkRow = candidateRow + i;
+                if (occupiedPositions.has(`${checkRow},${column}`)) {
+                    canFitAll = false;
+                    break;
+                }
+            }
+            
+            if (canFitAll) {
+                return candidateRow; // Return the lowest row where tokens will start
+            }
+            
+            candidateRow++; // Try one row lower
+        }
+    }
 }
 
 /**

@@ -170,12 +170,12 @@ describe('ASCII Grimoire Rendering', () => {
             const expected = `\
 ┌─ Grimoire (7 players) ─────────────────────────────────────────────────────────┐
 │                                                                                │
+│                                                                                │
+│                                                                                │
+│                                                                                │
+│                                                                                │
+│    (poi:poisoned)                                                              │
 │    (ww:townsfolk)     (lib:outsider)   (inv:minion)                            │
-│    (poi:poisoned)     ()               ()                                      │
-│    ()                 ()               ()                                      │
-│    ()                 ()               ()                                      │
-│    ()                 ()               ()                                      │
-│    ()                 ()               ()                                      │
 │    (4)                (23)             (40)                (60)                │
 │    Alice              Bob              Charlie             Dave                │
 │    washerwoman        librarian        investigator        chef                │

@@ -108,17 +108,17 @@ describe('Render Grimoire Command Test Cases', () => {
                 useAbbreviations: true
             });
             
-            // Fixed output with proper bubble lines
+            // Fixed output with closer token placement (right-to-left scanning)
             const expectedBuggyOutput = `\
 ┌─ Grimoire (3 players) ───────────┐
 │                                  │
+│                                  │
+│                                  │
+│                                  │
+│                                  │
+│                                  │
+│                                  │
 │                (ww:townsfolk)    │
-│                ()                │
-│                ()                │
-│                ()                │
-│                ()                │
-│                ()                │
-│                ()                │
 │                Alice             │
 │                washerwoman       │
 │                                  │
@@ -129,9 +129,6 @@ describe('Render Grimoire Command Test Cases', () => {
 │                                  │
 │                Bob               │
 │                librarian         │
-│                ()                │
-│                ()                │
-│                ()                │
 │                (lib:outsider)    │
 └──────────────────────────────────┘`;
             
@@ -159,21 +156,21 @@ describe('Render Grimoire Command Test Cases', () => {
                 useAbbreviations: true
             });
             
-            // Expected output with corrected bubble lines (no more text corruption)
+            // Expected output with closer token placement (right-to-left scanning)
             const expectedBuggyOutput = `\
 ┌─ Grimoire (3 players) ────────────────┐
 │                                       │
-│    (lib:outsider)   (ww:townsfolk)    │
-│    ()               ()                │
-│    ()               ()                │
-│    ()               ()                │
-│    ()               ()                │
-│    ()               ()                │
-│    ()               ()                │
-│    ()               Alice             │
-│    ()               washerwoman       │
-│    ()                                 │
-│    ()                                 │
+│                                       │
+│                                       │
+│                                       │
+│                                       │
+│                                       │
+│                                       │
+│                     (ww:townsfolk)    │
+│                     Alice             │
+│                     washerwoman       │
+│                                       │
+│    (lib:outsider)                     │
 │    Bob                                │
 │    librarian                          │
 │                                       │
