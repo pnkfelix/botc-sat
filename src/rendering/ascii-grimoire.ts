@@ -120,8 +120,9 @@ export function renderGrimoireToAsciiArt(grimoire: GrimoireState, options: Rende
         const layout: TurnBasedLayout = { topCount, rightCount, bottomCount, leftCount };
         return renderTurnBasedLayout(players, layout, options);
     } else if (options.mode === 'auto') {
-        // Auto mode: Balance compactness and squareness for optimal visual layouts
-        const bestLayout = findBestTurnConfigurationByCompactnessAndSquareness(players, options);
+        // Auto mode: Use 80-character width-constrained layout for optimal display compatibility
+        const autoOptions = { ...options, targetWidth: 80 };
+        const bestLayout = findBestTurnConfigurationByWidthConstraint(players, autoOptions);
         return renderTurnBasedLayout(players, bestLayout, options);
     } else if (options.mode === 'squariness') {
         // Find the best turn configuration via exhaustive search (squareness-based)
@@ -1450,76 +1451,6 @@ function findBestTurnConfigurationByAreaPerimeter2Ratio(players: any[], options:
     return bestConfig;
 }
 
-function findBestTurnConfigurationByCompactnessAndSquareness(players: any[], options: RenderOptions): TurnBasedLayout {
-    const playerCount = players.length;
-    const allTurnConfigs = generateAllTurnConfigurations(playerCount);
-    
-    // Debug: Check if we're using a custom evaluation title
-    const evaluationTitle = (options as any)._evaluationTitle;
-    const isInstrumented = evaluationTitle && (evaluationTitle.includes('Grim') || evaluationTitle.includes('long title'));
-    
-    if (isInstrumented) {
-        console.log(`\n=== FINDBESTCOMPACT+SQUARE DEBUG: title="${evaluationTitle}" ===`);
-        console.log(`Generated ${allTurnConfigs.length} configurations for ${playerCount} players`);
-    }
-    
-    // Evaluate each configuration using a weighted combination of compactness and squareness
-    let bestConfig = allTurnConfigs[0];
-    let bestScore = Number.POSITIVE_INFINITY;
-    let evaluationResults: Array<{config: TurnBasedLayout, score: number, success: boolean, error?: string, details?: any}> = [];
-    
-    for (const config of allTurnConfigs) {
-        try {
-            const combinedScore = evaluateLayoutCompactnessAndSquareness(players, config, options);
-            evaluationResults.push({config, score: combinedScore.combined, success: true, details: combinedScore});
-            
-            if (combinedScore.combined < bestScore) {
-                bestScore = combinedScore.combined;
-                bestConfig = config;
-            }
-            
-            if (isInstrumented) {
-                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] combined: ${combinedScore.combined.toFixed(3)} (area: ${combinedScore.area}, square: ${combinedScore.squareness.toFixed(3)}) ${combinedScore.combined === bestScore ? '← NEW BEST' : ''}`);
-            }
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            evaluationResults.push({config, score: Number.POSITIVE_INFINITY, success: false, error: errorMessage});
-            
-            if (isInstrumented) {
-                console.log(`  [${config.topCount},${config.rightCount},${config.bottomCount},${config.leftCount}] FAILED: ${errorMessage}`);
-            }
-        }
-    }
-    
-    if (isInstrumented) {
-        const successfulEvals = evaluationResults.filter(r => r.success);
-        const failedEvals = evaluationResults.filter(r => !r.success);
-        
-        console.log(`\nSUMMARY:`);
-        console.log(`  Total configurations: ${allTurnConfigs.length}`);
-        console.log(`  Successful evaluations: ${successfulEvals.length}`);
-        console.log(`  Failed evaluations: ${failedEvals.length}`);
-        console.log(`  Selected best: [${bestConfig.topCount},${bestConfig.rightCount},${bestConfig.bottomCount},${bestConfig.leftCount}] score: ${bestScore.toFixed(3)}`);
-        
-        // Check if we missed any obviously good configurations
-        const sortedByScore = successfulEvals.sort((a, b) => a.score - b.score);
-        console.log(`  Top 3 scores:`);
-        for (let i = 0; i < Math.min(3, sortedByScore.length); i++) {
-            const result = sortedByScore[i];
-            console.log(`    ${i+1}. [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}] score: ${result.score.toFixed(3)}`);
-        }
-        
-        if (failedEvals.length > 0) {
-            console.log(`  Failed configurations:`);
-            failedEvals.forEach(result => {
-                console.log(`    [${result.config.topCount},${result.config.rightCount},${result.config.bottomCount},${result.config.leftCount}]: ${result.error}`);
-            });
-        }
-        console.log(`=== END FINDBESTCOMPACT+SQUARE DEBUG ===\n`);
-    }
-    
-    return bestConfig;
-}
 
 function findBestTurnConfigurationByWidthConstraint(players: any[], options: RenderOptions): TurnBasedLayout {
     const playerCount = players.length;
@@ -1929,92 +1860,6 @@ function evaluateLayoutAreaPerimeter2Ratio(players: any[], layout: TurnBasedLayo
     }
 }
 
-/**
- * Evaluates a layout configuration using a weighted combination of compactness and squareness.
- * Balances the desire for compact layouts with visually pleasing square-like proportions.
- * 
- * @param players - The players to layout
- * @param layout - The turn configuration to evaluate
- * @param options - Render options (without tokens for layout evaluation)
- * @returns Object with combined score and individual metrics (lower combined score is better)
- */
-function evaluateLayoutCompactnessAndSquareness(players: any[], layout: TurnBasedLayout, options: RenderOptions): {
-    combined: number; 
-    area: number; 
-    squareness: number; 
-    normalizedArea: number; 
-    normalizedSquareness: number;
-} {
-    // Create a copy of options that uses worst-case formatting for robust layout measurement
-    const layoutOptions: RenderOptions = {
-        ...options,
-        mode: 'explicit-turns',
-        explicitTurns: [layout.topCount, layout.rightCount, layout.bottomCount, layout.leftCount],
-        // Flag to ensure title logic doesn't affect layout evaluation
-        _isEvaluation: true,
-        // Use worst-case formatting (*~~player~~*) to ensure layouts are robust to all future game states
-        _forceWorstCaseFormatting: true,
-        // Pass through evaluation title if specified
-        _evaluationTitle: (options as any)._evaluationTitle
-    };
-    
-    // Create players without tokens for layout measurement, but keep original alive/ghost state
-    // The worst-case formatting will be handled by formatPlayerDisplayText()
-    const playersWithoutTokens = players.map(player => ({
-        ...player,
-        tokens: [] // Remove tokens for pure layout evaluation
-    }));
-    
-    const grimoire = { players: playersWithoutTokens };
-    
-    // Render this configuration and measure dimensions
-    try {
-        const rendered = renderGrimoireToAsciiArt(grimoire, layoutOptions);
-        const dimensions = measureContentDimensions(rendered);
-        
-        // Calculate raw metrics
-        const area = dimensions.width * dimensions.height;
-        
-        // Calculate squareness score: how far the visual aspect ratio is from 1.0
-        // Character dimensions: 6 points wide, 10 points tall (1.67:1 height:width ratio)
-        const characterAspectRatio = 10 / 6; // 1.67
-        const visualAspectRatio = dimensions.width / (dimensions.height * characterAspectRatio);
-        const squareness = Math.abs(visualAspectRatio - 1.0);
-        
-        // Normalize scores to make them comparable and combinable
-        // For area: normalize relative to theoretical minimum (all players in a single row)
-        const playerCount = players.length;
-        const minPossibleArea = playerCount * 20; // rough estimate: 20 chars per player minimum
-        const normalizedArea = area / minPossibleArea;
-        
-        // For squareness: already normalized (0 = perfect, higher = worse)
-        // Scale it to be in similar range as normalized area
-        const normalizedSquareness = squareness * 2; // Scale factor to balance with area
-        
-        // Combine scores with weighting: 60% compactness, 40% squareness
-        // This favors compact layouts but still considers visual appeal
-        const areaWeight = 0.6;
-        const squarenessWeight = 0.4;
-        const combined = (areaWeight * normalizedArea) + (squarenessWeight * normalizedSquareness);
-        
-        return {
-            combined,
-            area,
-            squareness,
-            normalizedArea,
-            normalizedSquareness
-        };
-    } catch (error) {
-        // If rendering fails, return very high scores (worst possible)
-        return {
-            combined: Number.POSITIVE_INFINITY,
-            area: Number.POSITIVE_INFINITY,
-            squareness: Number.POSITIVE_INFINITY,
-            normalizedArea: Number.POSITIVE_INFINITY,
-            normalizedSquareness: Number.POSITIVE_INFINITY
-        };
-    }
-}
 
 /**
  * Evaluates the total width of a layout configuration.

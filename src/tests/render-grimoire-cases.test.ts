@@ -34,18 +34,12 @@ describe('Render Grimoire Command Test Cases', () => {
                 useAbbreviations: true
             });
             
-            // Simple layout with 2 players should be arranged optimally
+            // Auto mode now uses 80-char-width-constrained, favoring horizontal layouts
             const expected = `\
-┌─ Grim ───────────┐
-│Alice             │
-│washerwoman       │
-│                  │
-│                  │
-│                  │
-│                  │
-│Bob               │
-│imp               │
-└──────────────────┘`;
+┌─ Grimoire (2 players) ──────┐
+│Alice              Bob       │
+│washerwoman        imp       │
+└─────────────────────────────┘`;
             
             expect(rendered).toBe(expected);
         });
@@ -208,27 +202,18 @@ describe('Render Grimoire Command Test Cases', () => {
                 useAbbreviations: true
             });
             
-            // Expected ASCII output showing proper clockwise layout
+            // Auto mode now uses 80-char-width-constrained, producing horizontal layout
             const expected = `\
-┌─ Grimoire (6 players) ────────┐
-│Alice                          │
-│investigator                   │
-│                               │
-│                       Bob     │
-│                       chef    │
-│                               │
-│                    Charlie    │
-│                    empath     │
-│                               │
-│                 Dave          │
-│                 librarian     │
-│                               │
-│                    Eve        │
-│                    butler     │
-│                               │
-│*Frank*                        │
-│*imp*                          │
-└───────────────────────────────┘`;
+┌─ Grimoire (6 players) ──────────────────────────────────────────────────────┐
+│Alice               Bob         Charlie        Dave             Eve          │
+│investigator        chef        empath         librarian        butler       │
+│                                                                             │
+│                                                                             │
+│                                                                             │
+│                                                                             │
+│*Frank*                                                                      │
+│*imp*                                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘`;
             
             expect(rendered).toBe(expected);
             
@@ -259,30 +244,21 @@ describe('Render Grimoire Command Test Cases', () => {
                 useAbbreviations: true
             });
             
-            // Expected ASCII output showing proper clockwise layout with left side players
+            // Auto mode now uses 80-char-width-constrained, producing wider layout
             const expected = `\
-┌─ Grimoire (8 players) ──────────┐
-│Alice                            │
-│investigator                     │
-│                                 │
-│                        Bob      │
-│                        chef     │
-│                                 │
-│                    Charlie      │
-│                    empath       │
-│                                 │
-│                 Dave            │
-│                 librarian       │
-│                                 │
-│                    Eve          │
-│                    butler       │
-│                                 │
-│                        Frank    │
-│                        mayor    │
-│                                 │
-│*Harold*      Grace              │
-│*imp*         virgin             │
-└─────────────────────────────────┘`;
+┌─ Grimoire (8 players) ───────────────────────────────────────────────────────┐
+│                 Alice               Bob         Charlie                      │
+│                 investigator        chef        empath                       │
+│                                                                              │
+│                                                                 Dave         │
+│   Grace                                                         librarian    │
+│   virgin                                                                     │
+│                                                             Eve              │
+│*Harold*                                                     butler           │
+│*imp*                                                                         │
+│                                                                 Frank        │
+│                                                                 mayor        │
+└──────────────────────────────────────────────────────────────────────────────┘`;
             
             expect(rendered).toBe(expected);
             
@@ -320,30 +296,21 @@ describe('Render Grimoire Command Test Cases', () => {
                 useAbbreviations: true
             });
             
-            // Fixed output - Harold now appears with asterisk formatting (dead with ghost vote)
+            // Auto mode now uses 80-char-width-constrained, Harold still shows asterisk formatting
             const expectedFixedOutput = `\
-┌─ Grimoire (8 players) ──────────┐
-│Alice                            │
-│investigator                     │
-│                                 │
-│                        Bob      │
-│                        chef     │
-│                                 │
-│                    Charlie      │
-│                    empath       │
-│                                 │
-│                 Dave            │
-│                 librarian       │
-│                                 │
-│                    Eve          │
-│                    butler       │
-│                                 │
-│                        Frank    │
-│                        mayor    │
-│                                 │
-│*Harold*      Grace              │
-│*imp*         virgin             │
-└─────────────────────────────────┘`;
+┌─ Grimoire (8 players) ───────────────────────────────────────────────────────┐
+│                 Alice               Bob         Charlie                      │
+│                 investigator        chef        empath                       │
+│                                                                              │
+│                                                                 Dave         │
+│   Grace                                                         librarian    │
+│   virgin                                                                     │
+│                                                             Eve              │
+│*Harold*                                                     butler           │
+│*imp*                                                                         │
+│                                                                 Frank        │
+│                                                                 mayor        │
+└──────────────────────────────────────────────────────────────────────────────┘`;
             
             // Now renders with dead player indicators
             expect(rendered).toBe(expectedFixedOutput);
@@ -632,36 +599,44 @@ describe('Render Grimoire Command Test Cases', () => {
             const aliveRendered = renderGrimoireToAsciiArt(aliveGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
             const deadRendered = renderGrimoireToAsciiArt(deadGrimoire, { mode: 'auto', showColumnNumbers: false, useAbbreviations: true });
             
-            // Expected layout: auto mode selects compact layout for 15 players
+            // Auto mode now uses 80-char-width-constrained for 15 players
             const expectedOutput = `\
-┌─ Grimoire (15 players) ──────────────────────────────────┐
-│                       Alice                              │
-│                       investigator                       │
-│                                                          │
-│                                                Frank     │
-│        Helen                                   chef      │
-│        mayor                                             │
-│                                              Grace       │
-│     Peter                                    empath      │
-│     undertaker                                           │
-│                                            David         │
-│   Marie                                    librarian     │
-│   monk                                                   │
-│                                          Sarah           │
-│Louis                                     butler          │
-│ravenkeeper                                               │
-│                                        Brian             │
-│   Nancy                                fortune_teller    │
-│   washerwoman                                            │
-│                                          Carol           │
-│     Emily                                virgin          │
-│     imp                                                  │
-│                                            Diana         │
-│                                            slayer        │
-│                                                          │
-│                                              James       │
-│                                              soldier     │
-└──────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (15 players) ─────────────────────────────────────────────────────┐
+│                         Alice                  Frank           Grace        │
+│                         investigator           chef            empath       │
+│                                                                             │
+│                                                                             │
+│        Carol                                                                │
+│        virgin                                                               │
+│                                                                             │
+│      Diana                                                                  │
+│      slayer                                                                 │
+│                                                                             │
+│    James                                                                    │
+│    soldier                                                                  │
+│                                                                             │
+│  Helen                                                                      │
+│  mayor                                                                      │
+│                                                                             │
+│Peter                                                                        │
+│undertaker                                                                   │
+│                                                                             │
+│  Marie                                                                      │
+│  monk                                                                       │
+│                                                                             │
+│    Louis                                                                    │
+│    ravenkeeper                                                              │
+│                                                                             │
+│      Nancy                                                                  │
+│      washerwoman                                                            │
+│                                                                             │
+│        Emily                                                                │
+│        imp                                                                  │
+│                                                                             │
+│                                                                             │
+│                         Brian                 Sarah         David           │
+│                         fortune_teller        butler        librarian       │
+└─────────────────────────────────────────────────────────────────────────────┘`;
             
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
