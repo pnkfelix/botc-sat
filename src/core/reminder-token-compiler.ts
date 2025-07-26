@@ -29,7 +29,7 @@ export class ReminderTokenCompiler {
     ): number {
         const initialVarCount = solver.getVariableCount();
         
-        console.log(`Adding reminder token constraints for ${playerCount} players...`);
+        // Adding reminder token constraints for the given player count
         
         // 1. Create variables for all possible token placements
         this.createTokenPlacementVariables(script, solver, playerCount);
@@ -43,7 +43,6 @@ export class ReminderTokenCompiler {
         }
         
         const tokenVarCount = solver.getVariableCount() - initialVarCount;
-        console.log(`Generated ${tokenVarCount} reminder token variables`);
         return tokenVarCount;
     }
     
@@ -76,7 +75,7 @@ export class ReminderTokenCompiler {
     }
     
     private compileTokenConstraint(roleId: string, constraint: TokenPlacementConstraint, solver: SATSolver, playerCount: number): void {
-        console.log(`Compiling token constraint: ${constraint.description}`);
+        // Compiling constraint: ${constraint.description}
         
         switch (constraint.type) {
             case 'requires_role_present':
@@ -128,7 +127,6 @@ export class ReminderTokenCompiler {
         if (!constraint.onlyOnRole) return;
         
         const allowedRoleId = constraint.onlyOnRole.roleId;
-        console.log(`  DEBUG: Only-on-role constraint: ${roleId}:${constraint.token} can only be placed on ${allowedRoleId}`);
         
         // For all positions: token_placed_at_position => player_at_position_is_allowed_role
         for (let position = 0; position < playerCount; position++) {
@@ -136,8 +134,6 @@ export class ReminderTokenCompiler {
             if (!tokenPlacementVar) continue;
             
             const playerRoleVar = solver.addVariable(`player_${position}_is_${allowedRoleId}`);
-            console.log(`    Position ${position}: IF token_placed_${roleId}_${constraint.token}_at_${position} THEN player_${position}_is_${allowedRoleId}`);
-            console.log(`    Clause: [-${tokenPlacementVar}, ${playerRoleVar}]`);
             solver.addClause([-tokenPlacementVar, playerRoleVar]);
         }
     }
@@ -146,7 +142,6 @@ export class ReminderTokenCompiler {
         if (!constraint.onlyOnRoleType) return;
         
         const allowedRoleType = constraint.onlyOnRoleType.roleType;
-        console.log(`  DEBUG: Only-on-role-type constraint: ${roleId}:${constraint.token} can only be placed on ${allowedRoleType} players`);
         
         // For all positions: token_placed_at_position => player_at_position_has_allowed_role_type
         for (let position = 0; position < playerCount; position++) {
@@ -159,7 +154,6 @@ export class ReminderTokenCompiler {
             } else {
                 // Handle specific role type constraints
                 const playerTypeVar = solver.addVariable(`player_${position}_is_${allowedRoleType.toLowerCase()}`);
-                console.log(`    Position ${position}: IF token_placed_${roleId}_${constraint.token}_at_${position} THEN player_${position}_is_${allowedRoleType.toLowerCase()}`);
                 solver.addClause([-tokenPlacementVar, playerTypeVar]);
             }
         }
@@ -174,8 +168,6 @@ export class ReminderTokenCompiler {
             // token_placed => (player_is_townsfolk OR player_is_outsider)
             // Which is: NOT token_placed OR player_is_townsfolk OR player_is_outsider
             solver.addClause([-tokenPlacementVar, playerTownsfolkVar, playerOutsiderVar]);
-            console.log(`    Position ${position}: IF token placed THEN player is good (townsfolk OR outsider)`);
-            console.log(`    Clause: [-${tokenPlacementVar}, ${playerTownsfolkVar}, ${playerOutsiderVar}]`);
         } else if (alignment === 'evil') {
             // Evil = Minion OR Demon
             const playerMinionVar = solver.addVariable(`player_${position}_is_minion`);
@@ -183,15 +175,12 @@ export class ReminderTokenCompiler {
             
             // token_placed => (player_is_minion OR player_is_demon)
             solver.addClause([-tokenPlacementVar, playerMinionVar, playerDemonVar]);
-            console.log(`    Position ${position}: IF token placed THEN player is evil (minion OR demon)`);
-            console.log(`    Clause: [-${tokenPlacementVar}, ${playerMinionVar}, ${playerDemonVar}]`);
         }
     }
     
-    private compileInformationToken(roleId: string, constraint: TokenPlacementConstraint, _solver: SATSolver, _playerCount: number): void {
+    private compileInformationToken(_roleId: string, _constraint: TokenPlacementConstraint, _solver: SATSolver, _playerCount: number): void {
         // Information tokens can be placed anywhere, no additional position constraints
         // The requires_role_present constraint (if present) handles role presence requirement
-        console.log(`Information token ${roleId}:${constraint.token} can be placed anywhere`);
     }
     
     private compileConditionalPlacement(_roleId: string, constraint: TokenPlacementConstraint, _solver: SATSolver, _playerCount: number): void {
@@ -209,7 +198,7 @@ export class ReminderTokenCompiler {
         const roleVar = solver.getVariableId(`${requiredRoleId}_present`) || 
                        solver.addVariable(`${requiredRoleId}_present`);
         
-        console.log(`  DEBUG: Role-requires-token constraint: if ${requiredRoleId} is present, then ${roleId}:${constraint.token} must be placed somewhere`);
+        // Role-requires-token constraint: if role is present, then token must be placed somewhere
         
         // Create a disjunction of all possible placements for this token
         // If role is present, then at least one placement of this token must be true
@@ -226,14 +215,11 @@ export class ReminderTokenCompiler {
             // Which is equivalent to: NOT role_present OR token_at_0 OR token_at_1 OR ... OR token_at_n
             const clause = [-roleVar, ...tokenPlacementVars];
             solver.addClause(clause);
-            console.log(`    Clause: IF ${requiredRoleId}_present THEN ${roleId}:${constraint.token} must be placed somewhere`);
-            console.log(`    Clause: [${clause.join(', ')}]`);
         }
     }
     
     private addObservedPlacementConstraints(script: Script, grimoireState: GrimoireState, solver: SATSolver): void {
         // Rule: If we observe specific token placements in a grimoire, constrain the solver to match
-        console.log('Adding observed placement constraints from grimoire...');
         
         for (let position = 0; position < grimoireState.players.length; position++) {
             const player = grimoireState.players[position];
@@ -246,7 +232,7 @@ export class ReminderTokenCompiler {
                 
                 const tokenPlacementVar = solver.getVariableId(`token_placed_${roleId}_${token}_at_${position}`);
                 if (tokenPlacementVar) {
-                    console.log(`  Forcing ${roleId}:${token} at position ${position} (${player.name})`);
+                    // Force observed token placement
                     solver.addUnitClause(tokenPlacementVar, true);
                 }
             }
@@ -254,7 +240,7 @@ export class ReminderTokenCompiler {
             // Force the player's role at this position
             const playerRoleVar = solver.addVariable(`player_${position}_is_${player.role}`);
             solver.addUnitClause(playerRoleVar, true);
-            console.log(`  Player ${position} (${player.name}) is ${player.role} (variable ${playerRoleVar})`);
+            // Force player role at position
         }
         
         // Force roles to be present based on observed players
@@ -266,7 +252,7 @@ export class ReminderTokenCompiler {
         for (const roleId of observedRoles) {
             const roleVar = solver.getVariableId(`${roleId}_present`) || solver.addVariable(`${roleId}_present`);
             solver.addUnitClause(roleVar, true);
-            console.log(`  Role ${roleId} is present in game`);
+            // Force role to be present
         }
         
         // Force role type variables based on observed players
@@ -290,7 +276,7 @@ export class ReminderTokenCompiler {
                 const roleVar = solver.getVariableId(`${roleId}_present`);
                 if (roleVar) {
                     solver.addUnitClause(roleVar, false);
-                    console.log(`  Role ${roleId} is NOT present in game`);
+                    // Force role to be absent
                 }
             }
         }
@@ -304,7 +290,7 @@ export class ReminderTokenCompiler {
     }
     
     private addPlayerRoleMutualExclusion(grimoireState: GrimoireState, solver: SATSolver): void {
-        console.log('Adding mutual exclusion constraints for player roles...');
+        // Adding mutual exclusion constraints for player roles
         
         // Get all role IDs that appear in the grimoire
         const allRoles = new Set<string>();
@@ -314,7 +300,6 @@ export class ReminderTokenCompiler {
         
         // For each player, collect all possible role variables that might be assigned to them
         for (let position = 0; position < grimoireState.players.length; position++) {
-            const player = grimoireState.players[position];
             const playerRoleVars: number[] = [];
             
             // Collect all role variables for this player position that exist in the solver
@@ -331,16 +316,14 @@ export class ReminderTokenCompiler {
             for (let i = 0; i < playerRoleVars.length; i++) {
                 for (let j = i + 1; j < playerRoleVars.length; j++) {
                     solver.addClause([-playerRoleVars[i], -playerRoleVars[j]]);
-                    const role1Name = solver.getVariableName(playerRoleVars[i]);
-                    const role2Name = solver.getVariableName(playerRoleVars[j]);
-                    console.log(`  ${player.name} cannot be both ${role1Name?.split('_')[2]} and ${role2Name?.split('_')[2]}`);
+                    // Add mutual exclusion constraint between roles
                 }
             }
         }
     }
     
     private addUnobservedTokenExclusions(script: Script, grimoireState: GrimoireState, solver: SATSolver): void {
-        console.log('Adding unobserved token exclusions...');
+        // Adding unobserved token exclusions
         
         // Collect all tokens that ARE placed in the grimoire
         const observedTokens = new Set<string>();
@@ -389,7 +372,7 @@ export class ReminderTokenCompiler {
                     const isObservedAtThisPosition = player?.tokens.includes(tokenString);
                     if (!isObservedAtThisPosition) {
                         solver.addUnitClause(i, false);
-                        console.log(`  Forcing ${tokenString} NOT at position ${position} (${player?.name || 'unknown'})`);
+                        // Force unobserved token to be false
                     }
                 }
             }
@@ -397,7 +380,7 @@ export class ReminderTokenCompiler {
     }
     
     private addObservedRoleTypeConstraints(grimoireState: GrimoireState, solver: SATSolver): void {
-        console.log('Adding observed role type constraints...');
+        // Adding observed role type constraints
         
         for (let position = 0; position < grimoireState.players.length; position++) {
             const player = grimoireState.players[position];
@@ -408,7 +391,7 @@ export class ReminderTokenCompiler {
             const roleType = role.type.toLowerCase() as 'townsfolk' | 'outsider' | 'minion' | 'demon';
             const playerTypeVar = solver.addVariable(`player_${position}_is_${roleType}`);
             solver.addUnitClause(playerTypeVar, true);
-            console.log(`  Player ${position} (${player.name}) is ${roleType} type`);
+            // Force correct role type for player
             
             // Force other role types to be false for this player
             const allRoleTypes = ['townsfolk', 'outsider', 'minion', 'demon'];
@@ -417,7 +400,7 @@ export class ReminderTokenCompiler {
                     const otherTypeVar = solver.getVariableId(`player_${position}_is_${otherType}`);
                     if (otherTypeVar) {
                         solver.addUnitClause(otherTypeVar, false);
-                        console.log(`  Player ${position} (${player.name}) is NOT ${otherType} type`);
+                        // Force incorrect role types to be false
                     }
                 }
             }
