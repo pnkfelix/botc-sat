@@ -166,6 +166,68 @@ digit ::= '0' | '1' | ... | '9'
 - **Comma-separated tokens**: Natural list format within parentheses
 - **Round-trip compatibility**: Format contains exactly the information needed to reconstruct grimoire state
 
+## Layout Pattern Analysis for Left and Right Sides
+
+### Visual Quality Research Findings
+
+**Research Methodology**: Generated 9 different layout configurations across 8, 10, and 12 player scenarios to analyze visual patterns for left and right side player placement.
+
+### Key Layout Insights
+
+**Left Side Characteristics**:
+- **Interior space usage**: Left side players naturally create interior space for token extension lines
+- **Readability**: Text flows right-to-left, creating clear visual hierarchy 
+- **Compactness**: Left-heavy layouts tend to be wider but more compact in area
+- **Best configurations**: 2-4 players on left side provide good balance without overcrowding
+
+**Right Side Characteristics**:
+- **Exterior space usage**: Right side players extend tokens toward exterior (unlimited space)
+- **Visual flow**: Natural left-to-right reading pattern aligns with token placement
+- **Height efficiency**: Right-heavy layouts tend to be taller but narrower
+- **Optimal range**: 3-5 players on right side create visually pleasing vertical towers
+
+### Recommended Layout Patterns
+
+**Balanced Layouts** (equal left/right usage):
+```
+8-player: [top=2, right=2, bottom=2, left=2] → 73×15 (area=1095)
+10-player: [top=3, right=2, bottom=3, left=2] → 80×15 (area=1200)  
+12-player: [top=3, right=3, bottom=3, left=3] → 93×18 (area=1674)
+```
+
+**Compact Layouts** (optimized for area):
+```
+8-player: [top=2, right=4, bottom=2, left=0] → 57×19 (area=1083) - Right Heavy
+12-player: [top=5, right=1, bottom=5, left=1] → 109×12 (area=1308) - Horizontal
+```
+
+**Vertical Tower Layouts** (tall, narrow profiles):
+```
+8-player: [top=2, right=0, bottom=2, left=4] → 57×21 - Left Heavy
+10-player: [top=3, right=5, bottom=2, left=0] → 74×22 - Right Heavy
+12-player: [top=2, right=4, bottom=2, left=4] → 76×21 - Balanced Vertical
+```
+
+### Layout Quality Guidelines
+
+1. **Left side works well with 2-4 players** - provides interior space without overcrowding
+2. **Right side optimal with 3-5 players** - creates clean vertical alignment
+3. **Balanced configurations** produce most visually pleasing results across player counts
+4. **Avoid extreme concentrations** (>5 players on one side) - creates visual imbalance
+5. **Horizontal spread layouts** work well for wide displays but may be too wide for constrained formats
+
+### Token Rendering Implications
+
+**Left Side Token Strategy**:
+- Tokens extend inward toward grimoire center
+- Requires interior space management to prevent overlap
+- Text alignment: right-justified token labels for visual consistency
+
+**Right Side Token Strategy**:
+- Tokens extend outward to unlimited exterior space
+- Simpler placement algorithm - no collision concerns
+- Text alignment: left-justified token labels (natural flow)
+
 ## Underspecified Areas
 
 - **Event representation** - not yet designed
