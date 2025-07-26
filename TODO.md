@@ -3,43 +3,60 @@
 ## Current Status
 - **Main Branch**: `main` - stable SAT-based bag validation system
 - **Feature Branch**: `feature/ascii-grimoire-hybrid-spacing` - ASCII grimoire rendering development
-- **Last Updated**: 2025-07-20
+- **Last Updated**: 2025-07-26
 - **Core System**: ✅ Working SAT-based bag validation with Baron & Drunk roles
 - **New Feature**: ✅ ASCII grimoire rendering with hybrid spacing algorithm and role abbreviations
+- **Recent Completions**: ✅ Constraint-based layout modes, validation systems, integration testing
 
 ## 🚨 HIGH-PRIORITY FIXES, REGRESSIONS & IMPLEMENTATION GAPS
 
-**Status**: Major progress made - 2 of 5 critical issues resolved. Focus now on remaining edge cases and rendering consistency.
-
-**Recent Completions**: ✅ BUG #7 (left side positioning) and ✅ BUG #8 (dead player indicators) successfully fixed with comprehensive test coverage.
-
-### ASCII Grimoire Rendering Issues
-**Priority**: HIGH | **Impact**: Visual correctness | **Test Cases**: `src/tests/render-grimoire-cases.test.ts`
-
-1. **🐛 BUG #9: Layout Selection Affected by Visual Formatting**
-   - **Issue**: Auto layout selection may change based on visual formatting (dead indicators, etc.) rather than logical structure
-   - **Risk**: Same logical grimoire could select different layouts based on alive/dead status
-   - **Impact**: Layout "optimality" based on visual appearance instead of player positioning logic
-   - **Status**: Needs concrete test case development and investigation
-
-### Token Rendering Issues
-2. **🐛 Token Rendering Inconsistency**
-   - **Issue**: Some tokens not appearing in rendered output (Alice's `ww:townsfolk` missing while Bob's `lib:outsider` shows)
-   - **Test Case**: `[Alice:washerwoman(ww:townsfolk) Bob:librarian(lib:outsider) *Charlie:imp*]`
-   - **Status**: Inconsistent token placement in bubble column system
+**Status**: 1 critical issue remaining plus new validation concerns identified.
 
 ### Edge Case Handling
-3. **🐛 Empty Grimoire Auto Layout Crash**
+1. **🐛 Empty Grimoire Auto Layout Crash**
    - **Issue**: Auto layout system crashes with "Cannot read properties of undefined (reading 'topCount')" for empty grimoires
    - **Impact**: System should handle edge cases gracefully
    - **Root Cause**: Auto layout can't generate turn configurations for 0 players
+   - **Priority**: HIGH
+
+### Validation System Issues  
+2. **🐛 Column Validation False Positives**
+   - **Issue**: Validation incorrectly identifies single-word roles (imp, spy, chef) as player names due to flawed heuristic
+   - **Root Cause**: Logic assumes all roles have underscores, but many don't (imp, spy, chef vs fortune_teller, scarlet_woman)
+   - **Examples**: "*Charlie:imp*" triggers warning "Column 40: [*Charlie*, *imp*]" because both are misclassified as player names
+   - **Impact**: False positive warnings that confuse developers - actual layout positioning is correct
+   - **Priority**: MEDIUM (cosmetic issue, not functional bug)
 
 **Action Items**:
-- [ ] Investigate and fix token rendering inconsistencies
-- [ ] Create test demonstrating layout selection bias from visual formatting (BUG #9)
-- [ ] Fix empty grimoire crash with graceful edge case handling
+- [ ] Fix empty grimoire crash with graceful edge case handling - **ACTIVE HIGH PRIORITY**
+- [ ] Fix column validation false positives - rewrite player name detection logic to avoid misclassifying single-word roles
 
 **Documentation**: All bugs captured with visual examples in `src/tests/render-grimoire-cases.test.ts`
+
+## 🎉 RECENTLY RESOLVED HIGH-PRIORITY ISSUES
+
+**Major Progress**: 4 of 5 original critical issues successfully resolved with comprehensive test coverage.
+
+### ASCII Grimoire Rendering Issues - RESOLVED
+**Test Coverage**: `src/tests/render-grimoire-cases.test.ts`
+
+1. **✅ FIXED: Layout Selection Affected by Visual Formatting (BUG #9)**
+   - **Issue**: Auto layout selection changed based on visual formatting (dead indicators, etc.) rather than logical structure
+   - **Status**: ✅ **RESOLVED** - Comprehensive tests (7-15 players) demonstrate "perfect border stability"
+   - **Test Coverage**: Lines 329-714 with systematic alive/dead layout comparisons
+
+2. **✅ FIXED: Token Rendering Inconsistency (BUG #2)**
+   - **Issue**: Some tokens not appearing in rendered output (Alice's `ww:townsfolk` missing while Bob's `lib:outsider` shows)
+   - **Status**: ✅ **RESOLVED** - Both tokens now render correctly in bubble column system
+   - **Test Case**: `[Alice:washerwoman(ww:townsfolk) Bob:librarian(lib:outsider) *Charlie:imp*]`
+
+3. **✅ FIXED: Left Side Positioning (BUG #7)**
+   - **Issue**: Left side players appeared below bottom row instead of proper clockwise arc
+   - **Status**: ✅ **RESOLVED** - Proper coordinate calculations implemented
+
+4. **✅ FIXED: Dead Player Visual Indicators (BUG #8)**
+   - **Issue**: Dead players showed no visual indication in ASCII output
+   - **Status**: ✅ **RESOLVED** - Consistent visual formatting between single-line and ASCII formats
 
 ## Immediate Tasks
 
@@ -87,7 +104,15 @@
 - ✅ **Multi-criteria optimization** - primary constraint satisfaction + secondary optimization (minimize other dimension) + tertiary tie-breaking (maximize top-side players)
 - ✅ **Graceful fallback** - when constraints impossible to meet, selects narrowest/shortest available layout
 - ✅ **Comprehensive testing** - explicit expected output validation for 12-player/20-line height constraint scenario
-- ✅ **Layout comparison experiment** - extended to include width/height constraint variants (40/80/100/200-char, 8/12/20/40-line)
+- ✅ **Layout comparison experiment** - extended to include width/height constraint variants (40/80/120-char, 16/20/40-line)
+- ✅ **Layout research documentation** - comprehensive analysis of left vs right side placement patterns and visual quality guidelines
+
+**✅ COMPLETED VALIDATION & TESTING IMPROVEMENTS**:
+- ✅ **Column uniqueness validation** - automatic validation that each player has unique column position in ASCII grimoire output
+- ✅ **Examples integration testing** - comprehensive test suite that validates all example files execute without runtime errors
+- ✅ **README argument extraction** - automated parsing of command-line arguments from documentation to ensure examples match docs
+- ✅ **Deprecated API detection** - test checks for outdated API patterns in examples to prevent deployment of broken code
+- ✅ **Documentation consistency validation** - ensures all documented examples exist as files and all example files are documented
 
 **🚧 IN PROGRESS**:
 - [ ] **Extended player counts** - support 7-15 players with hybrid spacing
@@ -112,6 +137,13 @@
    - **Results**: 31% more compact layouts, `(washerwoman:townsfolk)` → `(ww:townsfolk)`, column positions improved from `(4,29,51,74)` to `(4,20,36,50)`
 
 **Value**: Foundation for grimoire visualization, debugging, and user-friendly state representation
+
+**✅ RECENTLY COMPLETED FILES & IMPROVEMENTS**:
+- ✅ `src/tests/examples-integration.test.ts` - comprehensive integration test suite for examples directory
+- ✅ `research/textual-representation-formats.md` - layout pattern analysis and visual quality guidelines  
+- ✅ `src/rendering/ascii-grimoire.ts` - added column uniqueness validation with detailed error reporting
+- ✅ `examples/complete-game-setup.js` - updated to demonstrate 9-player setups instead of 5-player
+- ✅ `src/experiments/layout-optimization-comparison.js` - refined constraint ranges for more practical testing
 
 ### 2. Performance Optimization ✅
 **Priority**: High  
@@ -155,6 +187,12 @@
 
 ### 4. Testing & Validation
 **Priority**: Medium  
+
+**✅ Recently Completed**:
+- ✅ **Examples integration testing** - automated validation that all example files execute without errors
+- ✅ **Documentation consistency** - validates examples match README documentation
+- ✅ **Deprecated API detection** - prevents deployment of outdated example code
+- ✅ **Column uniqueness validation** - ensures ASCII grimoire rendering meets layout constraints
 
 **Current gaps**:
 - [ ] Test all Trouble Brewing role combinations systematically
@@ -506,6 +544,10 @@ npm run build:browser
 - `src/bag-compiler.ts` - Bag validation and generation logic
 - `src/solver.ts` - SAT solver wrapper with clause counting
 - `src/trouble-brewing-roles.ts` - Role definitions with constraints
+
+**Testing & Validation**:
+- `src/tests/examples-integration.test.ts` - comprehensive integration test suite for examples directory
+- `src/rendering/ascii-grimoire.ts` - ASCII grimoire rendering with column uniqueness validation
 
 **Bias Analysis & Testing**:
 - `src/first-solution-analysis.ts` - Generalized seed analysis system
