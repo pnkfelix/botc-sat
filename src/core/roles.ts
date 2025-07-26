@@ -49,6 +49,44 @@ export interface BagConstraint {
     };
 }
 
+// Token placement constraints for reminder tokens
+export interface TokenPlacementConstraint {
+    // Human-readable description
+    description: string;
+    
+    // Constraint types for token placement rules
+    type: 'requires_role_present' | 'only_on_role' | 'only_on_role_type' | 'information_token' | 'conditional_placement';
+    
+    // Which token this constraint applies to
+    token: string;
+    
+    // For requires_role_present: token can only exist if role is in game
+    requiresRole?: {
+        roleId: string;  // Role that must be present for token to be placeable
+    };
+    
+    // For only_on_role: token can only be placed on specific role
+    onlyOnRole?: {
+        roleId: string;  // Role that can have this token placed on it
+    };
+    
+    // For only_on_role_type: token can only be placed on roles of specific type
+    onlyOnRoleType?: {
+        roleType: RoleType;  // Role type that can have this token
+    };
+    
+    // For information_token: token represents information and can go anywhere
+    informationToken?: {
+        // No additional constraints beyond role presence
+    };
+    
+    // For conditional_placement: placement depends on game state
+    conditionalPlacement?: {
+        condition: string;  // DSL expression for when placement is allowed
+        otherwiseConstraint?: TokenPlacementConstraint;
+    };
+}
+
 export interface Role {
     id: string;           // Unique identifier (e.g., "butler", "imp")
     name: string;         // Display name (e.g., "Butler", "Imp")
@@ -64,6 +102,9 @@ export interface Role {
     // Reminder tokens this role introduces (e.g., ["townsfolk", "wrong"] for washerwoman)
     // In grimoire format these appear as "washerwoman:townsfolk", "washerwoman:wrong"
     reminderTokens?: string[];
+    
+    // Token placement constraints for this role's tokens
+    tokenConstraints?: TokenPlacementConstraint[];
     
     // Constraints this role imposes on bag/setup legality
     bagConstraints?: BagConstraint[];

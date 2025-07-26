@@ -58,6 +58,32 @@ const simpleRoles: Role[] = [
         englishText: 'You start knowing that 1 of 2 players is a particular Townsfolk.',
         suggestedAbbreviation: 'ww',
         reminderTokens: ['townsfolk', 'wrong'],
+        tokenConstraints: [
+            {
+                description: 'Washerwoman tokens require washerwoman to be present',
+                type: 'requires_role_present',
+                token: 'townsfolk',
+                requiresRole: { roleId: 'washerwoman' }
+            },
+            {
+                description: 'Washerwoman tokens require washerwoman to be present',
+                type: 'requires_role_present',
+                token: 'wrong',
+                requiresRole: { roleId: 'washerwoman' }
+            },
+            {
+                description: 'Washerwoman tokens are information and can be placed anywhere',
+                type: 'information_token',
+                token: 'townsfolk',
+                informationToken: {}
+            },
+            {
+                description: 'Washerwoman tokens are information and can be placed anywhere',
+                type: 'information_token',
+                token: 'wrong',
+                informationToken: {}
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -150,6 +176,20 @@ const simpleRoles: Role[] = [
         type: 'Townsfolk',
         englishText: 'The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately.',
         reminderTokens: ['no_ability'],
+        tokenConstraints: [
+            {
+                description: 'Virgin no_ability token can only be placed on the virgin',
+                type: 'only_on_role',
+                token: 'no_ability',
+                onlyOnRole: { roleId: 'virgin' }
+            },
+            {
+                description: 'Virgin tokens require virgin to be present',
+                type: 'requires_role_present', 
+                token: 'no_ability',
+                requiresRole: { roleId: 'virgin' }
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -160,6 +200,20 @@ const simpleRoles: Role[] = [
         type: 'Townsfolk',
         englishText: 'Once per game, during the day, publicly choose a player: if they are the Demon, they die.',
         reminderTokens: ['no_ability'],
+        tokenConstraints: [
+            {
+                description: 'Slayer no_ability token can only be placed on the slayer',
+                type: 'only_on_role',
+                token: 'no_ability',
+                onlyOnRole: { roleId: 'slayer' }
+            },
+            {
+                description: 'Slayer tokens require slayer to be present',
+                type: 'requires_role_present',
+                token: 'no_ability', 
+                requiresRole: { roleId: 'slayer' }
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
