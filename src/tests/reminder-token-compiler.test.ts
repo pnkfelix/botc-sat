@@ -343,5 +343,77 @@ describe('Reminder Token Constraint Compilation', () => {
             
             expect(rendered).toBe(expected);
         });
+
+        it('should validate drunk token placement on townsfolk only', () => {
+            // Valid: drunk token on a townsfolk player (librarian), need both librarian tokens
+            const validGrimoire = createTestGrimoire([
+                { name: 'Alice', role: 'librarian', tokens: ['drunk:is_the_drunk', 'librarian:outsider'] }, // Drunk token on townsfolk + required librarian token
+                { name: 'Bob', role: 'chef', tokens: ['librarian:wrong'] }, // Second required librarian token
+                { name: 'Carol', role: 'drunk', tokens: [] }, // Actual drunk player (no token on them)
+                { name: 'Dave', role: 'butler', tokens: [] },
+                { name: 'Eve', role: 'poisoner', tokens: [] },
+                { name: 'Frank', role: 'imp', tokens: [] }
+            ]);
+
+            const solver1 = new SATSolver();
+            const compiler1 = new ReminderTokenCompiler();
+            compiler1.compileReminderTokenConstraints(troubleBrewing, solver1, 6, validGrimoire);
+            
+            const result1 = solver1.solve();
+            expect(result1).toBe(true); // Should be valid - drunk token on townsfolk
+
+            // Invalid: drunk token on outsider (drunk itself)
+            const invalidGrimoire = createTestGrimoire([
+                { name: 'Alice', role: 'librarian', tokens: ['librarian:outsider'] },
+                { name: 'Bob', role: 'chef', tokens: ['librarian:wrong'] },
+                { name: 'Carol', role: 'drunk', tokens: ['drunk:is_the_drunk'] }, // Drunk token on drunk itself!
+                { name: 'Dave', role: 'butler', tokens: [] },
+                { name: 'Eve', role: 'poisoner', tokens: [] },
+                { name: 'Frank', role: 'imp', tokens: [] }
+            ]);
+
+            const solver2 = new SATSolver();
+            const compiler2 = new ReminderTokenCompiler();
+            compiler2.compileReminderTokenConstraints(troubleBrewing, solver2, 6, invalidGrimoire);
+            
+            const result2 = solver2.solve();
+            expect(result2).toBe(false); // Should be invalid - drunk token cannot be on drunk
+        });
+
+        it('should validate fortune teller red herring placement on good players only', () => {
+            // Valid: red herring on outsider (good player)
+            const validGrimoire = createTestGrimoire([
+                { name: 'Alice', role: 'fortune_teller', tokens: [] },
+                { name: 'Bob', role: 'chef', tokens: [] },
+                { name: 'Carol', role: 'butler', tokens: ['fortune_teller:red_herring'] }, // Red herring on outsider (good)
+                { name: 'Dave', role: 'saint', tokens: [] },
+                { name: 'Eve', role: 'poisoner', tokens: [] },
+                { name: 'Frank', role: 'imp', tokens: [] }
+            ]);
+
+            const solver1 = new SATSolver();
+            const compiler1 = new ReminderTokenCompiler();
+            compiler1.compileReminderTokenConstraints(troubleBrewing, solver1, 6, validGrimoire);
+            
+            const result1 = solver1.solve();
+            expect(result1).toBe(true); // Should be valid - red herring on good player
+
+            // Invalid: red herring on minion (evil player)
+            const invalidGrimoire = createTestGrimoire([
+                { name: 'Alice', role: 'fortune_teller', tokens: [] },
+                { name: 'Bob', role: 'chef', tokens: [] },
+                { name: 'Carol', role: 'butler', tokens: [] },
+                { name: 'Dave', role: 'saint', tokens: [] },
+                { name: 'Eve', role: 'poisoner', tokens: ['fortune_teller:red_herring'] }, // Red herring on minion!
+                { name: 'Frank', role: 'imp', tokens: [] }
+            ]);
+
+            const solver2 = new SATSolver();
+            const compiler2 = new ReminderTokenCompiler();
+            compiler2.compileReminderTokenConstraints(troubleBrewing, solver2, 6, invalidGrimoire);
+            
+            const result2 = solver2.solve();
+            expect(result2).toBe(false); // Should be invalid - red herring cannot be on evil player
+        });
     });
 });

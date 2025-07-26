@@ -37,6 +37,20 @@ const drunk: Role = {
     englishText: 'You do not know you are the Drunk. You think you are a Townsfolk character, but you are not.',
     suggestedAbbreviation: 'dr',
     reminderTokens: ['is_the_drunk'],
+    tokenConstraints: [
+        {
+            description: 'Drunk is_the_drunk token can only be placed on townsfolk players',
+            type: 'only_on_role_type',
+            token: 'is_the_drunk',
+            onlyOnRoleType: { roleType: 'Townsfolk' }
+        },
+        {
+            description: 'Drunk tokens require drunk to be present',
+            type: 'requires_role_present',
+            token: 'is_the_drunk',
+            requiresRole: { roleId: 'drunk' }
+        }
+    ],
     constraints: [
         {
             type: 'physical_bag_substitution',
@@ -107,6 +121,44 @@ const simpleRoles: Role[] = [
         englishText: 'You start knowing that 1 of 2 players is a particular Outsider, or that zero Outsiders are in play.',
         suggestedAbbreviation: 'lib',
         reminderTokens: ['outsider', 'wrong'],
+        tokenConstraints: [
+            {
+                description: 'Librarian tokens require librarian to be present',
+                type: 'requires_role_present',
+                token: 'outsider',
+                requiresRole: { roleId: 'librarian' }
+            },
+            {
+                description: 'Librarian tokens require librarian to be present',
+                type: 'requires_role_present',
+                token: 'wrong',
+                requiresRole: { roleId: 'librarian' }
+            },
+            {
+                description: 'Librarian tokens are information and can be placed anywhere',
+                type: 'information_token',
+                token: 'outsider',
+                informationToken: {}
+            },
+            {
+                description: 'Librarian tokens are information and can be placed anywhere',
+                type: 'information_token',
+                token: 'wrong',
+                informationToken: {}
+            },
+            {
+                description: 'Librarian presence requires outsider token to be placed',
+                type: 'role_requires_token',
+                token: 'outsider',
+                roleRequiresToken: { roleId: 'librarian' }
+            },
+            {
+                description: 'Librarian presence requires wrong token to be placed',
+                type: 'role_requires_token',
+                token: 'wrong',
+                roleRequiresToken: { roleId: 'librarian' }
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -118,6 +170,44 @@ const simpleRoles: Role[] = [
         englishText: 'You start knowing that 1 of 2 players is a particular Minion.',
         suggestedAbbreviation: 'inv',
         reminderTokens: ['minion', 'wrong'],
+        tokenConstraints: [
+            {
+                description: 'Investigator tokens require investigator to be present',
+                type: 'requires_role_present',
+                token: 'minion',
+                requiresRole: { roleId: 'investigator' }
+            },
+            {
+                description: 'Investigator tokens require investigator to be present',
+                type: 'requires_role_present',
+                token: 'wrong',
+                requiresRole: { roleId: 'investigator' }
+            },
+            {
+                description: 'Investigator tokens are information and can be placed anywhere',
+                type: 'information_token',
+                token: 'minion',
+                informationToken: {}
+            },
+            {
+                description: 'Investigator tokens are information and can be placed anywhere',
+                type: 'information_token',
+                token: 'wrong',
+                informationToken: {}
+            },
+            {
+                description: 'Investigator presence requires minion token to be placed',
+                type: 'role_requires_token',
+                token: 'minion',
+                roleRequiresToken: { roleId: 'investigator' }
+            },
+            {
+                description: 'Investigator presence requires wrong token to be placed',
+                type: 'role_requires_token',
+                token: 'wrong',
+                roleRequiresToken: { roleId: 'investigator' }
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -149,6 +239,20 @@ const simpleRoles: Role[] = [
         englishText: 'Each night, choose 2 players: you learn if either is a Demon. There is a good player that registers as a Demon to you.',
         suggestedAbbreviation: 'ft',
         reminderTokens: ['red_herring'],
+        tokenConstraints: [
+            {
+                description: 'Fortune Teller red_herring token can only be placed on good players',
+                type: 'only_on_role_type',
+                token: 'red_herring',
+                onlyOnRoleType: { roleType: 'good' }
+            },
+            {
+                description: 'Fortune Teller tokens require fortune teller to be present',
+                type: 'requires_role_present',
+                token: 'red_herring',
+                requiresRole: { roleId: 'fortune_teller' }
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -159,6 +263,20 @@ const simpleRoles: Role[] = [
         type: 'Townsfolk',
         englishText: 'Each night*, you learn which character died by execution today.',
         reminderTokens: ['died_today'],
+        tokenConstraints: [
+            {
+                description: 'Undertaker tokens require undertaker to be present',
+                type: 'requires_role_present',
+                token: 'died_today',
+                requiresRole: { roleId: 'undertaker' }
+            },
+            {
+                description: 'Undertaker tokens are information and can be placed anywhere',
+                type: 'information_token',
+                token: 'died_today',
+                informationToken: {}
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -169,6 +287,20 @@ const simpleRoles: Role[] = [
         type: 'Townsfolk',
         englishText: 'Each night*, choose a player (not yourself): they are safe from the Demon tonight.',
         reminderTokens: ['safe'],
+        tokenConstraints: [
+            {
+                description: 'Monk tokens require monk to be present',
+                type: 'requires_role_present',
+                token: 'safe',
+                requiresRole: { roleId: 'monk' }
+            },
+            {
+                description: 'Monk tokens are information and can be placed anywhere',
+                type: 'information_token',
+                token: 'safe',
+                informationToken: {}
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -257,6 +389,20 @@ const simpleRoles: Role[] = [
         englishText: 'Each night, choose a player (not yourself): tomorrow, you may only vote if they are voting too.',
         suggestedAbbreviation: 'but',
         reminderTokens: ['master'],
+        tokenConstraints: [
+            {
+                description: 'Butler tokens require butler to be present',
+                type: 'requires_role_present',
+                token: 'master',
+                requiresRole: { roleId: 'butler' }
+            },
+            {
+                description: 'Butler tokens are information and can be placed anywhere',
+                type: 'information_token',
+                token: 'master',
+                informationToken: {}
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -288,6 +434,20 @@ const simpleRoles: Role[] = [
         englishText: 'Each night, choose a player: they are poisoned tonight and tomorrow day.',
         suggestedAbbreviation: 'poi',
         reminderTokens: ['poisoned'],
+        tokenConstraints: [
+            {
+                description: 'Poisoner tokens require poisoner to be present',
+                type: 'requires_role_present',
+                token: 'poisoned',
+                requiresRole: { roleId: 'poisoner' }
+            },
+            {
+                description: 'Poisoner tokens are information and can be placed anywhere',
+                type: 'information_token',
+                token: 'poisoned',
+                informationToken: {}
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -308,6 +468,20 @@ const simpleRoles: Role[] = [
         englishText: 'If there are 5 or more players alive & the Demon dies, you become the Demon.',
         suggestedAbbreviation: 'sw',
         reminderTokens: ['is_the_demon'],
+        tokenConstraints: [
+            {
+                description: 'Scarlet Woman is_the_demon token can only be placed on scarlet woman',
+                type: 'only_on_role',
+                token: 'is_the_demon',
+                onlyOnRole: { roleId: 'scarlet_woman' }
+            },
+            {
+                description: 'Scarlet Woman tokens require scarlet woman to be present',
+                type: 'requires_role_present',
+                token: 'is_the_demon',
+                requiresRole: { roleId: 'scarlet_woman' }
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 2
@@ -321,6 +495,20 @@ const simpleRoles: Role[] = [
         englishText: 'Each night*, choose a player: they die. If you kill yourself this way, a Minion becomes the Imp.',
         suggestedAbbreviation: 'imp',
         reminderTokens: ['dead'],
+        tokenConstraints: [
+            {
+                description: 'Imp tokens require imp to be present',
+                type: 'requires_role_present',
+                token: 'dead',
+                requiresRole: { roleId: 'imp' }
+            },
+            {
+                description: 'Imp tokens are information and can be placed anywhere',
+                type: 'information_token',
+                token: 'dead',
+                informationToken: {}
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1

@@ -1,6 +1,8 @@
 // Role definitions and DSL types for Blood on the Clocktower
 
 export type RoleType = 'Townsfolk' | 'Outsider' | 'Minion' | 'Demon';
+export type RoleAlignment = 'good' | 'evil';
+export type RoleTypeOrAlignment = RoleType | RoleAlignment;
 
 // Core distinction: in-play roles vs physical bag contents
 export interface RoleDistribution {
@@ -70,9 +72,9 @@ export interface TokenPlacementConstraint {
         roleId: string;  // Role that can have this token placed on it
     };
     
-    // For only_on_role_type: token can only be placed on roles of specific type
+    // For only_on_role_type: token can only be placed on roles of specific type or alignment
     onlyOnRoleType?: {
-        roleType: RoleType;  // Role type that can have this token
+        roleType: RoleTypeOrAlignment;  // Role type/alignment that can have this token
     };
     
     // For information_token: token represents information and can go anywhere
