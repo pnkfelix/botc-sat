@@ -7,8 +7,8 @@ async function run() {
     console.log('🎮 Complete BOTC game setup workflow...\n');
     
     // Step 1: Generate a legal bag
-    console.log('Step 1: Generating legal bag for 5 players...');
-    const bagResult = await validator.generateBag(5);
+    console.log('Step 1: Generating legal bag for 9 players...');
+    const bagResult = await validator.generateBag(9);
     
     if (!bagResult.success) {
         console.log('❌ Failed to generate bag');
@@ -19,7 +19,7 @@ async function run() {
     
     // Step 2: Assign roles to players
     console.log('\nStep 2: Assigning roles to players...');
-    const playerNames = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve'];
+    const playerNames = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eve', 'Felix', 'George', 'Harry', 'Ignes'];
     const gameState = validator.generateInitialGameState(
         bagResult.selectedRoles, 
         playerNames,
