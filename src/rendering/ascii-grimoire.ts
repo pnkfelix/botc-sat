@@ -975,42 +975,79 @@ export function validateColumnStructure(renderedOutput: string, options?: Render
     }
     
     const lines = renderedOutput.split('\n');
-    if (lines.length === 0) {
+    if (lines.length <= 2) { // Need at least top border, content, bottom border
         return;
     }
     
+    // Ignore decorative borders: skip first and last row, first and last column
+    const contentLines = lines.slice(1, -1); // Remove top and bottom border lines
     const maxWidth = Math.max(...lines.map(line => line.length));
     const problemColumns: string[] = [];
     
-    // Scan each column
-    for (let col = 0; col < maxWidth; col++) {
-        // Extract the column as a vertical string
+    // Scan each column, ignoring the border columns (first and last)
+    for (let col = 1; col < maxWidth - 1; col++) {
+        // Extract the column as a vertical string from content area only
         const columnChars: string[] = [];
-        for (let row = 0; row < lines.length; row++) {
-            const char = col < lines[row].length ? lines[row][col] : ' ';
+        for (let row = 0; row < contentLines.length; row++) {
+            const char = col < contentLines[row].length ? contentLines[row][col] : ' ';
             columnChars.push(char);
         }
         const columnStr = columnChars.join('');
         
-        // Skip columns that are entirely whitespace or contain only borders/symbols
-        if (/^[ |+\-]*$/.test(columnStr)) {
+        // Skip columns that are entirely whitespace or contain only decorative elements
+        if (/^[ │┌┐└┘─┤├┬┴┼]*$/.test(columnStr)) {
             continue;
         }
         
-        // Pattern: optional spaces, uppercase letter (player), mixed content, 
-        // optional second uppercase letter (second player), then spaces
-        // This allows legal upper/lower side column sharing
-        const validPattern = /^[ ]*[A-Z][ a-z*~()]*([A-Z][ a-z*~()]*)?[ ]*$/;
+        // Count uppercase letters (player names)
+        const uppercaseMatches = columnStr.match(/[A-Z]/g) || [];
+        const uppercaseCount = uppercaseMatches.length;
         
-        if (!validPattern.test(columnStr)) {
-            // Count uppercase letters (potential player names) for better error reporting
-            const uppercaseCount = (columnStr.match(/[A-Z]/g) || []).length;
-            const nonWhitespaceContent = columnStr.replace(/[ ]/g, '');
+        // Rule: At most 2 players per column
+        if (uppercaseCount > 2) {
+            problemColumns.push(`Column ${col}: ${uppercaseCount} player names (max 2 allowed)`);
+            continue;
+        }
+        
+        // If no players in this column, skip further validation
+        if (uppercaseCount === 0) {
+            continue;
+        }
+        
+        // Find player positions
+        const playerPositions: number[] = [];
+        for (let i = 0; i < columnStr.length; i++) {
+            if (/[A-Z]/.test(columnStr[i])) {
+                playerPositions.push(i);
+            }
+        }
+        
+        // Rules for 1 player: must have clear line either up or down
+        if (uppercaseCount === 1) {
+            const playerPos = playerPositions[0];
+            // Clear line means: only spaces and lowercase letters (role names, tokens), no other uppercase
+            const hasSpaceAbove = playerPos === 0 || /^[ a-z():*~_-]*$/.test(columnStr.substring(0, playerPos));
+            const hasSpaceBelow = playerPos === columnStr.length - 1 || /^[ a-z():*~_-]*$/.test(columnStr.substring(playerPos + 1));
             
-            if (uppercaseCount > 2) {
-                problemColumns.push(`Column ${col}: ${uppercaseCount} potential player names (max 2 allowed for upper/lower sharing)`);
-            } else if (uppercaseCount > 0) {
-                problemColumns.push(`Column ${col}: Invalid pattern with ${uppercaseCount} player name(s) - content: "${nonWhitespaceContent}"`);
+            if (!hasSpaceAbove && !hasSpaceBelow) {
+                problemColumns.push(`Column ${col}: Single player has no clear line up or down`);
+            }
+        }
+        
+        // Rules for 2 players: top must have clear line up, bottom must have clear line down
+        if (uppercaseCount === 2) {
+            const topPlayerPos = Math.min(...playerPositions);
+            const bottomPlayerPos = Math.max(...playerPositions);
+            
+            // Clear line means: only spaces and lowercase letters, no other uppercase letters
+            const topHasSpaceAbove = topPlayerPos === 0 || /^[ a-z():*~_-]*$/.test(columnStr.substring(0, topPlayerPos));
+            const bottomHasSpaceBelow = bottomPlayerPos === columnStr.length - 1 || /^[ a-z():*~_-]*$/.test(columnStr.substring(bottomPlayerPos + 1));
+            
+            if (!topHasSpaceAbove) {
+                problemColumns.push(`Column ${col}: Top player has no clear line up`);
+            }
+            if (!bottomHasSpaceBelow) {
+                problemColumns.push(`Column ${col}: Bottom player has no clear line down`);
             }
         }
     }
@@ -1018,7 +1055,7 @@ export function validateColumnStructure(renderedOutput: string, options?: Render
     if (problemColumns.length > 0) {
         console.warn(
             `⚠️  COLUMN VALIDATION WARNING: Invalid column structure detected!\n` +
-            `Legal columns: spaces + player name + content + optional second player (upper/lower sharing) + spaces\n` +
+            `Rules: 1) max 2 players per column, 2) single player needs clear line up OR down, 3) two players need clear lines up (top) and down (bottom)\n` +
             `Problem columns:\n${problemColumns.map(line => `  ${line}`).join('\n')}`
         );
     } else if (process.env.NODE_ENV !== 'production') {
