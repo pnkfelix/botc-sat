@@ -31,7 +31,7 @@ async function testOptimizationModes() {
     const modes = [
         'auto', 
         'squariness', 
-        'min-area', 
+        // 'min-area', 
         'min-max-dim', 
         'min-perimeter', 
         'max-area-perimeter-ratio', 
@@ -39,9 +39,8 @@ async function testOptimizationModes() {
         '40-char-width-constrained',
         '80-char-width-constrained', 
         '100-char-width-constrained',
-        '200-char-width-constrained',
-        '8-line-height-constrained',
-        '12-line-height-constrained',
+        '120-char-width-constrained',
+        '16-line-height-constrained',
         '20-line-height-constrained',
         '40-line-height-constrained'
     ];
