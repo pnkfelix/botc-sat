@@ -39,7 +39,7 @@ export class ReminderTokenCompiler {
         
         // 5. If grimoire state is provided, constrain to match observed placements
         if (grimoireState) {
-            this.addObservedPlacementConstraints(grimoireState, solver);
+            this.addObservedPlacementConstraints(script, grimoireState, solver);
         }
         
         const tokenVarCount = solver.getVariableCount() - initialVarCount;
@@ -97,6 +97,10 @@ export class ReminderTokenCompiler {
                 
             case 'conditional_placement':
                 this.compileConditionalPlacement(roleId, constraint, solver, playerCount);
+                break;
+                
+            case 'role_requires_token':
+                this.compileRoleRequiresToken(roleId, constraint, solver, playerCount);
                 break;
                 
             default:
@@ -167,7 +171,36 @@ export class ReminderTokenCompiler {
         console.warn(`Conditional placement not yet implemented: ${constraint.conditionalPlacement.condition}`);
     }
     
-    private addObservedPlacementConstraints(grimoireState: GrimoireState, solver: SATSolver): void {
+    private compileRoleRequiresToken(roleId: string, constraint: TokenPlacementConstraint, solver: SATSolver, playerCount: number): void {
+        if (!constraint.roleRequiresToken) return;
+        
+        const requiredRoleId = constraint.roleRequiresToken.roleId;
+        const roleVar = solver.getVariableId(`${requiredRoleId}_present`) || 
+                       solver.addVariable(`${requiredRoleId}_present`);
+        
+        console.log(`  DEBUG: Role-requires-token constraint: if ${requiredRoleId} is present, then ${roleId}:${constraint.token} must be placed somewhere`);
+        
+        // Create a disjunction of all possible placements for this token
+        // If role is present, then at least one placement of this token must be true
+        const tokenPlacementVars: number[] = [];
+        for (let position = 0; position < playerCount; position++) {
+            const tokenPlacementVar = solver.getVariableId(`token_placed_${roleId}_${constraint.token}_at_${position}`);
+            if (tokenPlacementVar) {
+                tokenPlacementVars.push(tokenPlacementVar);
+            }
+        }
+        
+        if (tokenPlacementVars.length > 0) {
+            // Constraint: role_present => (token_at_0 OR token_at_1 OR ... OR token_at_n)
+            // Which is equivalent to: NOT role_present OR token_at_0 OR token_at_1 OR ... OR token_at_n
+            const clause = [-roleVar, ...tokenPlacementVars];
+            solver.addClause(clause);
+            console.log(`    Clause: IF ${requiredRoleId}_present THEN ${roleId}:${constraint.token} must be placed somewhere`);
+            console.log(`    Clause: [${clause.join(', ')}]`);
+        }
+    }
+    
+    private addObservedPlacementConstraints(script: Script, grimoireState: GrimoireState, solver: SATSolver): void {
         // Rule: If we observe specific token placements in a grimoire, constrain the solver to match
         console.log('Adding observed placement constraints from grimoire...');
         
@@ -228,6 +261,10 @@ export class ReminderTokenCompiler {
             }
         }
         
+        // Force unobserved tokens to be false at all positions
+        // This prevents the solver from placing tokens that aren't actually in the grimoire
+        this.addUnobservedTokenExclusions(script, grimoireState, solver);
+        
         // Add mutual exclusion constraints: each player can only have one role
         this.addPlayerRoleMutualExclusion(grimoireState, solver);
     }
@@ -263,6 +300,63 @@ export class ReminderTokenCompiler {
                     const role1Name = solver.getVariableName(playerRoleVars[i]);
                     const role2Name = solver.getVariableName(playerRoleVars[j]);
                     console.log(`  ${player.name} cannot be both ${role1Name?.split('_')[2]} and ${role2Name?.split('_')[2]}`);
+                }
+            }
+        }
+    }
+    
+    private addUnobservedTokenExclusions(script: Script, grimoireState: GrimoireState, solver: SATSolver): void {
+        console.log('Adding unobserved token exclusions...');
+        
+        // Collect all tokens that ARE placed in the grimoire
+        const observedTokens = new Set<string>();
+        for (const player of grimoireState.players) {
+            for (const tokenString of player.tokens) {
+                observedTokens.add(tokenString);
+            }
+        }
+        
+        // For all possible token placement variables, if the token isn't observed, force it to false
+        for (let i = 1; i <= solver.getVariableCount(); i++) {
+            const varName = solver.getVariableName(i);
+            if (!varName) continue;
+            
+            // Match token placement variables like "token_placed_washerwoman_townsfolk_at_2"
+            const match = varName.match(/^token_placed_(.+)_at_(\d+)$/);
+            if (match) {
+                const [, roleAndToken, positionStr] = match;
+                const position = parseInt(positionStr, 10);
+                
+                // Need to split roleAndToken carefully since both role and token can contain underscores
+                // Strategy: Find the role by looking at all possible prefixes and checking if they're valid roles
+                let roleId = '';
+                let token = '';
+                
+                // Try progressively longer prefixes to find the role
+                const parts = roleAndToken.split('_');
+                for (let j = 1; j <= parts.length - 1; j++) {
+                    const candidateRole = parts.slice(0, j).join('_');
+                    const candidateToken = parts.slice(j).join('_');
+                    
+                    // Check if this looks like a valid role-token combination by checking the script
+                    const role = script.getRoles().find(r => r.id === candidateRole);
+                    if (role && role.reminderTokens && role.reminderTokens.includes(candidateToken)) {
+                        roleId = candidateRole;
+                        token = candidateToken;
+                        break;
+                    }
+                }
+                
+                if (roleId && token) {
+                    const tokenString = `${roleId}:${token}`;
+                    
+                    // If this specific token at this specific position is not observed, force it to false
+                    const player = grimoireState.players[position];
+                    const isObservedAtThisPosition = player?.tokens.includes(tokenString);
+                    if (!isObservedAtThisPosition) {
+                        solver.addUnitClause(i, false);
+                        console.log(`  Forcing ${tokenString} NOT at position ${position} (${player?.name || 'unknown'})`);
+                    }
                 }
             }
         }

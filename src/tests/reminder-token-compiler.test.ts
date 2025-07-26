@@ -56,7 +56,7 @@ describe('Reminder Token Constraint Compilation', () => {
         it('should validate virgin token placed on virgin player', () => {
             const validGrimoire = createTestGrimoire([
                 { name: 'Alice', role: 'washerwoman', tokens: ['washerwoman:townsfolk'] },
-                { name: 'Bob', role: 'chef', tokens: [] },
+                { name: 'Bob', role: 'chef', tokens: ['washerwoman:wrong'] }, // Washerwoman's second token
                 { name: 'Carol', role: 'virgin', tokens: ['virgin:no_ability'] }, // Virgin with token
                 { name: 'Dave', role: 'butler', tokens: [] },
                 { name: 'Eve', role: 'drunk', tokens: [] },
@@ -74,6 +74,55 @@ describe('Reminder Token Constraint Compilation', () => {
 
             // Test rendered grimoire format
             const rendered = renderGrimoireToAsciiArt(validGrimoire, { mode: 'auto', useAbbreviations: true });
+            const expected = `\
+┌─ Grimoire (7 players) ──────────────────────────────────────────────────────────────┐
+│                                                                                     │
+│                                                                                     │
+│                                                                                     │
+│                                                                                     │
+│                                                                                     │
+│                                                                                     │
+│                                                                                     │
+│                    (ww:townsfolk)     (ww:wrong)  (virgin:no_ability)               │
+│                    Alice              Bob         Carol                Dave         │
+│                    washerwoman        chef        virgin               butler       │
+│                                                                                     │
+│                                                                                     │
+│    Frank                                                                            │
+│    poisoner                                                                         │
+│                                                                                     │
+│ Grace                                                                               │
+│ imp                                                                                 │
+│                                                                                     │
+│                                                                                     │
+│                    Eve                                                              │
+│                    drunk                                                            │
+└─────────────────────────────────────────────────────────────────────────────────────┘`;
+            
+            expect(rendered).toBe(expected);
+        });
+
+        it('should reject washerwoman missing required tokens', () => {
+            const invalidGrimoire = createTestGrimoire([
+                { name: 'Alice', role: 'washerwoman', tokens: ['washerwoman:townsfolk'] }, // Missing wrong token!
+                { name: 'Bob', role: 'chef', tokens: [] },
+                { name: 'Carol', role: 'virgin', tokens: ['virgin:no_ability'] },
+                { name: 'Dave', role: 'butler', tokens: [] },
+                { name: 'Eve', role: 'drunk', tokens: [] },
+                { name: 'Frank', role: 'poisoner', tokens: [] },
+                { name: 'Grace', role: 'imp', tokens: [] }
+            ]);
+
+            // Test constraint validation
+            const solver = new SATSolver();
+            const compiler = new ReminderTokenCompiler();
+            compiler.compileReminderTokenConstraints(troubleBrewing, solver, 7, invalidGrimoire);
+            
+            const result = solver.solve();
+            expect(result).toBe(false); // Should be invalid - washerwoman missing wrong token
+
+            // Test rendered grimoire format shows missing token
+            const rendered = renderGrimoireToAsciiArt(invalidGrimoire, { mode: 'auto', useAbbreviations: true });
             const expected = `\
 ┌─ Grimoire (7 players) ──────────────────────────────────────────────────────────────┐
 │                                                                                     │

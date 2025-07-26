@@ -211,6 +211,11 @@ Based on the successful implementation of the ASCII grimoire visualization:
 - **Test expectations must reflect actual output** - Update ASCII art test cases when visual formatting changes
 - **Helper function patterns** - Use `formatPlayerDisplayText()` and `getPlayerDisplayWidth()` consistently across all rendering locations
 
+#### Box Drawing Character Testing Challenges
+- **ASCII art test expectations are difficult to get right** - Box drawing characters and precise spacing are error-prone to manually specify
+- **Request human help for ASCII grid tests** - When tests involve expected ASCII output with borders, ask user to verify/fix the expected strings
+- **Future improvement needed**: Consider developing a vitest helper function that compares ASCII grids while ignoring box-drawing characters and trailing whitespace, enabling easier detection of content differences without getting bogged down in border formatting
+
 ### TypeScript Code Navigation Tools (cclsp MCP)
 This project has **Language Server Protocol (LSP) tools** available via the cclsp MCP server that provide superior TypeScript code navigation:
 

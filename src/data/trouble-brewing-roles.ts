@@ -82,6 +82,18 @@ const simpleRoles: Role[] = [
                 type: 'information_token',
                 token: 'wrong',
                 informationToken: {}
+            },
+            {
+                description: 'Washerwoman presence requires townsfolk token to be placed',
+                type: 'role_requires_token',
+                token: 'townsfolk',
+                roleRequiresToken: { roleId: 'washerwoman' }
+            },
+            {
+                description: 'Washerwoman presence requires wrong token to be placed',
+                type: 'role_requires_token',
+                token: 'wrong',
+                roleRequiresToken: { roleId: 'washerwoman' }
             }
         ],
         constraints: [],

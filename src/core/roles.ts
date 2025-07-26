@@ -55,7 +55,7 @@ export interface TokenPlacementConstraint {
     description: string;
     
     // Constraint types for token placement rules
-    type: 'requires_role_present' | 'only_on_role' | 'only_on_role_type' | 'information_token' | 'conditional_placement';
+    type: 'requires_role_present' | 'only_on_role' | 'only_on_role_type' | 'information_token' | 'conditional_placement' | 'role_requires_token';
     
     // Which token this constraint applies to
     token: string;
@@ -84,6 +84,11 @@ export interface TokenPlacementConstraint {
     conditionalPlacement?: {
         condition: string;  // DSL expression for when placement is allowed
         otherwiseConstraint?: TokenPlacementConstraint;
+    };
+    
+    // For role_requires_token: if role is present, then token must be placed somewhere
+    roleRequiresToken?: {
+        roleId: string;  // Role that must place this token when present
     };
 }
 
