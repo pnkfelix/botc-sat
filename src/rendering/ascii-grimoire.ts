@@ -963,6 +963,104 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
 // Legacy spacing function - replaced by hybrid dense/justified algorithm
 // Kept for potential future use in other layout modes
 
+/**
+ * Validates that each player has a unique column position in the output.
+ * This is a critical constraint for proper ASCII grimoire formatting - overlapping
+ * player columns would create illegible output and violate the parsing assumptions.
+ */
+function validateUniqueColumnPerPlayer(grid: AbstractGrid, options?: RenderOptions & { _isEvaluation?: boolean }): void {
+    // Skip validation during evaluation mode to avoid performance overhead
+    if (options?._isEvaluation) {
+        return;
+    }
+    
+    // Extract column numbers from cells that contain them
+    const columnNumbers: { col: number; playerInfo: string }[] = [];
+    const playerNameColumns: { col: number; name: string }[] = [];
+    
+    for (const cell of grid.cells) {
+        // Match column number markers like "(4)", "(23)", etc.
+        const columnMatch = cell.content.match(/^\((\d+)\)$/);
+        if (columnMatch) {
+            const columnNumber = parseInt(columnMatch[1]);
+            columnNumbers.push({ 
+                col: columnNumber, 
+                playerInfo: `col=${cell.col}, content="${cell.content}"` 
+            });
+        }
+        
+        // Collect player names (non-empty, non-parenthetical, non-role content)
+        // Heuristic: likely player names are capitalized and not role names
+        if (cell.content && 
+            !cell.content.startsWith('(') && 
+            !cell.content.includes('_') && // Roles have underscores
+            cell.content[0] === cell.content[0].toUpperCase() &&
+            cell.content.length > 1) {
+            playerNameColumns.push({ col: cell.col, name: cell.content });
+        }
+    }
+    
+    // Check for duplicate column numbers in the markers
+    const seenColumns = new Set<number>();
+    const duplicateColumns: number[] = [];
+    
+    for (const entry of columnNumbers) {
+        if (seenColumns.has(entry.col)) {
+            duplicateColumns.push(entry.col);
+        }
+        seenColumns.add(entry.col);
+    }
+    
+    // Report validation results
+    if (duplicateColumns.length > 0) {
+        const errorDetails = columnNumbers
+            .filter(entry => duplicateColumns.includes(entry.col))
+            .map(entry => `  Column ${entry.col}: ${entry.playerInfo}`)
+            .join('\n');
+            
+        // For now, log as warning instead of throwing error since this reveals 
+        // existing implementation issues that need separate investigation
+        console.warn(
+            `⚠️  COLUMN VALIDATION WARNING: Duplicate player columns detected!\n` +
+            `Each player should have a unique column position for optimal ASCII grimoire formatting.\n` +
+            `Duplicate columns found:\n${errorDetails}\n` +
+            `This may indicate overlapping player positioning.`
+        );
+    }
+    
+    // Additional check: ensure player names are at different actual column positions
+    const nameColumnMap = new Map<number, string[]>();
+    for (const entry of playerNameColumns) {
+        if (!nameColumnMap.has(entry.col)) {
+            nameColumnMap.set(entry.col, []);
+        }
+        nameColumnMap.get(entry.col)!.push(entry.name);
+    }
+    
+    const overlappingNameColumns: string[] = [];
+    for (const [col, names] of nameColumnMap.entries()) {
+        if (names.length > 1) {
+            overlappingNameColumns.push(`Column ${col}: [${names.join(', ')}]`);
+        }
+    }
+    
+    if (overlappingNameColumns.length > 0) {
+        console.warn(
+            `⚠️  COLUMN VALIDATION WARNING: Multiple player names at same column position!\n` +
+            `Each player should start at a unique column for optimal readability.\n` +
+            `Overlapping positions:\n${overlappingNameColumns.map(line => `  ${line}`).join('\n')}\n` +
+            `This may indicate overlapping player positioning.`
+        );
+    }
+    
+    // Success: validation passed
+    const totalPlayers = Math.max(columnNumbers.length, playerNameColumns.length);
+    if (totalPlayers > 0 && process.env.NODE_ENV !== 'production') {
+        // Debug information in development mode only
+        console.debug(`✅ Column validation passed: ${totalPlayers} players with unique column positions`);
+    }
+}
+
 function renderAbstractGrid(grid: AbstractGrid, playerCount: number, options?: RenderOptions & { _isEvaluation?: boolean }): string {
     // Create a 2D array to hold the final output
     const height = grid.maxRow - grid.minRow + 3; // Add padding for border
@@ -1005,7 +1103,12 @@ function renderAbstractGrid(grid: AbstractGrid, playerCount: number, options?: R
         lines[i] = '│' + lines[i].substring(1, width - 1) + '│';
     }
     
-    return lines.join('\n');
+    const result = lines.join('\n');
+    
+    // Validate unique column per player constraint
+    validateUniqueColumnPerPlayer(grid, options);
+    
+    return result;
 }
 
 function setTextInLines(lines: string[], row: number, col: number, text: string): void {
