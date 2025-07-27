@@ -130,6 +130,17 @@ export interface Role {
     // For later: ongoing abilities during gameplay
     ongoingAbilities?: string[]; // DSL expressions for ongoing effects
     
+    // Temporal constraint properties for game history validation
+    abilityType?: 'one_time_automatic' | 'one_time_player_triggered' | 'one_time_event_triggered' | 'recurring_nightly' | 'recurring_nightly_except_first' | 'setup_passive';
+    abilityTiming?: 'setup' | 'night_1' | 'any_night' | 'night_2_plus' | 'day' | 'on_death' | 'on_event' | 'passive';
+    abilityConstraints?: {
+        requires_sober_and_healthy?: boolean;
+        learns_information?: boolean;
+        places_persistent_tokens?: boolean;
+        affects_transient_state?: boolean;
+        triggered_by_event?: string; // Event that triggers ability (e.g., 'nomination', 'demon_death')
+    };
+    
     // Metadata
     edition: string;      // Which edition/script this role belongs to
     complexity?: number;  // 1-3 difficulty rating

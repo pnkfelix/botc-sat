@@ -3,6 +3,7 @@ import { Script } from '../core/scripts';
 import { getRole, TokenPlacementConstraint } from '../core/roles';
 import { SATSolver } from '../core/solver';
 import { GrimoireState } from '../core/grimoire';
+import { TemporalConstraintCompiler, TemporalContext } from './temporal-constraint-compiler';
 
 /**
  * Generic compiler for reminder token placement rules into SAT constraints.
@@ -44,6 +45,40 @@ export class ReminderTokenCompiler {
         
         const tokenVarCount = solver.getVariableCount() - initialVarCount;
         return tokenVarCount;
+    }
+
+    /**
+     * Enhanced compilation with temporal constraint integration.
+     * Makes token constraints conditional on game history context.
+     */
+    compileWithTemporalConstraints(
+        script: Script,
+        solver: SATSolver,
+        playerCount: number,
+        grimoireState?: GrimoireState
+    ): { tokenVarCount: number; temporalContext: TemporalContext } {
+        const initialVarCount = solver.getVariableCount();
+        
+        // 1. Compile temporal constraints first
+        const temporalCompiler = new TemporalConstraintCompiler();
+        const temporalContext = temporalCompiler.compileTemporalConstraints(script, solver, playerCount);
+        
+        // 2. Create token placement variables
+        this.createTokenPlacementVariables(script, solver, playerCount);
+        
+        // 3. Add conditional token constraints (modified to use temporal context)
+        this.addConditionalTokenConstraints(script, solver, playerCount, temporalContext);
+        
+        // 4. Link bag composition to temporal context
+        temporalCompiler.addBagToTemporalConstraints(script, solver, temporalContext);
+        
+        // 5. If grimoire state provided, constrain to match observed placements
+        if (grimoireState) {
+            this.addObservedPlacementConstraints(script, grimoireState, solver);
+        }
+        
+        const tokenVarCount = solver.getVariableCount() - initialVarCount;
+        return { tokenVarCount, temporalContext };
     }
     
     private createTokenPlacementVariables(script: Script, solver: SATSolver, playerCount: number): void {
@@ -429,5 +464,84 @@ export class ReminderTokenCompiler {
         }
         
         return placements.sort((a, b) => a.position - b.position);
+    }
+
+    /**
+     * Add token constraints that are conditional on temporal context variables.
+     * This makes information gathering constraints depend on being sober and healthy.
+     */
+    private addConditionalTokenConstraints(script: Script, solver: SATSolver, playerCount: number, temporalContext: TemporalContext): void {
+        for (const roleId of script.roleIds) {
+            const role = getRole(roleId);
+            if (!role?.tokenConstraints) continue;
+
+            // Check if this role has temporal constraints affecting its tokens
+            const soberHealthyVar = temporalContext.soberHealthyWhenActing.get(roleId);
+            
+            for (const constraint of role.tokenConstraints) {
+                if (constraint.type === 'information_token' && soberHealthyVar) {
+                    // Information tokens only apply normal constraints if role was sober and healthy
+                    this.addConditionalInformationConstraints(roleId, constraint, solver, playerCount, soberHealthyVar);
+                } else {
+                    // Non-information tokens or roles without sober/healthy requirements use normal constraints
+                    this.compileTokenConstraint(roleId, constraint, solver, playerCount);
+                }
+            }
+        }
+    }
+
+    /**
+     * Add information token constraints that are conditional on sober/healthy status.
+     */
+    private addConditionalInformationConstraints(
+        roleId: string, 
+        constraint: TokenPlacementConstraint, 
+        solver: SATSolver, 
+        playerCount: number, 
+        soberHealthyVarName: string
+    ): void {
+        const soberHealthyVar = solver.getVariableId(soberHealthyVarName);
+        if (!soberHealthyVar) return;
+
+        // Get the role-specific constraints that should apply when sober and healthy
+        const role = getRole(roleId);
+        if (!role) return;
+
+        // Find the corresponding role_requires_token constraint for this token
+        const requiresTokenConstraint = role.tokenConstraints?.find(c => 
+            c.type === 'role_requires_token' && c.token === constraint.token
+        );
+
+        if (requiresTokenConstraint) {
+            // Modified constraint: role present AND sober/healthy => token must be placed
+            const roleVar = solver.getVariableId(`${roleId}_present`) || solver.addVariable(`${roleId}_present`);
+            
+            // Collect all placement variables for this token
+            const tokenPlacementVars: number[] = [];
+            for (let position = 0; position < playerCount; position++) {
+                const tokenPlacementVar = solver.getVariableId(`token_placed_${roleId}_${constraint.token}_at_${position}`);
+                if (tokenPlacementVar) {
+                    tokenPlacementVars.push(tokenPlacementVar);
+                }
+            }
+
+            if (tokenPlacementVars.length > 0) {
+                // (role_present AND sober_healthy) => (token_at_0 OR token_at_1 OR ... OR token_at_n)
+                // Which is: NOT role_present OR NOT sober_healthy OR token_at_0 OR token_at_1 OR ... OR token_at_n
+                const clause = [-roleVar, -soberHealthyVar, ...tokenPlacementVars];
+                solver.addClause(clause);
+            }
+        }
+
+        // Also apply the basic requires_role_present constraint (this is always needed)
+        if (constraint.type === 'information_token') {
+            // Find the requires_role_present constraint for this token
+            const requiresRoleConstraint = role.tokenConstraints?.find(c => 
+                c.type === 'requires_role_present' && c.token === constraint.token
+            );
+            if (requiresRoleConstraint) {
+                this.compileRequiresRolePresent(roleId, requiresRoleConstraint, solver, playerCount);
+            }
+        }
     }
 }

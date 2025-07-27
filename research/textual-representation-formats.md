@@ -228,11 +228,253 @@ digit ::= '0' | '1' | ... | '9'
 - Simpler placement algorithm - no collision concerns
 - Text alignment: left-justified token labels (natural flow)
 
-## Underspecified Areas
+## Game Trace Representation
 
-- **Event representation** - not yet designed
+### Overview
+
+To support temporal constraint validation and game analysis, we need textual representations for **game event sequences**. These complement grimoire representations by capturing the **history** that led to a grimoire state.
+
+**Design Goals**:
+1. **Dual format approach**: Compact one-liner (parsing/constraint validation) + rich multi-line (human analysis)
+2. **Mechanical focus**: One-liner captures only grimoire-affecting events for SAT constraint derivation
+3. **Rich context**: Multi-line includes social dynamics, player communications, reasoning
+4. **Consistent syntax**: Parallels grimoire format conventions where possible
+
+### Game Trace One-Liner Format
+
+**Purpose**: Encode mechanical game events for temporal constraint validation. Only events that affect grimoire state or game rules are included.
+
+#### Phase Structure
+
+**Syntax**: `<PHASE> event1, event2, ... <NEXT_PHASE> event3, ...`
+
+**Phase Labels**:
+- `<SETUP>` - Initial game setup
+- `<N1>` `<N2>` `<N3>` ... - Night phases (abilities, demon kills)
+- `<D1>` `<D2>` `[D3]` ... - Day phases (discussion, free talk)  
+- `<E1>` `<E2>` `[E3]` ... - Evening phases (nominations, voting, executions)
+
+**Sequence**: `<SETUP> <N1> <D1> <E1> <N2> <D2> <E2> <N3> ...`
+
+#### Event Syntax
+
+**Actor Syntax**: 
+- `PlayerName:RoleName` - Player acting as specific role (e.g., `Alice:poisoner`)
+- `PlayerName` - Player acting (role inferred from context)
+- `RoleName` - Role acting (player inferred from context) 
+- `st` - Storyteller action
+
+**Grimoire Mutation Events**:
+```
+Actor!Target(+token)           # Add reminder token
+Actor!Target(-token)           # Remove reminder token  
+Actor!Target1(-token),Target2(+token)  # Move token between targets
+```
+
+**Game Action Events**:
+```
+Player!nominates->Target:Role  # Player nominates target
+Player!votes->Target           # Player votes on current nomination
+st!executes->Player           # Storyteller resolves execution
+Player!dies                   # Player death (any cause)
+```
+
+#### Reminder Token Names
+
+**From Trouble Brewing roles** (using official token names with role prefixes):
+
+**Information Tokens**:
+- `ww:townsfolk`, `ww:wrong` (washerwoman learns)
+- `lib:outsider`, `lib:wrong` (librarian learns)
+- `inv:minion`, `inv:wrong` (investigator learns)
+- `undertaker:died_today` (undertaker learns execution victim)
+
+**Setup/Status Tokens**:
+- `dr:is_the_drunk` (drunk player receives townsfolk token)
+- `ft:red_herring` (fortune teller's false positive)
+- `sw:is_the_demon` (scarlet woman becomes demon)
+
+**Transient Effect Tokens**:
+- `poi:poisoned` (poisoner's current target)
+- `monk:safe` (monk's protection)
+- `but:master` (butler's chosen master)
+- `imp:dead` (imp's kill target)
+
+**Ability Loss Tokens**:
+- `virgin:no_ability` (virgin loses power after nomination)
+- `slayer:no_ability` (slayer loses power after use)
+
+#### Example One-Liner Traces
+
+**Basic 7-player game**:
+```
+<SETUP> st!Alice(+dr:is_the_drunk), st!Eve(+ft:red_herring) <N1> Alice:poisoner!Bob(+poi:poisoned), st!Dave(+ww:townsfolk),Frank(+ww:wrong), Carol:butler!Grace(+but:master) <E1> Frank!nominates->Alice:virgin, st!Alice(+virgin:no_ability) <N2> Alice:poisoner!Bob(-poi:poisoned),Carol(+poi:poisoned), Dave:imp!Grace(+imp:dead), Grace!dies
+```
+
+**With execution sequence**:
+```
+<SETUP> st!Bob(+dr:is_the_drunk) <N1> Alice:poisoner!Carol(+poi:poisoned), st!Dave(+ww:townsfolk),Eve(+ww:wrong) <E1> Frank!nominates->Alice:virgin, Grace!votes->Alice, Bob!votes->Alice, Carol!votes->Alice, st!executes->Alice, Alice!dies <N2> st!demon_kill->Bob, Bob!dies
+```
+
+### Game Trace Multi-Line Format
+
+**Purpose**: Human-readable format with rich context including social dynamics, player reasoning, and non-mechanical events.
+
+#### Structure
+
+**Phase headers** with indented events:
+```
+<SETUP>
+  storyteller places drunk token on Alice
+  storyteller places red herring token on Eve
+
+<N1> 
+  Alice (poisoner) adds poisoned token to Bob
+  storyteller determines washerwoman learns Dave:townsfolk, Frank:wrong
+  Carol (butler) chooses Grace as master
+
+MSG (N1): Alice -> Bob (whisper): "I'm the washerwoman, you're safe"
+MSG (N1): Carol -> ALL: "I need to vote with my master tomorrow"
+
+<D1>
+  Alice claims washerwoman (false - she's actually drunk)
+  Frank claims investigator (lie - he's evil)
+  
+<E1>
+  Frank nominates Alice (virgin) - stated reason: "Alice's info seems suspicious"
+  Grace votes Alice, Bob votes Alice, Carol votes Alice
+  storyteller executes Alice (3 votes, majority reached)  
+  Alice dies, virgin ability triggered
+```
+
+#### Extended Context Elements
+
+**Message Tracking**:
+```
+MSG (PHASE): Source -> Target: "quoted content"
+MSG (PHASE): Source -> Target (whisper): "private content"
+MSG (PHASE): Source -> ALL: "public statement"
+```
+
+**Reasoning/Notes**:
+```
+NOTE: Alice doesn't know she's drunk, shares false info confidently
+STORYTELLER: Chose conservative washerwoman info to avoid confirming roles
+STRATEGY: Frank targeting Alice to eliminate virgin threat
+```
+
+**Vote Dynamics**:
+```
+Frank nominates Carol (virgin) - reason: "Carol's voting patterns suspicious"
+Alice votes Carol - influenced by Frank's argument
+Bob abstains - worried about virgin trigger
+Carol defends - claims washerwoman but info contradicts Alice
+Grace votes Carol - trusts Frank as fellow evil
+RESULT: Carol executed (2 votes), virgin ability triggers, Alice dies
+```
+
+### Parsing and Conversion
+
+**One-liner → Temporal Context**: Parse mechanical events to derive constraint variables
+```typescript
+parseGameTrace(oneLineTrace: string): TemporalContextValues {
+    // Extract events like "st!Alice(+dr:is_the_drunk)"
+    // Derive facts like "washerwoman_was_sober_and_healthy_when_acting = false"
+    // Return constraint variables for SAT validation
+}
+```
+
+**Multi-line → Rich Analysis**: Parse full context for human analysis tools
+```typescript
+parseRichTrace(multiLineTrace: string): GameAnalysis {
+    // Extract mechanical events, messages, reasoning, vote patterns
+    // Build timeline with social and strategic context
+    // Support post-game analysis and strategy learning
+}
+```
+
+### Integration with Temporal Constraints
+
+**Workflow**:
+1. **Game occurs** → generates both trace formats
+2. **One-liner parsed** → derives temporal context values
+3. **Temporal constraints applied** → validates final grimoire consistency
+4. **Multi-line used** → for human review, strategy analysis, rule disputes
+
+**Constraint Derivation Examples**:
+```
+Trace: "st!Alice(+dr:is_the_drunk) ... st!Dave(+ww:townsfolk),Eve(+ww:wrong)"
+Derived: washerwoman_was_sober_and_healthy_when_acting = false (Alice was drunk)
+
+Trace: "Frank!nominates->Carol:virgin, st!Carol(+virgin:no_ability)"  
+Derived: virgin_was_nominated = true, nominator_was_townsfolk = true
+```
+
+This creates a complete **game state validation pipeline**: Game Events → Trace → Temporal Context → SAT Constraints → Grimoire Validation.
+
+## Implementation Status
+
+### ✅ Completed Components
+
+**Game Trace Parser** (`src/core/game-trace-parser.ts`):
+- ✅ One-liner format parsing with phase structure (`<SETUP>`, `<N1>`, `<E1>`, etc.)
+- ✅ Event syntax parsing: token manipulation, nominations, voting, executions, deaths
+- ✅ Simplified token syntax support (`Target(+token)` implies storyteller action)
+- ✅ Temporal context derivation from parsed events
+- ✅ Sober/healthy status tracking for information gathering roles
+- ✅ Event trigger detection (virgin nominations, etc.)
+- ✅ Transient state tracking (poisoning, protection, etc.)
+- ✅ Constraint variable generation for SAT validation
+
+**Temporal Constraint System** (`src/core/temporal-constraint-compiler.ts`):
+- ✅ Role temporal property analysis (abilityType, abilityTiming, abilityConstraints)
+- ✅ Historical context variable generation
+- ✅ Conditional token constraint compilation
+- ✅ Game trace integration with SAT constraints
+- ✅ Grimoire consistency validation against game history
+
+**Role Extensions** (`src/data/trouble-brewing-roles.ts`):
+- ✅ Temporal properties added to key Trouble Brewing roles
+- ✅ Information gathering roles: washerwoman, librarian, investigator
+- ✅ Event-triggered roles: virgin (nomination), slayer (ability use)
+- ✅ Transient effect roles: poisoner (affects_transient_state)
+
+**Integration Tests** (`src/tests/temporal-trace-integration.test.ts`):
+- ✅ End-to-end game trace validation
+- ✅ Sober/healthy constraint application
+- ✅ Virgin nomination event detection
+- ✅ Complex multi-phase game sequence handling
+- ✅ Reminder token constraint integration
+
+### 🔍 Implementation Insights
+
+**Parser Design Decisions**:
+- **Dual syntax support**: Both explicit (`st!Alice(+token)`) and simplified (`Alice(+token)`) formats
+- **Phase-based structure**: Clear separation of game phases for temporal ordering
+- **Event categorization**: Token manipulation, game actions (nominate/vote/execute), state changes
+- **Error tolerance**: Failed parsing logged but doesn't halt processing
+
+**Temporal Constraint Architecture**:
+- **Separation of concerns**: Game history (external) vs constraint validation (SAT system)
+- **Conditional constraints**: Token placement depends on sober/healthy status
+- **Variable indirection compatibility**: Works with bias reduction techniques
+- **Backward compatibility**: Extends existing reminder token system
+
+**SAT Integration Strategy**:
+- **Unit clauses for trace facts**: Force variables to match observed game history
+- **Constraint bridging**: Temporal context values become SAT constraint inputs
+- **Validation pipeline**: Game Events → Trace → Temporal Context → SAT → Grimoire Validation
+
+### 📋 Remaining Underspecified Areas
+
 - **Implementation algorithm** for ASCII layout generation
 - **Bag representation** examples - mentioned but not fully specified
 - **Column spacing rules** - minimum separation, calculation method
 - **Box alignment** - how to ensure consistent right borders
 - **ASCII art dead player representation** - needs to be consistent with singleline format
+- **~~Game trace parser implementation~~** - ✅ **COMPLETED**
+- **~~Temporal context derivation rules~~** - ✅ **COMPLETED**
+- **Multi-line trace format extensions** - voting patterns, madness tracking, timing constraints
+- **Trace validation** - ensure trace events are legal according to BOTC rules
+- **Role assignment tracking** - map player names to roles for complete temporal context
+- **Advanced temporal patterns** - chain reactions, ability interactions, timing conflicts

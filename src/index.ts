@@ -7,6 +7,11 @@ export { BagLegalityValidator, BagLegalityProblem } from './core/bag-compiler';
 export { RoleDistribution, getRole } from './core/roles';
 export { Script } from './core/scripts';
 
+// Temporal constraint system and game trace validation
+export { TemporalConstraintCompiler, TemporalContext } from './core/temporal-constraint-compiler';
+export { GameTraceParser, TemporalContextValues, GameEvent } from './core/game-trace-parser';
+export { ReminderTokenCompiler } from './core/reminder-token-compiler';
+
 // Game data
 export { registerTroubleBrewing } from './data/trouble-brewing-roles';
 export { troubleBrewing } from './core/scripts';

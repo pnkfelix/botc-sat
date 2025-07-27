@@ -111,6 +111,13 @@ const simpleRoles: Role[] = [
             }
         ],
         constraints: [],
+        abilityType: 'one_time_automatic',
+        abilityTiming: 'night_1',
+        abilityConstraints: {
+            requires_sober_and_healthy: true,
+            learns_information: true,
+            places_persistent_tokens: true
+        },
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -160,6 +167,13 @@ const simpleRoles: Role[] = [
             }
         ],
         constraints: [],
+        abilityType: 'one_time_automatic',
+        abilityTiming: 'night_1',
+        abilityConstraints: {
+            requires_sober_and_healthy: true,
+            learns_information: true,
+            places_persistent_tokens: true
+        },
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -209,6 +223,13 @@ const simpleRoles: Role[] = [
             }
         ],
         constraints: [],
+        abilityType: 'one_time_automatic',
+        abilityTiming: 'night_1',
+        abilityConstraints: {
+            requires_sober_and_healthy: true,
+            learns_information: true,
+            places_persistent_tokens: true
+        },
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -335,6 +356,12 @@ const simpleRoles: Role[] = [
             }
         ],
         constraints: [],
+        abilityType: 'one_time_event_triggered',
+        abilityTiming: 'day',
+        abilityConstraints: {
+            triggered_by_event: 'nomination',
+            places_persistent_tokens: true
+        },
         edition: 'Trouble Brewing',
         complexity: 1
     },
@@ -449,6 +476,11 @@ const simpleRoles: Role[] = [
             }
         ],
         constraints: [],
+        abilityType: 'recurring_nightly',
+        abilityTiming: 'any_night',
+        abilityConstraints: {
+            affects_transient_state: true
+        },
         edition: 'Trouble Brewing',
         complexity: 1
     },
