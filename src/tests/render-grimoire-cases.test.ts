@@ -108,10 +108,6 @@ describe('Render Grimoire Command Test Cases', () => {
 │                                  │
 │                                  │
 │                                  │
-│                                  │
-│                                  │
-│                                  │
-│                                  │
 │                (ww:townsfolk)    │
 │                Alice             │
 │                washerwoman       │
@@ -153,10 +149,6 @@ describe('Render Grimoire Command Test Cases', () => {
             // Expected output with closer token placement (right-to-left scanning)
             const expectedBuggyOutput = `\
 ┌─ Grimoire (3 players) ────────────────┐
-│                                       │
-│                                       │
-│                                       │
-│                                       │
 │                                       │
 │                                       │
 │                                       │

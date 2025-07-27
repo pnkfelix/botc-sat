@@ -286,9 +286,6 @@ describe('ASCII Grimoire Rendering', () => {
 ┌─ Grimoire (7 players) ─────────────────────────────────────────────────────────┐
 │                                                                                │
 │                                                                                │
-│                                                                                │
-│                                                                                │
-│                                                                                │
 │    (poi:poisoned)                                                              │
 │    (ww:townsfolk)     (lib:outsider)   (inv:minion)                            │
 │    (4)                (23)             (40)                (60)                │

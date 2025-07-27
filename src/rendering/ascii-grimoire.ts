@@ -771,7 +771,8 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
     let tokenStartRow, tokenRows, columnNumberRow;
     if (hasTokens) {
         tokenStartRow = 2; // Start after blank line 
-        tokenRows = 6; // Fixed height for the bubble matrix
+        // Dynamic height based on actual token content + small buffer for visual separation
+        tokenRows = Math.max(1, maxTokensInAnyColumn + 1); // Add 1 for visual breathing room
         columnNumberRow = tokenStartRow + tokenRows;
         
         // Add explicit blank line at row 1

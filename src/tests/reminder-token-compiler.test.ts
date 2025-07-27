@@ -79,10 +79,6 @@ describe('Reminder Token Constraint Compilation', () => {
 │                                                                                     │
 │                                                                                     │
 │                                                                                     │
-│                                                                                     │
-│                                                                                     │
-│                                                                                     │
-│                                                                                     │
 │                    (ww:townsfolk)     (ww:wrong)  (virgin:no_ability)               │
 │                    Alice              Bob         Carol                Dave         │
 │                    washerwoman        chef        virgin               butler       │
@@ -125,10 +121,6 @@ describe('Reminder Token Constraint Compilation', () => {
             const rendered = renderGrimoireToAsciiArt(invalidGrimoire, { mode: 'auto', useAbbreviations: true });
             const expected = `\
 ┌─ Grimoire (7 players) ──────────────────────────────────────────────────────────────┐
-│                                                                                     │
-│                                                                                     │
-│                                                                                     │
-│                                                                                     │
 │                                                                                     │
 │                                                                                     │
 │                                                                                     │
@@ -177,10 +169,6 @@ describe('Reminder Token Constraint Compilation', () => {
 │                                                                                       │
 │                                                                                       │
 │                                                                                       │
-│                                                                                       │
-│                                                                                       │
-│                                                                                       │
-│                                                                                       │
 │                                       (virgin:no_ability)                             │
 │                    Alice              Bob                  Carol         Dave         │
 │                    washerwoman        chef                 virgin        butler       │
@@ -223,10 +211,6 @@ describe('Reminder Token Constraint Compilation', () => {
             const rendered = renderGrimoireToAsciiArt(invalidGrimoire, { mode: 'auto', useAbbreviations: true });
             const expected = `\
 ┌─ Grimoire (7 players) ────────────────────────────────────────────────────────────────┐
-│                                                                                       │
-│                                                                                       │
-│                                                                                       │
-│                                                                                       │
 │                                                                                       │
 │                                                                                       │
 │                                                                                       │
@@ -275,10 +259,6 @@ describe('Reminder Token Constraint Compilation', () => {
 │                                                                                  │
 │                                                                                  │
 │                                                                                  │
-│                                                                                  │
-│                                                                                  │
-│                                                                                  │
-│                                                                                  │
 │                                       (ww:townsfolk)  (ww:wrong)                 │
 │                    Alice              Bob             Carol         Dave         │
 │                    washerwoman        chef            empath        butler       │
@@ -321,10 +301,6 @@ describe('Reminder Token Constraint Compilation', () => {
             const rendered = renderGrimoireToAsciiArt(invalidGrimoire, { mode: 'auto', useAbbreviations: true });
             const expected = `\
 ┌─ Grimoire (7 players) ───────────────────────────────────────────────────────────┐
-│                                                                                  │
-│                                                                                  │
-│                                                                                  │
-│                                                                                  │
 │                                                                                  │
 │                                                                                  │
 │                                                                                  │
