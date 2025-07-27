@@ -75,25 +75,22 @@ describe('Reminder Token Constraint Compilation', () => {
             // Test rendered grimoire format
             const rendered = renderGrimoireToAsciiArt(validGrimoire, { mode: 'auto', useAbbreviations: true });
             const expected = `\
-┌─ Grimoire (7 players) ──────────────────────────────────────────────────────────────┐
-│                                                                                     │
-│                                                                                     │
-│                                                                                     │
-│                    (ww:townsfolk)     (ww:wrong)  (virgin:no_ability)               │
-│                    Alice              Bob         Carol                Dave         │
-│                    washerwoman        chef        virgin               butler       │
-│                                                                                     │
-│                                                                                     │
-│    Frank                                                                            │
-│    poisoner                                                                         │
-│                                                                                     │
-│ Grace                                                                               │
-│ imp                                                                                 │
-│                                                                                     │
-│                                                                                     │
-│                    Eve                                                              │
-│                    drunk                                                            │
-└─────────────────────────────────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (7 players) ─────────────────────────────────────────────────────────────┐
+│                   (ww:townsfolk)     (ww:wrong)  (virgin:no_ability)               │
+│                   Alice              Bob         Carol                Dave         │
+│                   washerwoman        chef        virgin               butler       │
+│                                                                                    │
+│                                                                                    │
+│   Frank                                                                            │
+│   poisoner                                                                         │
+│                                                                                    │
+│Grace                                                                               │
+│imp                                                                                 │
+│                                                                                    │
+│                                                                                    │
+│                   Eve                                                              │
+│                   drunk                                                            │
+└────────────────────────────────────────────────────────────────────────────────────┘`;
             
             expect(rendered).toBe(expected);
         });
@@ -120,25 +117,22 @@ describe('Reminder Token Constraint Compilation', () => {
             // Test rendered grimoire format shows missing token
             const rendered = renderGrimoireToAsciiArt(invalidGrimoire, { mode: 'auto', useAbbreviations: true });
             const expected = `\
-┌─ Grimoire (7 players) ──────────────────────────────────────────────────────────────┐
-│                                                                                     │
-│                                                                                     │
-│                                                                                     │
-│                    (ww:townsfolk)                 (virgin:no_ability)               │
-│                    Alice              Bob         Carol                Dave         │
-│                    washerwoman        chef        virgin               butler       │
-│                                                                                     │
-│                                                                                     │
-│    Frank                                                                            │
-│    poisoner                                                                         │
-│                                                                                     │
-│ Grace                                                                               │
-│ imp                                                                                 │
-│                                                                                     │
-│                                                                                     │
-│                    Eve                                                              │
-│                    drunk                                                            │
-└─────────────────────────────────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (7 players) ─────────────────────────────────────────────────────────────┐
+│                   (ww:townsfolk)                 (virgin:no_ability)               │
+│                   Alice              Bob         Carol                Dave         │
+│                   washerwoman        chef        virgin               butler       │
+│                                                                                    │
+│                                                                                    │
+│   Frank                                                                            │
+│   poisoner                                                                         │
+│                                                                                    │
+│Grace                                                                               │
+│imp                                                                                 │
+│                                                                                    │
+│                                                                                    │
+│                   Eve                                                              │
+│                   drunk                                                            │
+└────────────────────────────────────────────────────────────────────────────────────┘`;
             
             expect(rendered).toBe(expected);
         });
@@ -165,25 +159,22 @@ describe('Reminder Token Constraint Compilation', () => {
             // Test rendered grimoire format shows invalid placement
             const rendered = renderGrimoireToAsciiArt(invalidGrimoire, { mode: 'auto', useAbbreviations: true });
             const expected = `\
-┌─ Grimoire (7 players) ────────────────────────────────────────────────────────────────┐
-│                                                                                       │
-│                                                                                       │
-│                                                                                       │
-│                                       (virgin:no_ability)                             │
-│                    Alice              Bob                  Carol         Dave         │
-│                    washerwoman        chef                 virgin        butler       │
-│                                                                                       │
-│                                                                                       │
-│    Frank                                                                              │
-│    poisoner                                                                           │
-│                                                                                       │
-│ Grace                                                                                 │
-│ imp                                                                                   │
-│                                                                                       │
-│                                                                                       │
-│                    Eve                                                                │
-│                    drunk                                                              │
-└───────────────────────────────────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (7 players) ───────────────────────────────────────────────────────────────┐
+│                                      (virgin:no_ability)                             │
+│                   Alice              Bob                  Carol         Dave         │
+│                   washerwoman        chef                 virgin        butler       │
+│                                                                                      │
+│                                                                                      │
+│   Frank                                                                              │
+│   poisoner                                                                           │
+│                                                                                      │
+│Grace                                                                                 │
+│imp                                                                                   │
+│                                                                                      │
+│                                                                                      │
+│                   Eve                                                                │
+│                   drunk                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────┘`;
             
             expect(rendered).toBe(expected);
         });
@@ -210,25 +201,22 @@ describe('Reminder Token Constraint Compilation', () => {
             // Test rendered grimoire format shows virgin token without virgin role
             const rendered = renderGrimoireToAsciiArt(invalidGrimoire, { mode: 'auto', useAbbreviations: true });
             const expected = `\
-┌─ Grimoire (7 players) ────────────────────────────────────────────────────────────────┐
-│                                                                                       │
-│                                                                                       │
-│                                                                                       │
-│                                       (virgin:no_ability)                             │
-│                    Alice              Bob                  Carol         Dave         │
-│                    washerwoman        chef                 slayer        butler       │
-│                                                                                       │
-│                                                                                       │
-│    Frank                                                                              │
-│    poisoner                                                                           │
-│                                                                                       │
-│ Grace                                                                                 │
-│ imp                                                                                   │
-│                                                                                       │
-│                                                                                       │
-│                    Eve                                                                │
-│                    drunk                                                              │
-└───────────────────────────────────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (7 players) ───────────────────────────────────────────────────────────────┐
+│                                      (virgin:no_ability)                             │
+│                   Alice              Bob                  Carol         Dave         │
+│                   washerwoman        chef                 slayer        butler       │
+│                                                                                      │
+│                                                                                      │
+│   Frank                                                                              │
+│   poisoner                                                                           │
+│                                                                                      │
+│Grace                                                                                 │
+│imp                                                                                   │
+│                                                                                      │
+│                                                                                      │
+│                   Eve                                                                │
+│                   drunk                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────┘`;
             
             expect(rendered).toBe(expected);
         });
@@ -255,25 +243,22 @@ describe('Reminder Token Constraint Compilation', () => {
             // Test rendered grimoire format shows information tokens placed anywhere
             const rendered = renderGrimoireToAsciiArt(validGrimoire, { mode: 'auto', useAbbreviations: true });
             const expected = `\
-┌─ Grimoire (7 players) ───────────────────────────────────────────────────────────┐
-│                                                                                  │
-│                                                                                  │
-│                                                                                  │
-│                                       (ww:townsfolk)  (ww:wrong)                 │
-│                    Alice              Bob             Carol         Dave         │
-│                    washerwoman        chef            empath        butler       │
-│                                                                                  │
-│                                                                                  │
-│    Frank                                                                         │
-│    poisoner                                                                      │
-│                                                                                  │
-│ Grace                                                                            │
-│ imp                                                                              │
-│                                                                                  │
-│                                                                                  │
-│                    Eve                                                           │
-│                    drunk                                                         │
-└──────────────────────────────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (7 players) ──────────────────────────────────────────────────────────┐
+│                                      (ww:townsfolk)  (ww:wrong)                 │
+│                   Alice              Bob             Carol         Dave         │
+│                   washerwoman        chef            empath        butler       │
+│                                                                                 │
+│                                                                                 │
+│   Frank                                                                         │
+│   poisoner                                                                      │
+│                                                                                 │
+│Grace                                                                            │
+│imp                                                                              │
+│                                                                                 │
+│                                                                                 │
+│                   Eve                                                           │
+│                   drunk                                                         │
+└─────────────────────────────────────────────────────────────────────────────────┘`;
             
             expect(rendered).toBe(expected);
         });
@@ -300,22 +285,19 @@ describe('Reminder Token Constraint Compilation', () => {
             // Test rendered grimoire format shows washerwoman token without washerwoman role
             const rendered = renderGrimoireToAsciiArt(invalidGrimoire, { mode: 'auto', useAbbreviations: true });
             const expected = `\
-┌─ Grimoire (7 players) ───────────────────────────────────────────────────────────┐
-│                                                                                  │
-│                                                                                  │
-│                                                                                  │
-│                               (ww:townsfolk)                                     │
-│              Alice            Bob             Carol         Dave                 │
-│              librarian        chef            empath        butler               │
-│                                                                                  │
-│                                                                         Eve      │
-│ Grace                                                                   drunk    │
-│ imp                                                                              │
-│                                                                                  │
-│                                                                                  │
-│              Frank                                                               │
-│              poisoner                                                            │
-└──────────────────────────────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (7 players) ──────────────────────────────────────────────────────────┐
+│                              (ww:townsfolk)                                     │
+│             Alice            Bob             Carol         Dave                 │
+│             librarian        chef            empath        butler               │
+│                                                                                 │
+│                                                                        Eve      │
+│Grace                                                                   drunk    │
+│imp                                                                              │
+│                                                                                 │
+│                                                                                 │
+│             Frank                                                               │
+│             poisoner                                                            │
+└─────────────────────────────────────────────────────────────────────────────────┘`;
             
             expect(rendered).toBe(expected);
         });

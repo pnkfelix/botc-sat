@@ -104,23 +104,20 @@ describe('Render Grimoire Command Test Cases', () => {
             
             // Fixed output with closer token placement (right-to-left scanning)
             const expectedBuggyOutput = `\
-┌─ Grimoire (3 players) ───────────┐
-│                                  │
-│                                  │
-│                                  │
-│                (ww:townsfolk)    │
-│                Alice             │
-│                washerwoman       │
-│                                  │
-│                                  │
-│ *Charlie*                        │
-│ *imp*                            │
-│                                  │
-│                                  │
-│                Bob               │
-│                librarian         │
-│                (lib:outsider)    │
-└──────────────────────────────────┘`;
+┌─ Grimoire (3 players) ──────────┐
+│               (ww:townsfolk)    │
+│               Alice             │
+│               washerwoman       │
+│                                 │
+│                                 │
+│*Charlie*                        │
+│*imp*                            │
+│                                 │
+│                                 │
+│               Bob               │
+│               librarian         │
+│               (lib:outsider)    │
+└─────────────────────────────────┘`;
             
             expect(rendered).toBe(expectedBuggyOutput);
             
@@ -148,21 +145,18 @@ describe('Render Grimoire Command Test Cases', () => {
             
             // Expected output with closer token placement (right-to-left scanning)
             const expectedBuggyOutput = `\
-┌─ Grimoire (3 players) ────────────────┐
-│                                       │
-│                                       │
-│                                       │
-│                     (ww:townsfolk)    │
-│                     Alice             │
-│                     washerwoman       │
-│                                       │
-│    (lib:outsider)                     │
-│    Bob                                │
-│    librarian                          │
-│                                       │
-│ *Charlie*                             │
-│ *imp*                                 │
-└───────────────────────────────────────┘`;
+┌─ Grimoire (3 players) ───────────────┐
+│                    (ww:townsfolk)    │
+│                    Alice             │
+│                    washerwoman       │
+│                                      │
+│   (lib:outsider)                     │
+│   Bob                                │
+│   librarian                          │
+│                                      │
+│*Charlie*                             │
+│*imp*                                 │
+└──────────────────────────────────────┘`;
             
             expect(rendered).toBe(expectedBuggyOutput);
             

@@ -283,22 +283,20 @@ describe('ASCII Grimoire Rendering', () => {
             // Tokens should be on separate rows, not combined
             expect(result).not.toContain("(ww:townsfolk,poi:poisoned)");
             const expected = `\
-┌─ Grimoire (7 players) ─────────────────────────────────────────────────────────┐
-│                                                                                │
-│                                                                                │
-│    (poi:poisoned)                                                              │
-│    (ww:townsfolk)     (lib:outsider)   (inv:minion)                            │
-│    (4)                (23)             (40)                (60)                │
-│    Alice              Bob              Charlie             Dave                │
-│    washerwoman        librarian        investigator        chef                │
-│                                                                                │
-│                                                                      Eve       │
-│                                                                      empath    │
-│                                                                      (70)      │
-│    Grace                                               Frank                   │
-│    imp                                                 poisoner                │
-│    (4)                                                 (56)                    │
-└────────────────────────────────────────────────────────────────────────────────┘`;
+┌─ Grimoire (7 players) ─────────────────────────────────────────────────────┐
+│(poi:poisoned)                                                              │
+│(ww:townsfolk)     (lib:outsider)   (inv:minion)                            │
+│(4)                (23)             (40)                (60)                │
+│Alice              Bob              Charlie             Dave                │
+│washerwoman        librarian        investigator        chef                │
+│                                                                            │
+│                                                                  Eve       │
+│                                                                  empath    │
+│                                                                  (70)      │
+│Grace                                               Frank                   │
+│imp                                                 poisoner                │
+│(4)                                                 (56)                    │
+└────────────────────────────────────────────────────────────────────────────┘`;
 
             expect(result).toBe(expected);
         });

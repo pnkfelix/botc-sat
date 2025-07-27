@@ -770,13 +770,10 @@ function createAbstractGrid(playerPositions: PlayerPosition[], coordinateOptions
     
     let tokenStartRow, tokenRows, columnNumberRow;
     if (hasTokens) {
-        tokenStartRow = 2; // Start after blank line 
-        // Dynamic height based on actual token content + small buffer for visual separation
-        tokenRows = Math.max(1, maxTokensInAnyColumn + 1); // Add 1 for visual breathing room
+        tokenStartRow = 1; // Start immediately after border
+        // Dynamic height based on actual token content (no extra buffer needed)
+        tokenRows = Math.max(1, maxTokensInAnyColumn);
         columnNumberRow = tokenStartRow + tokenRows;
-        
-        // Add explicit blank line at row 1
-        cells.push({ content: '', row: 1, col: 0 });
     } else {
         tokenStartRow = 1;
         tokenRows = 0;
