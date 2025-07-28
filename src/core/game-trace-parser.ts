@@ -13,7 +13,7 @@ export interface TemporalContextValues {
 }
 
 export interface GameEvent {
-    phase: string; // SETUP, N1, D1, E1, etc. (wrapped in angle brackets in trace)
+    phase: string; // SETUP, N1, DAWN, EVENING, NIGHT (wrapped in angle brackets in trace)
     actor: string; // PlayerName:RoleName, PlayerName, RoleName, or 'st'
     action: string; // add_token, remove_token, nominate, vote, execute, die
     target?: string; // Target player name
@@ -21,11 +21,66 @@ export interface GameEvent {
     details?: any; // Additional event-specific data
 }
 
+/**
+ * BOTC Phase Structure:
+ * - SETUP: Role assignments and initial token placement
+ * - N1: First night (special abilities that only trigger on first night)
+ * - DAWN/EVENING/NIGHT: Repeating day/night cycle
+ *   - DAWN: Day begins, cleanup phase
+ *   - EVENING: Nominations, voting, executions
+ *   - NIGHT: Night kills and abilities
+ */
+export type BOTCPhase = 'SETUP' | 'N1' | 'DAWN' | 'EVENING' | 'NIGHT';
+
+export class PhaseUtils {
+    static readonly VALID_PHASES: BOTCPhase[] = ['SETUP', 'N1', 'DAWN', 'EVENING', 'NIGHT'];
+    
+    static isValidPhase(phase: string): phase is BOTCPhase {
+        return PhaseUtils.VALID_PHASES.includes(phase as BOTCPhase);
+    }
+    
+    static isNightPhase(phase: string): boolean {
+        return phase === 'N1' || phase === 'NIGHT';
+    }
+    
+    static isDayPhase(phase: string): boolean {
+        return phase === 'DAWN' || phase === 'EVENING';
+    }
+    
+    static isSetupPhase(phase: string): boolean {
+        return phase === 'SETUP';
+    }
+    
+    /**
+     * Validate that phase transitions follow BOTC rules
+     */
+    static isValidTransition(fromPhase: string, toPhase: string): boolean {
+        if (!PhaseUtils.isValidPhase(fromPhase) || !PhaseUtils.isValidPhase(toPhase)) {
+            return false;
+        }
+        
+        switch (fromPhase) {
+            case 'SETUP':
+                return toPhase === 'N1';
+            case 'N1':
+                return toPhase === 'DAWN';
+            case 'DAWN':
+                return toPhase === 'EVENING';
+            case 'EVENING':
+                return toPhase === 'NIGHT';
+            case 'NIGHT':
+                return toPhase === 'DAWN';
+            default:
+                return false;
+        }
+    }
+}
+
 export class GameTraceParser {
     
     /**
      * Parse a one-liner game trace into temporal context values
-     * Example: "<SETUP> st!Alice(+dr:is_the_drunk) <N1> Alice:poisoner!Bob(+poi:poisoned)"
+     * Example: "<SETUP> st!Alice:washerwoman, st!Bob:imp <N1> Alice:washerwoman!Bob(+ww:townsfolk) <DAWN> <EVENING> Charlie!nominates->Bob:imp <NIGHT> st!demon_kill->Alice"
      */
     parseGameTrace(oneLineTrace: string): TemporalContextValues {
         const events = this.parseTraceEvents(oneLineTrace);
@@ -50,6 +105,14 @@ export class GameTraceParser {
                 const phaseContent = trace.substring(lastIndex, match.index).trim();
                 if (phaseContent) {
                     events.push(...this.parsePhaseEvents(currentPhase, phaseContent));
+                } else if (currentPhase) {
+                    // Create a phase transition event for empty phases
+                    events.push({
+                        phase: currentPhase,
+                        actor: 'st',
+                        action: 'phase_transition',
+                        details: { emptyPhase: true }
+                    });
                 }
             }
             
@@ -62,7 +125,23 @@ export class GameTraceParser {
             const phaseContent = trace.substring(lastIndex).trim();
             if (phaseContent) {
                 events.push(...this.parsePhaseEvents(currentPhase, phaseContent));
+            } else {
+                // Create a phase transition event for final empty phase
+                events.push({
+                    phase: currentPhase,
+                    actor: 'st',
+                    action: 'phase_transition',
+                    details: { emptyPhase: true }
+                });
             }
+        } else if (currentPhase) {
+            // Handle case where we reach end of trace with a phase but no remaining content
+            events.push({
+                phase: currentPhase,
+                actor: 'st',
+                action: 'phase_transition',
+                details: { emptyPhase: true }
+            });
         }
         
         return events;
@@ -128,7 +207,7 @@ export class GameTraceParser {
      * - "Frank(+ww:wrong)" -> storyteller adds token to Frank (simplified syntax)
      */
     private parseEventString(phase: string, eventStr: string): GameEvent | null {
-        // Token manipulation: Actor!Target(+/-token)
+        // Token manipulation: Actor!Target(+/-token) - must come before role assignment
         const tokenMatch = eventStr.match(/^([^!]+)!([^(]+)\(([+-])([^)]+)\)$/);
         if (tokenMatch) {
             const [, actor, target, operation, token] = tokenMatch;
@@ -138,6 +217,20 @@ export class GameTraceParser {
                 action: operation === '+' ? 'add_token' : 'remove_token',
                 target: target.trim(),
                 token: token.trim()
+            };
+        }
+        
+        // Role assignment: Actor!Target:Role (typically st!Player:Role during SETUP)
+        // Must come after more specific patterns (like nominations with roles)
+        const roleAssignMatch = eventStr.match(/^([^!]+)!([^:]+):(.+)$/);
+        if (roleAssignMatch && !eventStr.includes('nominates->')) {
+            const [, actor, target, roleName] = roleAssignMatch;
+            return {
+                phase,
+                actor: actor.trim(),
+                action: 'assign_role',
+                target: target.trim(),
+                details: { roleName: roleName.trim() }
             };
         }
         
@@ -154,16 +247,27 @@ export class GameTraceParser {
             };
         }
         
-        // Nomination: Player!nominates->Target:Role
-        const nominateMatch = eventStr.match(/^([^!]+)!nominates->([^:]+):(.+)$/);
-        if (nominateMatch) {
-            const [, actor, target, role] = nominateMatch;
+        // Nomination: Player!nominates->Target:Role or Player!nominates->Target
+        const nominateWithRoleMatch = eventStr.match(/^([^!]+)!nominates->([^:]+):(.+)$/);
+        if (nominateWithRoleMatch) {
+            const [, actor, target, role] = nominateWithRoleMatch;
             return {
                 phase,
                 actor: actor.trim(),
                 action: 'nominate',
                 target: target.trim(),
                 details: { targetRole: role.trim() }
+            };
+        }
+        
+        const nominateMatch = eventStr.match(/^([^!]+)!nominates->(.+)$/);
+        if (nominateMatch) {
+            const [, actor, target] = nominateMatch;
+            return {
+                phase,
+                actor: actor.trim(),
+                action: 'nominate',
+                target: target.trim()
             };
         }
         

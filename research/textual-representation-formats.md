@@ -474,7 +474,169 @@ This creates a complete **game state validation pipeline**: Game Events → Trac
 - **ASCII art dead player representation** - needs to be consistent with singleline format
 - **~~Game trace parser implementation~~** - ✅ **COMPLETED**
 - **~~Temporal context derivation rules~~** - ✅ **COMPLETED**
+- **~~Operational semantics for grimoire evolution~~** - ✅ **COMPLETED**
 - **Multi-line trace format extensions** - voting patterns, madness tracking, timing constraints
 - **Trace validation** - ensure trace events are legal according to BOTC rules
 - **Role assignment tracking** - map player names to roles for complete temporal context
 - **Advanced temporal patterns** - chain reactions, ability interactions, timing conflicts
+
+## Operational Semantics Framework
+
+### Overview
+
+The operational semantics system implements small-step state transitions for BOTC grimoire evolution. Game traces represent sequences of operations that transform grimoire state through formal state transition rules.
+
+**Architecture**: `Game Trace → Events → State Transitions → Final Grimoire State`
+
+### Key Components
+
+#### GrimoireState Representation
+```typescript
+interface GrimoireState {
+    players: PlayerState[];           // Core player data
+    currentPhase: string;            // 'SETUP', 'N1', 'D1', 'E1', etc.
+    gameMetadata: GameMetadata;      // Script, player count, timing
+    
+    // Derived state for efficient queries
+    roleAssignments: Map<string, string>;  // playerName -> roleName
+    tokensByPlayer: Map<string, string[]>; // playerName -> tokens
+    livingPlayers: Set<string>;            // Fast alive/dead queries
+    deadPlayers: Set<string>;
+    ghostVotesRemaining: Set<string>;      // Dead players with ghost votes
+}
+
+interface PlayerState {
+    name: string;
+    role: string | null;          // null during setup
+    isAlive: boolean;
+    hasGhostVote: boolean;        // for dead players
+    reminderTokens: string[];     // e.g., ['poi:poisoned', 'ww:townsfolk']
+}
+```
+
+#### State Transition Rules
+
+**Token Operations**:
+- `add_token`: `State × Player × Token → State'` 
+- `remove_token`: `State × Player × Token → State'`
+
+**Death Mechanics**:
+- `execute`: `State × Player → State'` (grants ghost vote)
+- `die`: `State × Player → State'` (general death handler)
+- `demon_kill`: `State × Player → State'` (adds death token + kills)
+
+**Voting Mechanics**:
+- `nominate`: `State × Nominator × Target → State'` (no direct state change)
+- `vote`: `State × Voter × Target → State'` (validates ghost vote constraints)
+
+**Phase Transitions**:
+- `phase_change`: `State × OldPhase × NewPhase → State'`
+
+#### Validation Rules
+
+**Static Constraints**:
+- Player count remains constant during game
+- Dead players cannot become alive
+- Roles only assigned during SETUP phase
+- Token operations must target existing players
+
+**Dynamic Constraints**:
+- Living players can always vote
+- Dead players can vote only if `hasGhostVote = true`
+- Executions kill living players and grant ghost votes
+- Token consistency maintained across derived state
+
+### Implementation Patterns
+
+#### Immutable State Transitions
+```typescript
+const transition = executor.executeStep(currentState, event);
+// transition.fromState (immutable original)
+// transition.toState (new state with changes)
+// transition.isValid (rule validation result)
+```
+
+#### Step-by-Step Execution
+```typescript
+const trace = executor.executeTrace(gameTraceString, playerNames);
+// trace.initialState
+// trace.transitions[] (array of all steps)
+// trace.finalState
+// trace.invalidTransitions[] (rule violations)
+```
+
+#### Rule Validation Integration
+```typescript
+// Automatic validation during execution
+const executor = new GrimoireExecutor(validateTransitions: true);
+
+// Manual validation of specific states
+const validation = GrimoireStateUtils.validateState(state);
+// validation.isValid: boolean
+// validation.errors: string[] (detailed error descriptions)
+```
+
+### Advanced Features
+
+#### State Consistency Maintenance
+- **Derived state synchronization**: `livingPlayers`, `deadPlayers`, `ghostVotesRemaining` automatically updated
+- **Token mapping consistency**: `tokensByPlayer` kept in sync with `player.reminderTokens`
+- **Role assignment tracking**: `roleAssignments` map maintained during setup phase
+
+#### Debugging and Analysis
+- **Execution summaries**: Human-readable step-by-step evolution traces
+- **Single-line format conversion**: Convert any state to compact representation
+- **Rule violation reporting**: Detailed error messages for invalid transitions
+
+#### Integration with Temporal Constraints
+- **Bridge to SAT validation**: Final states can be validated against temporal constraints
+- **Constraint variable derivation**: Operational semantics trace provides input for temporal context
+- **Round-trip consistency**: Trace → State Evolution → Constraint Validation → Rule Compliance
+
+### Example Operational Semantics Execution
+
+**Input Trace**:
+```
+<SETUP> st!Alice(+dr:is_the_drunk), st!Bob(+ft:red_herring) 
+<N1> Alice:poisoner!Carol(+poi:poisoned), st!Dave(+ww:townsfolk),Eve(+ww:wrong) 
+<E1> Frank!nominates->Alice:virgin, st!executes->Alice, Alice!dies
+```
+
+**Step-by-Step Evolution**:
+```
+Step 1: ✅ SETUP: add_token (st) → [Alice(dr:is_the_drunk) Bob Carol Dave Eve Frank]
+Step 2: ✅ SETUP: add_token (st) → [Alice(dr:is_the_drunk) Bob(ft:red_herring) Carol Dave Eve Frank]
+Step 3: ✅ N1: add_token (Alice:poisoner) → [Alice(dr:is_the_drunk) Bob(ft:red_herring) Carol(poi:poisoned) Dave Eve Frank]
+Step 4: ✅ N1: add_token (st) → [Alice(dr:is_the_drunk) Bob(ft:red_herring) Carol(poi:poisoned) Dave(ww:townsfolk) Eve Frank]
+Step 5: ✅ N1: add_token (st) → [Alice(dr:is_the_drunk) Bob(ft:red_herring) Carol(poi:poisoned) Dave(ww:townsfolk) Eve(ww:wrong) Frank]
+Step 6: ✅ E1: nominate (Frank) → [Alice(dr:is_the_drunk) Bob(ft:red_herring) Carol(poi:poisoned) Dave(ww:townsfolk) Eve(ww:wrong) Frank]
+Step 7: ✅ E1: execute (st) → [*Alice(dr:is_the_drunk)* Bob(ft:red_herring) Carol(poi:poisoned) Dave(ww:townsfolk) Eve(ww:wrong) Frank]
+Step 8: ✅ E1: die (Alice) → [*Alice(dr:is_the_drunk)* Bob(ft:red_herring) Carol(poi:poisoned) Dave(ww:townsfolk) Eve(ww:wrong) Frank]
+```
+
+**Final State Analysis**:
+- Total transitions: 8
+- Rule violations: 0  
+- Living players: 5 (Bob, Carol, Dave, Eve, Frank)
+- Dead players: 1 (Alice with ghost vote)
+- Phase progression: SETUP → N1 → E1
+
+### Integration Status
+
+✅ **Core Implementation Complete**:
+- State representation with immutable transitions
+- Event-driven transformation rules  
+- Comprehensive rule validation
+- Integration with existing game trace parser
+- Full test coverage for complex scenarios
+
+✅ **Library Integration**:
+- Exported via main index as `GrimoireExecutor`, `GrimoireStateFactory`, `GrimoireStateUtils`
+- Compatible with existing temporal constraint system
+- Maintains backward compatibility with grimoire rendering
+
+🔍 **Future Extensions**:
+- **Role-specific transition rules**: virgin nomination effects, drunk behavior patterns
+- **Advanced timing constraints**: night order validation, day/evening phase rules  
+- **Multi-trace analysis**: compare different game evolution paths
+- **Interactive execution**: step-by-step debugging interface for trace analysis
