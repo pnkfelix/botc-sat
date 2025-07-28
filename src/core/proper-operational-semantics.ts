@@ -178,9 +178,6 @@ export class ProperGrimoireExecutor {
             case 'die':
                 this.handleDeath(state, event, errors);
                 break;
-            case 'demon_kill':
-                this.handleDemonKill(state, event, errors);
-                break;
             case 'phase_transition':
                 // No-op for phase transitions - the phase change is handled in executeStep
                 break;
@@ -218,6 +215,16 @@ export class ProperGrimoireExecutor {
         
         if (!player.tokens.includes(event.token)) {
             player.tokens.push(event.token);
+        }
+        
+        // Handle token-triggered effects
+        if (event.token === 'imp:dead') {
+            // Imp's dead token causes immediate death
+            this.handleDeath(state, {
+                ...event,
+                action: 'die',
+                actor: event.target
+            }, errors);
         }
     }
     
@@ -333,20 +340,8 @@ export class ProperGrimoireExecutor {
         player.ghost = true;
     }
     
-    private handleDemonKill(state: CompleteGameState, event: GameEvent, errors: string[]): void {
-        if (!event.target) {
-            errors.push('Demon kill missing target');
-            return;
-        }
-        
-        // Just handle the death - don't automatically add tokens
-        // The storyteller can add tokens manually if needed
-        this.handleDeath(state, {
-            ...event,
-            action: 'die',
-            actor: event.target
-        }, errors);
-    }
+    // Removed handleDemonKill - now handled through token-based system
+    // When imp:dead token is placed, death is handled automatically in handleAddToken
     
     private findPlayer(grimoire: GrimoireState, playerName: string) {
         return grimoire.players.find(p => p.name === playerName);

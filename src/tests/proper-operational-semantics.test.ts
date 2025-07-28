@@ -41,7 +41,7 @@ describe('Proper Operational Semantics - Using Existing Types', () => {
         const playerNames = ['Alice', 'Bob', 'Charlie'];
         
         // Proper BOTC game flow: SETUP → N1 → DAWN → EVENING → NIGHT → DAWN → EVENING
-        const trace = '<SETUP> st!Alice:washerwoman, st!Bob:imp, st!Charlie:chef <N1> Alice:washerwoman!Bob(+washerwoman:townsfolk) <DAWN> <EVENING> Charlie!nominates->Bob, Alice!votes->Bob, st!executes->Bob <NIGHT> st!demon_kill->Alice';
+        const trace = '<SETUP> st!Alice:washerwoman, st!Bob:imp, st!Charlie:chef <N1> Alice:washerwoman!Bob(+washerwoman:townsfolk) <DAWN> <EVENING> Charlie!nominates->Alice, Bob!votes->Alice, st!executes->Alice <NIGHT> Bob:imp!Charlie(+imp:dead)';
         
         const result = executor.executeTrace(trace, playerNames);
         
@@ -50,7 +50,7 @@ describe('Proper Operational Semantics - Using Existing Types', () => {
         
         // Verify final state has proper role preservation and death handling
         const finalGrimoire = executor.renderState(result.finalState);
-        expect(finalGrimoire).toBe('[*Alice:washerwoman* *Bob:imp(washerwoman:townsfolk)* Charlie:chef]');
+        expect(finalGrimoire).toBe('[*Alice:washerwoman* Bob:imp(washerwoman:townsfolk) *Charlie:chef(imp:dead)*]');
     });
     
     it('should validate invalid phase transitions', () => {
@@ -69,7 +69,7 @@ describe('Proper Operational Semantics - Using Existing Types', () => {
         const playerNames = ['Alice', 'Bob', 'Charlie', 'Dave'];
         
         // Multiple day/night cycles
-        const trace = '<SETUP> st!Alice:washerwoman, st!Bob:imp, st!Charlie:chef, st!Dave:butler <N1> Alice:washerwoman!Bob(+washerwoman:townsfolk) <DAWN> <EVENING> Charlie!nominates->Dave, Bob!votes->Dave, st!executes->Dave <NIGHT> st!demon_kill->Alice <DAWN> <EVENING> Charlie!nominates->Bob <NIGHT>';
+        const trace = '<SETUP> st!Alice:washerwoman, st!Bob:imp, st!Charlie:chef, st!Dave:butler <N1> Alice:washerwoman!Bob(+washerwoman:townsfolk) <DAWN> <EVENING> Charlie!nominates->Dave, Bob!votes->Dave, st!executes->Dave <NIGHT> Bob:imp!Alice(+imp:dead) <DAWN> <EVENING> Charlie!nominates->Bob <NIGHT>';
         
         const result = executor.executeTrace(trace, playerNames);
         
@@ -78,7 +78,7 @@ describe('Proper Operational Semantics - Using Existing Types', () => {
         
         // Verify final state
         const finalGrimoire = executor.renderState(result.finalState);
-        expect(finalGrimoire).toBe('[*Alice:washerwoman* Bob:imp(washerwoman:townsfolk) Charlie:chef *Dave:butler*]');
+        expect(finalGrimoire).toBe('[*Alice:washerwoman(imp:dead)* Bob:imp(washerwoman:townsfolk) Charlie:chef *Dave:butler*]');
     });
     
     it('should preserve existing grimoire functionality', () => {

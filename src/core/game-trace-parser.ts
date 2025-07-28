@@ -80,7 +80,7 @@ export class GameTraceParser {
     
     /**
      * Parse a one-liner game trace into temporal context values
-     * Example: "<SETUP> st!Alice:washerwoman, st!Bob:imp <N1> Alice:washerwoman!Bob(+ww:townsfolk) <DAWN> <EVENING> Charlie!nominates->Bob:imp <NIGHT> st!demon_kill->Alice"
+     * Example: "<SETUP> st!Alice:washerwoman, st!Bob:imp <N1> Alice:washerwoman!Bob(+ww:townsfolk) <DAWN> <EVENING> Charlie!nominates->Bob:imp <NIGHT> Bob:imp!Alice(+imp:dead)"
      */
     parseGameTrace(oneLineTrace: string): TemporalContextValues {
         const events = this.parseTraceEvents(oneLineTrace);
@@ -304,16 +304,8 @@ export class GameTraceParser {
             };
         }
         
-        // Demon kill: st!demon_kill->Target
-        const demonKillMatch = eventStr.match(/^st!demon_kill->(.+)$/);
-        if (demonKillMatch) {
-            return {
-                phase,
-                actor: 'st',
-                action: 'demon_kill',
-                target: demonKillMatch[1].trim()
-            };
-        }
+        // Removed hardcoded demon_kill - use token-based system instead
+        // Example: Bob:imp!Alice(+imp:dead) - imp places dead token, causing death
         
         console.warn(`Failed to parse event: ${eventStr}`);
         return null;

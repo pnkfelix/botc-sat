@@ -31,4 +31,20 @@ describe('Debug Operational Semantics', () => {
         
         console.log('Final grimoire:', executor.renderState(result.finalState));
     });
+    
+    it('should debug token-based demon kill', () => {
+        // Parse initial grimoire
+        const initialGrimoire = '[Alice:washerwoman Bob:imp Charlie:chef]';
+        const parsedGrimoire = parseGrimoireFromSingleLine(initialGrimoire);
+        
+        console.log('BEFORE imp kill - Initial grimoire:', renderGrimoireToSingleLine(parsedGrimoire));
+        
+        // Token-based demon kill: Bob:imp places dead token on Alice
+        const traceFragment = '<NIGHT> Bob:imp!Alice(+imp:dead)';
+        
+        const result = executor.executeTraceFromGrimoire(traceFragment, parsedGrimoire);
+        
+        console.log('AFTER imp kill - Final grimoire:', executor.renderState(result.finalState));
+        console.log('Alice should be dead with imp:dead token');
+    });
 });

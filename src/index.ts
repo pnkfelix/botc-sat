@@ -12,6 +12,17 @@ export { TemporalConstraintCompiler, TemporalContext } from './core/temporal-con
 export { GameTraceParser, TemporalContextValues, GameEvent } from './core/game-trace-parser';
 export { ReminderTokenCompiler } from './core/reminder-token-compiler';
 
+// Operational semantics system for step-by-step grimoire evolution
+export { 
+    GrimoireState as OperationalGrimoireState, 
+    PlayerState as OperationalPlayerState, 
+    GrimoireTransition, 
+    OperationalSemanticsTrace,
+    GrimoireStateFactory,
+    GrimoireStateUtils 
+} from './core/grimoire-state';
+export { GrimoireExecutor } from './core/grimoire-executor';
+
 // Game data
 export { registerTroubleBrewing } from './data/trouble-brewing-roles';
 export { troubleBrewing } from './core/scripts';
