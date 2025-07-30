@@ -56,8 +56,8 @@ export interface TokenPlacementConstraint {
     // Human-readable description
     description: string;
     
-    // Constraint types for token placement rules
-    type: 'requires_role_present' | 'only_on_role' | 'only_on_role_type' | 'information_token' | 'conditional_placement' | 'role_requires_token';
+    // Constraint types for token placement rules and effects
+    type: 'requires_role_present' | 'only_on_role' | 'only_on_role_type' | 'information_token' | 'conditional_placement' | 'role_requires_token' | 'token_effect';
     
     // Which token this constraint applies to
     token: string;
@@ -91,6 +91,18 @@ export interface TokenPlacementConstraint {
     // For role_requires_token: if role is present, then token must be placed somewhere
     roleRequiresToken?: {
         roleId: string;  // Role that must place this token when present
+    };
+    
+    // For token_effect: describes what happens when token is present during phase transitions
+    tokenEffect?: {
+        effect: 'causes_death_at_dawn' | 'causes_unhealthiness' | 'causes_death_if_madness_broken' | 'causes_death_if_madness_maintained' | 'causes_gain_ability_if_madness_maintained';
+        trigger: 'phase_transition' | 'while_present' | 'on_madness_check';
+        fromPhase?: string;  // Phase transition: from this phase (e.g., 'NIGHT') 
+        toPhase?: string;    // Phase transition: to this phase (e.g., 'DAWN')
+        announcement?: 'public_death' | 'private_info' | 'none';  // How effect is announced
+        unhealthinessType?: 'drunkenness' | 'poisoning';  // For causes_unhealthiness
+        abilityGained?: string;  // For causes_gain_ability_if_madness_maintained
+        madnessClaim?: string;  // The specific madness claim being checked
     };
 }
 

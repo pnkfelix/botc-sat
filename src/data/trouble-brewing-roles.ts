@@ -539,6 +539,18 @@ const simpleRoles: Role[] = [
                 type: 'information_token',
                 token: 'dead',
                 informationToken: {}
+            },
+            {
+                description: 'Imp dead token causes death at night-to-dawn transition',
+                type: 'token_effect',
+                token: 'dead',
+                tokenEffect: {
+                    effect: 'causes_death_at_dawn',
+                    trigger: 'phase_transition',
+                    fromPhase: 'NIGHT',
+                    toPhase: 'DAWN',
+                    announcement: 'public_death'
+                }
             }
         ],
         constraints: [],

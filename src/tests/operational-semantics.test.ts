@@ -35,7 +35,7 @@ describe('Operational Semantics - Grimoire Evolution', () => {
         it('should add tokens to players with assigned roles', () => {
             // BEFORE: Grimoire with all roles assigned
             const playerNames = ['Alice', 'Bob'];
-            const trace = '<SETUP> st!Alice:washerwoman, st!Bob:imp <N1> st!Alice(+poi:poisoned)';
+            const trace = '<SETUP> bag!Alice:washerwoman, bag!Bob:imp <N1> st!Alice(+poi:poisoned)';
             const result = executor.executeTrace(trace, playerNames);
             
             // Extract setup state and action result
@@ -54,7 +54,7 @@ describe('Operational Semantics - Grimoire Evolution', () => {
         it('should handle token removal correctly with assigned roles', () => {
             // BEFORE: Grimoire with roles assigned, Alice has poison token
             const playerNames = ['Alice', 'Bob'];
-            const trace = '<SETUP> st!Alice:washerwoman, st!Bob:imp <N1> st!Alice(+poi:poisoned) <N2> st!Alice(-poi:poisoned),Bob(+poi:poisoned)';
+            const trace = '<SETUP> bag!Alice:washerwoman, bag!Bob:imp <N1> st!Alice(+poi:poisoned) <N2> st!Alice(-poi:poisoned),Bob(+poi:poisoned)';
             const result = executor.executeTrace(trace, playerNames);
             
             // Print BEFORE → ACTION → AFTER for token removal

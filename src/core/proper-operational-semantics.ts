@@ -4,6 +4,7 @@ import { GrimoireState } from './grimoire';
 import { GameTraceParser, GameEvent, PhaseUtils } from './game-trace-parser';
 import { CompleteGameState, CompleteGameStateFactory, GameExecutionStateFactory, GameTransition, OperationalSemanticsTrace } from './game-execution-state';
 import { renderGrimoireToSingleLine } from '../rendering/single-line-format';
+import { ROLES } from './roles';
 
 /**
  * Operational semantics executor using proper grimoire types
@@ -178,6 +179,9 @@ export class ProperGrimoireExecutor {
             case 'die':
                 this.handleDeath(state, event, errors);
                 break;
+            case 'demon_kill':
+                this.handleDemonKill(state, event, errors);
+                break;
             case 'phase_transition':
                 // No-op for phase transitions - the phase change is handled in executeStep
                 break;
@@ -217,15 +221,8 @@ export class ProperGrimoireExecutor {
             player.tokens.push(event.token);
         }
         
-        // Handle token-triggered effects
-        if (event.token === 'imp:dead') {
-            // Imp's dead token causes immediate death
-            this.handleDeath(state, {
-                ...event,
-                action: 'die',
-                actor: event.target
-            }, errors);
-        }
+        // Handle token effects based on DSL declarations
+        this.processTokenEffects(state, event, errors);
     }
     
     private handleRemoveToken(state: CompleteGameState, event: GameEvent, errors: string[]): void {
@@ -340,8 +337,88 @@ export class ProperGrimoireExecutor {
         player.ghost = true;
     }
     
-    // Removed handleDemonKill - now handled through token-based system
-    // When imp:dead token is placed, death is handled automatically in handleAddToken
+    private handleDemonKill(state: CompleteGameState, event: GameEvent, errors: string[]): void {
+        if (!event.target) {
+            errors.push('Demon kill missing target');
+            return;
+        }
+        
+        // Add death token and handle death (backward compatibility)
+        this.handleAddToken(state, {
+            ...event,
+            action: 'add_token',
+            token: 'imp:dead'
+        }, errors);
+        
+        this.handleDeath(state, {
+            ...event,
+            action: 'die',
+            actor: event.target
+        }, errors);
+    }
+
+    /**
+     * Process token effects based on DSL role definitions
+     */
+    private processTokenEffects(state: CompleteGameState, event: GameEvent, errors: string[]): void {
+        if (!event.token) return;
+        
+        // Parse token format: "role:token" (e.g., "imp:dead")
+        const tokenParts = event.token.split(':');
+        if (tokenParts.length !== 2) return;
+        
+        const [roleId, tokenName] = tokenParts;
+        
+        // Find role definition
+        const role = ROLES.get(roleId);
+        if (!role || !role.tokenConstraints) return;
+        
+        // Find token effect constraints for this token
+        const tokenEffects = role.tokenConstraints.filter(constraint => 
+            constraint.type === 'token_effect' && 
+            constraint.token === tokenName &&
+            constraint.tokenEffect
+        );
+        
+        // Apply each token effect
+        for (const constraint of tokenEffects) {
+            const effect = constraint.tokenEffect!;
+            
+            switch (effect.effect) {
+                case 'causes_death_at_dawn':
+                    // For immediate triggers during token placement
+                    if (effect.trigger === 'phase_transition' && 
+                        effect.fromPhase === 'NIGHT' && 
+                        effect.toPhase === 'DAWN') {
+                        // Note: This is immediate placement during NIGHT
+                        // The actual dawn transition will be handled in phase transition logic
+                        // For now, mark for death at next dawn
+                        if (event.target) {
+                            this.handleDeath(state, {
+                                ...event,
+                                action: 'die',
+                                actor: event.target
+                            }, errors);
+                        }
+                    }
+                    break;
+                    
+                case 'causes_unhealthiness':
+                    // Handle drunk/poison effects
+                    // TODO: Implement sober/healthy state tracking
+                    break;
+                    
+                case 'causes_death_if_madness_broken':
+                case 'causes_death_if_madness_maintained':
+                case 'causes_gain_ability_if_madness_maintained':
+                    // TODO: Implement madness tracking and checking
+                    break;
+                    
+                default:
+                    errors.push(`Unknown token effect: ${effect.effect}`);
+            }
+        }
+    }
     
     private findPlayer(grimoire: GrimoireState, playerName: string) {
         return grimoire.players.find(p => p.name === playerName);

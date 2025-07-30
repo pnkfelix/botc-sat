@@ -137,6 +137,11 @@ export class ReminderTokenCompiler {
                 this.compileRoleRequiresToken(roleId, constraint, solver, playerCount);
                 break;
                 
+            case 'token_effect':
+                // Token effects don't generate SAT constraints - they're handled by operational semantics
+                // This is just for constraint compilation, so we can safely ignore token effects
+                break;
+                
             default:
                 console.warn(`Unknown token constraint type: ${constraint.type}`);
         }

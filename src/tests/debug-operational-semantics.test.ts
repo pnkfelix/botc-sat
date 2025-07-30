@@ -2,8 +2,12 @@ import { describe, it } from 'vitest';
 import { ProperGrimoireExecutor } from '../core/proper-operational-semantics';
 import { parseGrimoireFromSingleLine } from '../parsing/single-line-parser';
 import { renderGrimoireToSingleLine } from '../rendering/single-line-format';
+import { registerTroubleBrewing } from '../data/trouble-brewing-roles';
 
 describe('Debug Operational Semantics', () => {
+    // Register roles so DSL-driven token effects work
+    registerTroubleBrewing();
+    
     const executor = new ProperGrimoireExecutor(true);
     
     it('should debug what is happening with the simple case', () => {

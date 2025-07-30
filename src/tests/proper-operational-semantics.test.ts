@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { ProperGrimoireExecutor } from '../core/proper-operational-semantics';
 import { parseGrimoireFromSingleLine } from '../parsing/single-line-parser';
 import { renderGrimoireToSingleLine } from '../rendering/single-line-format';
+import { registerTroubleBrewing } from '../data/trouble-brewing-roles';
 
 /**
  * Convert from single-line parser result to operational semantics initial state
@@ -12,6 +13,9 @@ function createInitialStateFromGrimoire(grimoireString: string) {
 }
 
 describe('Proper Operational Semantics - Using Existing Types', () => {
+    // Register roles so DSL-driven token effects work
+    registerTroubleBrewing();
+    
     const executor = new ProperGrimoireExecutor(true);
     
     it('should add and remove reminder tokens while preserving roles using proper BOTC phases', () => {
@@ -20,7 +24,7 @@ describe('Proper Operational Semantics - Using Existing Types', () => {
         const { grimoire: parsedGrimoire } = createInitialStateFromGrimoire(initialGrimoire);
         
         // Verify initial state was parsed correctly using existing renderer
-        expect(renderGrimoireToSingleLine(parsedGrimoire)).toBe('[Alice:washerwoman(poisoner:poisoned) Bob:imp Charlie:chef]');
+        expect(renderGrimoireToSingleLine(parsedGrimoire)).toBe('[Alice:washerwoman(poi:poisoned) Bob:imp Charlie:chef]');
         
         // 2. Near-trivial sequence using proper BOTC phases: add one token, remove another
         const traceFragment = '<EVENING> st!Bob(+washerwoman:townsfolk), st!Alice(-poisoner:poisoned)';
@@ -29,7 +33,7 @@ describe('Proper Operational Semantics - Using Existing Types', () => {
         const result = executor.executeTraceFromGrimoire(traceFragment, parsedGrimoire);
         
         // 4. Confirm the resulting game state matches expected grimoire using existing renderer
-        const expectedFinalGrimoire = '[Alice:washerwoman Bob:imp(washerwoman:townsfolk) Charlie:chef]';
+        const expectedFinalGrimoire = '[Alice:washerwoman Bob:imp(ww:townsfolk) Charlie:chef]';
         const actualFinalGrimoire = executor.renderState(result.finalState);
         
         expect(actualFinalGrimoire).toBe(expectedFinalGrimoire);
@@ -41,7 +45,7 @@ describe('Proper Operational Semantics - Using Existing Types', () => {
         const playerNames = ['Alice', 'Bob', 'Charlie'];
         
         // Proper BOTC game flow: SETUP → N1 → DAWN → EVENING → NIGHT → DAWN → EVENING
-        const trace = '<SETUP> st!Alice:washerwoman, st!Bob:imp, st!Charlie:chef <N1> Alice:washerwoman!Bob(+washerwoman:townsfolk) <DAWN> <EVENING> Charlie!nominates->Alice, Bob!votes->Alice, st!executes->Alice <NIGHT> Bob:imp!Charlie(+imp:dead)';
+        const trace = '<SETUP> bag!Alice:washerwoman, bag!Bob:imp, bag!Charlie:chef <N1> Alice:washerwoman!Bob(+washerwoman:townsfolk) <DAWN> <EVENING> Charlie!nominates->Alice, Bob!votes->Alice, st!executes->Alice <NIGHT> Bob:imp!Charlie(+imp:dead)';
         
         const result = executor.executeTrace(trace, playerNames);
         
@@ -50,14 +54,14 @@ describe('Proper Operational Semantics - Using Existing Types', () => {
         
         // Verify final state has proper role preservation and death handling
         const finalGrimoire = executor.renderState(result.finalState);
-        expect(finalGrimoire).toBe('[*Alice:washerwoman* Bob:imp(washerwoman:townsfolk) *Charlie:chef(imp:dead)*]');
+        expect(finalGrimoire).toBe('[*Alice:washerwoman* Bob:imp(ww:townsfolk) *Charlie:chef(imp:dead)*]');
     });
     
     it('should validate invalid phase transitions', () => {
         const playerNames = ['Alice', 'Bob'];
         
         // Invalid: SETUP → EVENING (should be SETUP → N1)
-        const invalidTrace = '<SETUP> st!Alice:washerwoman <EVENING> Alice!nominates->Bob';
+        const invalidTrace = '<SETUP> bag!Alice:washerwoman <EVENING> Alice!nominates->Bob';
         
         const result = executor.executeTrace(invalidTrace, playerNames);
         
@@ -69,7 +73,7 @@ describe('Proper Operational Semantics - Using Existing Types', () => {
         const playerNames = ['Alice', 'Bob', 'Charlie', 'Dave'];
         
         // Multiple day/night cycles
-        const trace = '<SETUP> st!Alice:washerwoman, st!Bob:imp, st!Charlie:chef, st!Dave:butler <N1> Alice:washerwoman!Bob(+washerwoman:townsfolk) <DAWN> <EVENING> Charlie!nominates->Dave, Bob!votes->Dave, st!executes->Dave <NIGHT> Bob:imp!Alice(+imp:dead) <DAWN> <EVENING> Charlie!nominates->Bob <NIGHT>';
+        const trace = '<SETUP> bag!Alice:washerwoman, bag!Bob:imp, bag!Charlie:chef, bag!Dave:butler <N1> Alice:washerwoman!Bob(+washerwoman:townsfolk) <DAWN> <EVENING> Charlie!nominates->Dave, Bob!votes->Dave, st!executes->Dave <NIGHT> Bob:imp!Alice(+imp:dead) <DAWN> <EVENING> Charlie!nominates->Bob <NIGHT>';
         
         const result = executor.executeTrace(trace, playerNames);
         
@@ -78,12 +82,12 @@ describe('Proper Operational Semantics - Using Existing Types', () => {
         
         // Verify final state
         const finalGrimoire = executor.renderState(result.finalState);
-        expect(finalGrimoire).toBe('[*Alice:washerwoman(imp:dead)* Bob:imp(washerwoman:townsfolk) Charlie:chef *Dave:butler*]');
+        expect(finalGrimoire).toBe('[*Alice:washerwoman(imp:dead)* Bob:imp(ww:townsfolk) Charlie:chef *Dave:butler*]');
     });
     
     it('should preserve existing grimoire functionality', () => {
         // Test that we can still parse and render complex grimoire states
-        const complexGrimoire = '[Alice:washerwoman(poisoner:poisoned,washerwoman:townsfolk) *Bob:imp* *~~Charlie~~:chef(imp:dead)* Dave:butler]';
+        const complexGrimoire = '[Alice:washerwoman(poi:poisoned,ww:townsfolk) *Bob:imp* *~~Charlie~~:chef(imp:dead)* Dave:butler]';
         const { grimoire } = createInitialStateFromGrimoire(complexGrimoire);
         
         // Verify the existing parser and renderer work correctly
@@ -95,7 +99,7 @@ describe('Proper Operational Semantics - Using Existing Types', () => {
         expect(grimoire.players[0].name).toBe('Alice');
         expect(grimoire.players[0].role).toBe('washerwoman');
         expect(grimoire.players[0].alive).toBe(true);
-        expect(grimoire.players[0].tokens).toEqual(['poisoner:poisoned', 'washerwoman:townsfolk']);
+        expect(grimoire.players[0].tokens).toEqual(['poi:poisoned', 'ww:townsfolk']);
         
         expect(grimoire.players[1].name).toBe('Bob');
         expect(grimoire.players[1].alive).toBe(false);
