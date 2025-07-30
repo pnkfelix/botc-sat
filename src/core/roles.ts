@@ -106,6 +106,108 @@ export interface TokenPlacementConstraint {
     };
 }
 
+// Parameter types for role actions
+export type ActionParameterType = 'player' | 'role' | 'boolean' | 'statement' | 'number';
+
+export interface ActionParameter {
+    name: string;
+    type: ActionParameterType;
+    optional?: boolean;
+}
+
+// Action visibility types
+export type ActionVisibility = 'public' | 'private' | 'either';
+
+// Action timing constraints
+export interface ActionTiming {
+    phase: 'SETUP' | 'N1' | 'DAWN' | 'EVENING' | 'NIGHT' | 'any_day' | 'any_night' | 'on_trigger';
+    frequency: 'once_per_game' | 'once_per_day' | 'once_per_night' | 'unlimited' | 'when_triggered';
+    excludeFirstNight?: boolean; // For recurring night actions that skip N1
+    trigger?: 'on_nomination' | 'on_execution' | 'on_death' | 'on_demon_death' | 'on_night_death' | 'end_of_day' | 'registration_check';
+}
+
+// Action effects that can occur
+export interface ActionEffect {
+    description: string;
+    type: 'causes_death' | 'causes_execution' | 'places_token' | 'removes_token' | 'modifies_votes' | 'conditional' | 'learns_information' | 'game_end' | 'role_transformation' | 'redirect_attack';
+    
+    // For conditional effects
+    condition?: string; // DSL expression (e.g., "target.role.type === 'demon'")
+    
+    // For death effects
+    targetDies?: boolean;
+    actorDies?: boolean;
+    
+    // For token effects
+    tokenToPlace?: string; // Format: "role:token"
+    tokenToRemove?: string;
+    tokenTarget?: 'actor' | 'target' | 'storyteller_choice' | 'nominator';
+    
+    // For execution effects
+    executionTarget?: 'target' | 'actor' | 'nominator';
+    
+    // For vote modification
+    voteModification?: {
+        type: 'double_vote' | 'negative_vote' | 'no_vote' | 'conditional_vote';
+        target: 'actor' | 'target';
+        condition?: string; // For butler: can only vote if master votes
+    };
+    
+    // For information learning
+    informationLearned?: {
+        type: 'yes_no' | 'role_name' | 'count' | 'alignment';
+        about?: 'target' | 'neighbors' | 'demon_status' | 'execution_target';
+    };
+    
+    // For game ending effects
+    gameEnd?: {
+        winningTeam: 'good' | 'evil';
+        condition: string;
+    };
+    
+    // For role transformation (Scarlet Woman → Imp)
+    roleTransformation?: {
+        from: string; // Role ID
+        to: string;   // Role ID
+        condition: string;
+    };
+    
+    // For attack redirection (Mayor ability)
+    attackRedirect?: {
+        fromTarget: 'actor';
+        toTarget: 'storyteller_choice';
+        optional: boolean; // Storyteller can choose whether to redirect
+    };
+}
+
+// Role action constraint definition
+export interface RoleActionConstraint {
+    // Human-readable description
+    description: string;
+    
+    // Action name (namespaced with role, e.g., "slayer:shoot_at")
+    actionName: string;
+    
+    // Parameters this action takes
+    parameters: ActionParameter[];
+    
+    // When this action can be used
+    timing: ActionTiming;
+    
+    // Whether action is public, private, or either
+    visibility: ActionVisibility;
+    
+    // What happens when this action is used
+    effects: ActionEffect[];
+    
+    // Prerequisites (must be sober and healthy, etc.)
+    prerequisites?: {
+        requiresSoberAndHealthy?: boolean;
+        requiresAlive?: boolean;
+        customCondition?: string; // DSL expression
+    };
+}
+
 export interface Role {
     id: string;           // Unique identifier (e.g., "butler", "imp")
     name: string;         // Display name (e.g., "Butler", "Imp")
@@ -152,6 +254,9 @@ export interface Role {
         affects_transient_state?: boolean;
         triggered_by_event?: string; // Event that triggers ability (e.g., 'nomination', 'demon_death')
     };
+    
+    // Role-specific actions that players can take (slayer:shoot_at, monk:protect, etc.)
+    actions?: RoleActionConstraint[];
     
     // Metadata
     edition: string;      // Which edition/script this role belongs to

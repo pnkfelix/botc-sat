@@ -182,6 +182,9 @@ export class ProperGrimoireExecutor {
             case 'demon_kill':
                 this.handleDemonKill(state, event, errors);
                 break;
+            case 'role_action':
+                this.handleRoleAction(state, event, errors);
+                break;
             case 'phase_transition':
                 // No-op for phase transitions - the phase change is handled in executeStep
                 break;
@@ -417,6 +420,143 @@ export class ProperGrimoireExecutor {
                 default:
                     errors.push(`Unknown token effect: ${effect.effect}`);
             }
+        }
+    }
+
+    /**
+     * Handle script-parametric role actions (slayer:shoot_at, monk:protect, etc.)
+     */
+    private handleRoleAction(state: CompleteGameState, event: GameEvent, errors: string[]): void {
+        if (!event.details?.actionName) {
+            errors.push('Role action missing action name');
+            return;
+        }
+
+        const actionName = event.details.actionName;
+        const parameters = event.details.parameters || [];
+
+        // Parse actor to get player and role
+        const actorParts = event.actor.split(':');
+        if (actorParts.length !== 2) {
+            errors.push(`Invalid role action actor format: ${event.actor}`);
+            return;
+        }
+
+        const [playerName, roleId] = actorParts;
+        const player = this.findPlayer(state.grimoire, playerName);
+        if (!player) {
+            errors.push(`Role action actor not found: ${playerName}`);
+            return;
+        }
+
+        // Find role definition and action
+        const role = ROLES.get(roleId);
+        if (!role || !role.actions) {
+            errors.push(`Role not found or has no actions: ${roleId}`);
+            return;
+        }
+
+        // Action name can be either just the action part or the full namespaced name
+        const fullActionName = `${roleId}:${actionName}`;
+        const actionDef = role.actions.find(a => 
+            a.actionName === actionName || a.actionName === fullActionName
+        );
+        if (!actionDef) {
+            errors.push(`Action not found for role ${roleId}: ${actionName}`);
+            return;
+        }
+
+        // Validate prerequisites
+        if (actionDef.prerequisites?.requiresAlive && !player.alive) {
+            errors.push(`${playerName} cannot use ${actionName}: player is dead`);
+            return;
+        }
+
+        if (actionDef.prerequisites?.requiresSoberAndHealthy) {
+            // TODO: Check if player is sober and healthy
+            // For now, assume they are unless they have drunk/poison tokens  
+        }
+
+        // Process action effects
+        for (const effect of actionDef.effects) {
+            this.processRoleActionEffect(state, event, effect, parameters, errors);
+        }
+    }
+
+    /**
+     * Process individual role action effects
+     */
+    private processRoleActionEffect(
+        state: CompleteGameState, 
+        event: GameEvent, 
+        effect: any, 
+        parameters: string[], 
+        errors: string[]
+    ): void {
+        switch (effect.type) {
+            case 'places_token':
+                if (effect.tokenToPlace) {
+                    const target = this.resolveActionTarget(state, effect.tokenTarget, event, parameters);
+                    if (target) {
+                        this.handleAddToken(state, {
+                            ...event,
+                            action: 'add_token',
+                            target: target,
+                            token: effect.tokenToPlace
+                        }, errors);
+                    }
+                }
+                break;
+
+            case 'conditional':
+                // TODO: Implement condition evaluation
+                if (effect.targetDies && parameters.length > 0) {
+                    const target = parameters[0];
+                    this.handleDeath(state, {
+                        ...event,
+                        action: 'die',
+                        actor: target
+                    }, errors);
+                } else if (effect.actorDies) {
+                    const actorName = event.actor.split(':')[0];
+                    this.handleDeath(state, {
+                        ...event,
+                        action: 'die',
+                        actor: actorName
+                    }, errors);
+                }
+                break;
+
+            case 'learns_information':
+                // TODO: Implement information learning
+                // For now, just log that information would be learned
+                console.log(`${event.actor} would learn information from ${event.details.actionName}`);
+                break;
+
+            default:
+                errors.push(`Unknown role action effect: ${effect.type}`);
+        }
+    }
+
+    /**
+     * Resolve action target based on effect target specification
+     */
+    private resolveActionTarget(
+        _state: CompleteGameState, 
+        targetSpec: string, 
+        event: GameEvent, 
+        parameters: string[]
+    ): string | null {
+        switch (targetSpec) {
+            case 'actor':
+                return event.actor.split(':')[0]; // Player name only
+            case 'target':
+                return parameters.length > 0 ? parameters[0] : null;
+            case 'storyteller_choice':
+                // TODO: Implement storyteller choice mechanism
+                return null;
+            default:
+                return null;
         }
     }
     

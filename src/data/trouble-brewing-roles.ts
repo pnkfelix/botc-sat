@@ -274,6 +274,35 @@ const simpleRoles: Role[] = [
                 requiresRole: { roleId: 'fortune_teller' }
             }
         ],
+        actions: [
+            {
+                description: 'Fortune Teller divines two players each night to learn if either is demon',
+                actionName: 'fortune_teller:divine',
+                parameters: [
+                    { name: 'target1', type: 'player' },
+                    { name: 'target2', type: 'player' }
+                ],
+                timing: {
+                    phase: 'NIGHT',
+                    frequency: 'once_per_night'
+                },
+                visibility: 'private',
+                effects: [
+                    {
+                        description: 'Learn yes/no if either target is demon (accounting for red herring)',
+                        type: 'learns_information',
+                        informationLearned: {
+                            type: 'yes_no',
+                            about: 'demon_status'
+                        }
+                    }
+                ],
+                prerequisites: {
+                    requiresSoberAndHealthy: true,
+                    requiresAlive: true
+                }
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -322,6 +351,34 @@ const simpleRoles: Role[] = [
                 informationToken: {}
             }
         ],
+        actions: [
+            {
+                description: 'Monk can protect a player each night except the first night',
+                actionName: 'monk:protect',
+                parameters: [
+                    { name: 'target', type: 'player' }
+                ],
+                timing: {
+                    phase: 'NIGHT',
+                    frequency: 'once_per_night',
+                    excludeFirstNight: true
+                },
+                visibility: 'private',
+                effects: [
+                    {
+                        description: 'Target becomes safe from demon tonight',
+                        type: 'places_token',
+                        tokenToPlace: 'monk:safe',
+                        tokenTarget: 'target'
+                    }
+                ],
+                prerequisites: {
+                    requiresSoberAndHealthy: true,
+                    requiresAlive: true,
+                    customCondition: 'target !== actor' // Cannot protect self
+                }
+            }
+        ],
         constraints: [],
         edition: 'Trouble Brewing',
         complexity: 1
@@ -355,6 +412,36 @@ const simpleRoles: Role[] = [
                 requiresRole: { roleId: 'virgin' }
             }
         ],
+        actions: [
+            {
+                description: 'Virgin passive effect: if nominated by Townsfolk, nominator is executed',
+                actionName: 'virgin:nomination_trigger', 
+                parameters: [],
+                timing: {
+                    phase: 'on_trigger',
+                    frequency: 'once_per_game',
+                    trigger: 'on_nomination'
+                },
+                visibility: 'public',
+                effects: [
+                    {
+                        description: 'If nominator is Townsfolk, execute nominator immediately',
+                        type: 'conditional',
+                        condition: 'nominator.role.type === "Townsfolk"',
+                        executionTarget: 'nominator'
+                    },
+                    {
+                        description: 'Virgin loses ability after first nomination',
+                        type: 'places_token',
+                        tokenToPlace: 'virgin:no_ability',
+                        tokenTarget: 'actor'
+                    }
+                ],
+                prerequisites: {
+                    requiresAlive: true
+                }
+            }
+        ],
         constraints: [],
         abilityType: 'one_time_event_triggered',
         abilityTiming: 'day',
@@ -383,6 +470,44 @@ const simpleRoles: Role[] = [
                 type: 'requires_role_present',
                 token: 'no_ability', 
                 requiresRole: { roleId: 'slayer' }
+            }
+        ],
+        actions: [
+            {
+                description: 'Slayer can shoot at a player once per game during the day',
+                actionName: 'slayer:shoot_at',
+                parameters: [
+                    { name: 'target', type: 'player' }
+                ],
+                timing: {
+                    phase: 'EVENING',
+                    frequency: 'once_per_game'
+                },
+                visibility: 'public',
+                effects: [
+                    {
+                        description: 'If target is demon, target dies',
+                        type: 'conditional',
+                        condition: 'target.role.type === "demon"',
+                        targetDies: true
+                    },
+                    {
+                        description: 'If target is not demon, slayer dies',
+                        type: 'conditional', 
+                        condition: 'target.role.type !== "demon"',
+                        actorDies: true
+                    },
+                    {
+                        description: 'Slayer loses ability after use',
+                        type: 'places_token',
+                        tokenToPlace: 'slayer:no_ability',
+                        tokenTarget: 'actor'
+                    }
+                ],
+                prerequisites: {
+                    requiresSoberAndHealthy: true,
+                    requiresAlive: true
+                }
             }
         ],
         constraints: [],
@@ -560,6 +685,45 @@ const simpleRoles: Role[] = [
 ];
 
 // Register all roles
+/* 
+// Example of a statement-based action (Gossip role from Sects & Violets)
+const gossipExample: Role = {
+    id: 'gossip',
+    name: 'Gossip',
+    type: 'Townsfolk',
+    englishText: 'Each day, you may make a public statement. Tonight, if it was true, a player dies.',
+    actions: [
+        {
+            description: 'Gossip can make a public statement that causes death if true',
+            actionName: 'gossip:statement',
+            parameters: [
+                { name: 'statement', type: 'statement' }
+            ],
+            timing: {
+                phase: 'EVENING',
+                frequency: 'once_per_day'
+            },
+            visibility: 'public',
+            effects: [
+                {
+                    description: 'If statement is true, storyteller chooses a player to die tonight',
+                    type: 'conditional',
+                    condition: 'statement_is_true',
+                    // This would trigger storyteller choice during night phase
+                    targetDies: false // Storyteller chooses target later
+                }
+            ],
+            prerequisites: {
+                requiresSoberAndHealthy: true,
+                requiresAlive: true
+            }
+        }
+    ],
+    edition: 'Sects & Violets',
+    complexity: 2
+};
+*/
+
 export function registerTroubleBrewing(): void {
     registerRole(baron);
     registerRole(drunk);

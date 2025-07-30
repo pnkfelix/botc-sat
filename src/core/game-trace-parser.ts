@@ -220,6 +220,28 @@ export class GameTraceParser {
             };
         }
         
+        // Role action: Player:Role!action_name(params) - new script-parametric actions
+        const roleActionMatch = eventStr.match(/^([^:]+):([^!]+)!([^(]+)(?:\(([^)]*)\))?$/);
+        if (roleActionMatch) {
+            const [, playerName, roleName, actionName, paramsStr] = roleActionMatch;
+            
+            // Parse parameters if present
+            const parameters: string[] = [];
+            if (paramsStr && paramsStr.trim()) {
+                parameters.push(...paramsStr.split(',').map(p => p.trim()));
+            }
+            
+            return {
+                phase,
+                actor: `${playerName.trim()}:${roleName.trim()}`,
+                action: 'role_action',
+                details: {
+                    actionName: actionName.trim(),
+                    parameters
+                }
+            };
+        }
+        
         // Role assignment: Actor!Target:Role (typically bag!Player:Role during SETUP)
         // Must come after more specific patterns (like nominations with roles)
         const roleAssignMatch = eventStr.match(/^([^!]+)!([^:]+):(.+)$/);
