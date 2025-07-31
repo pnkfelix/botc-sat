@@ -7,28 +7,9 @@ describe('Operational Semantics - Grimoire Evolution', () => {
     const executor = new GrimoireExecutor(true); // Enable validation
     
     // Helper function to print BEFORE → ACTION → AFTER for all tests
-    function printOperationalSemantics(testName: string, result: OperationalSemanticsTrace) {
-        console.log(`\n=== ${testName} ===`);
-        console.log(`INITIAL STATE: ${GrimoireStateUtils.toSingleLineFormat(result.initialState)}`);
-        console.log('');
-        
-        result.transitions.forEach((transition, i) => {
-            const before = GrimoireStateUtils.toSingleLineFormat(transition.fromState);
-            const after = GrimoireStateUtils.toSingleLineFormat(transition.toState);
-            const action = `${transition.event.phase}:${transition.event.action}(${transition.event.actor})`;
-            const status = transition.isValid ? '✅' : '❌';
-            
-            console.log(`${status} Step ${i + 1}:`);
-            console.log(`  BEFORE: ${before}`);
-            console.log(`  ACTION: ${action}`);
-            console.log(`  AFTER:  ${after}`);
-            console.log('');
-        });
-        
-        if (result.invalidTransitions.length > 0) {
-            console.log(`⚠️  Invalid transitions: ${result.invalidTransitions.length}`);
-            console.log('');
-        }
+    function printOperationalSemantics(_testName: string, _result: OperationalSemanticsTrace) {
+        // Suppress console output for cleaner test runs
+        // Execution details are still available in the result object for debugging
     }
     
     describe('Basic State Evolution', () => {

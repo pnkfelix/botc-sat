@@ -1057,7 +1057,7 @@ export function validateColumnStructure(renderedOutput: string, options?: Render
             `Problem columns:\n${problemColumns.map(line => `  ${line}`).join('\n')}`
         );
     } else if (process.env.NODE_ENV !== 'production') {
-        console.debug(`✅ Column structure validation passed`);
+        // Column structure validation passed - suppress debug output
     }
 }
 

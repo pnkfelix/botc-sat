@@ -14,15 +14,14 @@ describe('Role Actions - Script-Parametric Actions', () => {
         const initialGrimoire = '[Alice:slayer Bob:imp Charlie:chef]';
         const parsedGrimoire = parseGrimoireFromSingleLine(initialGrimoire);
         
-        console.log('BEFORE slayer action:', parsedGrimoire.players.map(p => `${p.name}:${p.role}`).join(' '));
+        // Suppress debug output for cleaner test runs
         
         // Slayer shoots at the Imp (should kill the target)
         const traceFragment = '<EVENING> Alice:slayer!shoot_at(Bob)';
         
         const result = executor.executeTraceFromGrimoire(traceFragment, parsedGrimoire);
         
-        console.log('AFTER slayer action:', executor.renderState(result.finalState));
-        console.log('Errors:', result.invalidTransitions.map(t => t.validationErrors).flat());
+        // Result details available in result object for debugging
         
         // Slayer should have shot at Bob, and Bob should be dead (conditional on Bob being demon)
         // Slayer should have no_ability token showing the ability was used
@@ -34,15 +33,14 @@ describe('Role Actions - Script-Parametric Actions', () => {
         const initialGrimoire = '[Alice:monk Bob:imp Charlie:chef]';
         const parsedGrimoire = parseGrimoireFromSingleLine(initialGrimoire);
         
-        console.log('BEFORE monk action:', parsedGrimoire.players.map(p => `${p.name}:${p.role}`).join(' '));
+        // Suppress debug output for cleaner test runs
         
         // Monk protects Charlie 
         const traceFragment = '<NIGHT> Alice:monk!protect(Charlie)';
         
         const result = executor.executeTraceFromGrimoire(traceFragment, parsedGrimoire);
         
-        console.log('AFTER monk action:', executor.renderState(result.finalState));
-        console.log('Errors:', result.invalidTransitions.map(t => t.validationErrors).flat());
+        // Result details available in result object for debugging
         
         // Charlie should have monk:safe token
         expect(result.invalidTransitions).toHaveLength(0);
@@ -55,15 +53,14 @@ describe('Role Actions - Script-Parametric Actions', () => {
         const initialGrimoire = '[Alice:fortune_teller Bob:imp Charlie:chef]';
         const parsedGrimoire = parseGrimoireFromSingleLine(initialGrimoire);
         
-        console.log('BEFORE fortune teller action:', parsedGrimoire.players.map(p => `${p.name}:${p.role}`).join(' '));
+        // Suppress debug output for cleaner test runs
         
         // Fortune Teller divines two players
         const traceFragment = '<NIGHT> Alice:fortune_teller!divine(Bob, Charlie)';
         
         const result = executor.executeTraceFromGrimoire(traceFragment, parsedGrimoire);
         
-        console.log('AFTER fortune teller action:', executor.renderState(result.finalState));
-        console.log('Errors:', result.invalidTransitions.map(t => t.validationErrors).flat());
+        // Result details available in result object for debugging
         
         // Information learning action should not cause errors
         expect(result.invalidTransitions).toHaveLength(0);
@@ -74,17 +71,14 @@ describe('Role Actions - Script-Parametric Actions', () => {
         const initialGrimoire = '[Alice:slayer Bob:imp Charlie:monk Dave:chef]';
         const parsedGrimoire = parseGrimoireFromSingleLine(initialGrimoire);
         
-        console.log('MIXED FORMAT - Initial:', parsedGrimoire.players.map(p => `${p.name}:${p.role}`).join(' '));
+        // Suppress debug output for cleaner test runs
         
         // Mix of old and new formats
         const traceFragment = '<NIGHT> Charlie:monk!protect(Alice), Bob:imp!Alice(+imp:dead) <DAWN> <EVENING> Alice:slayer!shoot_at(Bob)';
         
         const result = executor.executeTraceFromGrimoire(traceFragment, parsedGrimoire);
         
-        console.log('MIXED FORMAT - Final:', executor.renderState(result.finalState));
-        console.log('Phases:', result.phases);
-        console.log('Steps:', result.totalSteps);
-        console.log('Errors:', result.invalidTransitions.map(t => t.validationErrors).flat());
+        // Result details available in result object for debugging
         
         // Should demonstrate both formats working together
         expect(result.phases).toEqual(['NIGHT', 'DAWN', 'EVENING']);

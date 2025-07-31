@@ -3,6 +3,9 @@ const BOTCValidator = require('../dist/index.js').default;
 const { parseGrimoireFromSingleLine } = require('../dist/parsing/single-line-parser.js');
 
 async function run() {
+    const startTime = Date.now();
+    console.log(`[${new Date().toISOString()}] Starting render-grimoire.js`);
+    
     // Parse command line arguments
     const args = process.argv.slice(2);
     
@@ -49,7 +52,9 @@ async function run() {
         console.log(`✅ Parsed ${grimoire.players.length} players successfully`);
         
         // Create validator instance (automatically registers roles)
+        const initStart = Date.now();
         const validator = new BOTCValidator();
+        console.log(`[${Date.now() - initStart}ms] BOTCValidator initialized`);
         
         // Configure render options based on layout selector
         let renderOptions;
@@ -75,7 +80,9 @@ async function run() {
         // Render the grimoire as ASCII art
         console.log('\n📜 ASCII Grimoire Rendering:');
         console.log('─'.repeat(60));
+        const renderStart = Date.now();
         const asciiArt = validator.renderGrimoireAscii(grimoire, renderOptions);
+        console.log(`[${Date.now() - renderStart}ms] ASCII rendering completed`);
         console.log(asciiArt);
         console.log('─'.repeat(60));
         
@@ -98,6 +105,7 @@ async function run() {
         }
         
         console.log('\n✅ Rendering complete!');
+        console.log(`[${Date.now() - startTime}ms] Total execution time`);
         
     } catch (error) {
         console.error('❌ Error rendering grimoire:');

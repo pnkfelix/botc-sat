@@ -319,9 +319,7 @@ describe('Render Grimoire Command Test Cases', () => {
             // BUG #9: Exhaustive test to definitively expose or rule out the visual formatting bug
             // Test parameters: 7-15 players × 1-15 name lengths × alive vs dead states = 270 combinations
             
-            console.log('\n=== BUG #9 EXHAUSTIVE EVALUATION ===');
-            console.log('Testing all combinations: 7-15 players, 1-15 char names, alive vs dead states');
-            console.log('This will definitively expose the bug if it manifests in practice\n');
+            // Running exhaustive evaluation of layout selection bug
             
             const roles = ['investigator', 'chef', 'empath', 'librarian', 'butler', 'fortune_teller', 'washerwoman', 'monk', 'ravenkeeper', 'virgin', 'slayer', 'soldier', 'mayor', 'undertaker', 'imp'];
             
@@ -391,27 +389,19 @@ describe('Render Grimoire Command Test Cases', () => {
                             deadDims: deadDimsStr
                         });
                         
-                        console.log(`🐛 DIFFERENCE FOUND! ${playerCount}p, ${nameLength}-char names: ${aliveDimsStr} vs ${deadDimsStr}`);
+                        // Layout difference detected
                     }
                 }
             }
             
-            console.log(`\n=== EXHAUSTIVE TEST RESULTS ===`);
-            console.log(`Total test combinations: ${totalTests}`);
-            console.log(`Layout differences found: ${layoutDifferences}`);
-            console.log(`Difference rate: ${(layoutDifferences/totalTests*100).toFixed(1)}%`);
+            // Exhaustive test completed: check layoutDifferences variable for results
             
             if (layoutDifferences > 0) {
-                console.log('\n🐛 BUG CONFIRMED by exhaustive testing!');
-                console.log('Visual formatting definitively affects squariness-layout selection');
-                console.log('\nAll differences found:');
-                differences.forEach(diff => {
-                    console.log(`  ${diff.playerCount} players, ${diff.nameLength}-char names: ${diff.aliveDims} → ${diff.deadDims}`);
-                });
+                // Bug confirmed by exhaustive testing
+                // Differences found - details available in differences array
             } else {
-                console.log('\n📊 No layout differences found in tested range');
-                console.log('Auto-layout appears robust to visual formatting in practice');
-                console.log('However, architectural flaw remains and will affect width-constrained mode');
+                // No layout differences found in tested range
+                // Auto-layout appears robust to visual formatting in practice
             }
             
             // The test passes regardless - we're documenting behavior, not asserting correctness
@@ -438,7 +428,7 @@ describe('Render Grimoire Command Test Cases', () => {
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
             
-            console.log(`\n7 players: ${aliveDims} (alive) vs ${deadDims} (dead) - ✅ STABLE`);
+            // 7 players: layout stable across alive/dead states
             expect(aliveDims).toBe(deadDims); // Perfect border stability achieved!
         });
 
@@ -457,7 +447,7 @@ describe('Render Grimoire Command Test Cases', () => {
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
             
-            console.log(`8 players: ${aliveDims} (alive) vs ${deadDims} (dead) - ✅ STABLE`);
+            // 8 players: layout stable across alive/dead states
             expect(aliveDims).toBe(deadDims); // Perfect border stability achieved!
         });
 
@@ -476,7 +466,7 @@ describe('Render Grimoire Command Test Cases', () => {
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
             
-            console.log(`9 players: ${aliveDims} (alive) vs ${deadDims} (dead) - ✅ STABLE`);
+            // 9 players: layout stable across alive/dead states
             expect(aliveDims).toBe(deadDims); // Perfect border stability achieved!
         });
 
@@ -495,7 +485,7 @@ describe('Render Grimoire Command Test Cases', () => {
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
             
-            console.log(`10 players: ${aliveDims} (alive) vs ${deadDims} (dead) - ✅ STABLE`);
+            // 10 players: layout stable across alive/dead states
             expect(aliveDims).toBe(deadDims); // Perfect border stability achieved!
         });
 
@@ -514,7 +504,7 @@ describe('Render Grimoire Command Test Cases', () => {
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
             
-            console.log(`11 players: ${aliveDims} (alive) vs ${deadDims} (dead) - ✅ STABLE`);
+            // 11 players: layout stable across alive/dead states
             expect(aliveDims).toBe(deadDims); // Perfect border stability achieved!
         });
 
@@ -533,7 +523,7 @@ describe('Render Grimoire Command Test Cases', () => {
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
             
-            console.log(`12 players: ${aliveDims} (alive) vs ${deadDims} (dead) - ✅ STABLE`);
+            // 12 players: layout stable across alive/dead states
             expect(aliveDims).toBe(deadDims); // Perfect border stability achieved!
         });
 
@@ -552,7 +542,7 @@ describe('Render Grimoire Command Test Cases', () => {
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
             
-            console.log(`13 players: ${aliveDims} (alive) vs ${deadDims} (dead) - ✅ STABLE`);
+            // 13 players: layout stable across alive/dead states
             expect(aliveDims).toBe(deadDims); // Perfect border stability achieved!
         });
 
@@ -571,7 +561,7 @@ describe('Render Grimoire Command Test Cases', () => {
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
             
-            console.log(`14 players: ${aliveDims} (alive) vs ${deadDims} (dead) - ✅ STABLE`);
+            // 14 players: layout stable across alive/dead states
             expect(aliveDims).toBe(deadDims); // Perfect border stability achieved!
         });
 
@@ -629,7 +619,7 @@ describe('Render Grimoire Command Test Cases', () => {
             const aliveDims = `${Math.max(...aliveRendered.split('\n').map(line => line.length))}x${aliveRendered.split('\n').length}`;
             const deadDims = `${Math.max(...deadRendered.split('\n').map(line => line.length))}x${deadRendered.split('\n').length}`;
             
-            console.log(`15 players: ${aliveDims} (alive) vs ${deadDims} (dead) - ✅ STABLE`);
+            // 15 players: layout stable across alive/dead states
             expect(aliveDims).toBe(deadDims); // Perfect border stability achieved!
             
             // Verify the actual rendered output matches expected (for code review visibility)
@@ -680,24 +670,20 @@ describe('Render Grimoire Command Test Cases', () => {
                 height: usedRendered.split('\n').length
             };
             
-            console.log('\n=== BUG #9 GHOST VOTE INVESTIGATION ===');
-            console.log(`Ghost vote available (*Frank*): ${ghostDimensions.width}x${ghostDimensions.height}`);
-            console.log(`Ghost vote used (*~~Frank~~*): ${usedDimensions.width}x${usedDimensions.height}`);
+            // Ghost vote investigation - dimensions available in variables
             
             // The visual difference: "*Frank*" vs "*~~Frank~~*" 
             // Length difference: 7 chars vs 11 chars (4 extra characters for strikethrough)
             // This could affect layout squareness scoring and change squariness layout selection
             
             if (ghostDimensions.width !== usedDimensions.width || ghostDimensions.height !== usedDimensions.height) {
-                console.log('🐛 BUG CONFIRMED: Ghost vote status affects layout selection!');
-                console.log('Visual formatting length difference changed squariness layout choice');
+                // Bug confirmed: Ghost vote status affects layout selection
             } else {
-                console.log('✅ NO BUG: Ghost vote status did not affect layout selection');
+                // No bug: Ghost vote status did not affect layout selection
             }
             
             // Document visual formatting differences
-            console.log(`Ghost vote formatting: ${ghostRendered.includes('*Frank*') ? '*Frank*' : 'not found'}`);
-            console.log(`Used vote formatting: ${usedRendered.includes('*~~Frank~~*') ? '*~~Frank~~*' : 'not found'}`);
+            // Vote formatting differences documented in rendered strings
         });
     });
 
@@ -718,9 +704,7 @@ describe('Render Grimoire Command Test Cases', () => {
                 });
             }).toThrow(); // Currently crashes - should be fixed to handle gracefully
             
-            console.log('\n=== BUG: Empty Grimoire Crash ===');
-            console.log('Squariness layout system crashes when given 0 players');
-            console.log('Should handle empty grimoires gracefully');
+            // Bug: Empty grimoire crashes squariness layout system
         });
 
         it('should handle single player grimoire', () => {
@@ -774,12 +758,8 @@ describe('Render Grimoire Command Test Cases', () => {
             const allRightWidth = Math.max(...allRight.split('\n').map(line => line.length));
             const mixedWidth = Math.max(...mixedTopRight.split('\n').map(line => line.length));
             
-            console.log('\n=== SPACING BUG DEMONSTRATION ===');
-            console.log(`Layout [0,3,0,0] - All Right: ${allRightWidth} chars (EFFICIENT)`);
-            console.log(allRight);
-            console.log(`\nLayout [1,2,0,0] - Mixed Top/Right: ${mixedWidth} chars (WASTEFUL)`);
-            console.log(mixedTopRight);
-            console.log(`\nWidth difference: +${mixedWidth - allRightWidth} characters (${Math.round((mixedWidth/allRightWidth - 1) * 100)}% increase)`);
+            // Spacing bug demonstration - layouts available in variables
+            // Width difference calculated and available in variables
             
             // Document the spacing improvement (was much worse before fix)
             expect(allRightWidth).toBeLessThan(25); // All-right layout should be efficient (18 chars)
@@ -828,10 +808,7 @@ describe('Render Grimoire Command Test Cases', () => {
             const investigatorPos = content.indexOf('investigator');
             const trailingSpaces = content.length - investigatorPos - 'investigator'.length;
             
-            console.log(`\n=== TRAILING SPACE ANALYSIS ===`);
-            console.log(`"investigator" trailing spaces: ${trailingSpaces}`);
-            console.log(`Expected with worst-case buffer: ~7 (6 buffer + 1 margin)`);
-            console.log(`Actual: ${trailingSpaces} (${trailingSpaces - 7} excess)`);
+            // Trailing space analysis - metrics available in trailingSpaces variable
             
             // Document the excessive trailing spaces
             expect(trailingSpaces).toBeGreaterThan(15); // Currently has ~22 trailing spaces
@@ -863,10 +840,7 @@ describe('Render Grimoire Command Test Cases', () => {
             expect(rendered).toBe(expectedOutput);
             
             // This layout is wide but intentionally so - players are justified across the full width
-            const width = Math.max(...rendered.split('\n').map(line => line.length));
-            console.log(`\n=== ALL-TOP REFERENCE ===`);
-            console.log(`All-top layout width: ${width} chars (justified spacing across full width)`);
-            console.log('This layout works correctly - wide spacing is intentional for visual balance');
+            // All-top reference layout works correctly
         });
     });
 });

@@ -34,8 +34,7 @@ describe('Text Overlap Bug', () => {
         expect(result).not.toContain("chefarian"); // Another potential merge we saw
         
         // For debugging: log the actual output
-        console.log("Actual output:");
-        console.log(result);
+        // Output available in result variable for debugging
     });
 
     it('should handle left-side and bottom-side player positioning without text overlap', () => {
@@ -56,7 +55,6 @@ describe('Text Overlap Bug', () => {
         expect(result).toContain("investigator");
         expect(result).not.toContain("fortune_tellerstigator");
         
-        console.log("Two-player overlap test:");
-        console.log(result);
+        // Output available in result variable for debugging
     });
 });

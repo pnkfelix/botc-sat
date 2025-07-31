@@ -54,9 +54,9 @@ describe('Examples Integration Tests', () => {
 
     const readmeArgs = getExampleArgsFromReadme();
 
-    // Test each example file individually
+    // Test each example file individually (in parallel for faster execution)
     exampleFiles.forEach(filename => {
-        it(`should run ${filename} without runtime errors`, async () => {
+        it.concurrent(`should run ${filename} without runtime errors`, async () => {
             const filePath = path.join(examplesDir, filename);
             
             // Get command-line arguments from README documentation
@@ -68,7 +68,7 @@ describe('Examples Integration Tests', () => {
             
             try {
                 // Run the example file with a reasonable timeout
-                const { stdout, stderr } = await execAsync(command, {
+                const { stderr } = await execAsync(command, {
                     timeout: 30000, // 30 second timeout
                     cwd: path.join(__dirname, '../..'), // Run from project root
                     maxBuffer: 1024 * 1024 // 1MB buffer for output
@@ -76,16 +76,8 @@ describe('Examples Integration Tests', () => {
                 
                 // Success if no exception was thrown
                 // We don't validate output content - just that it runs without error
-                const argsInfo = args.length > 0 ? ` (with args: ${args.join(' ')})` : ' (no args)';
-                console.log(`✅ ${filename} executed successfully${argsInfo}`);
                 
-                // Optional: Log a sample of output for debugging (first few lines)
-                if (stdout) {
-                    const outputLines = stdout.split('\n').slice(0, 3);
-                    console.log(`   Sample output: ${outputLines.join(' | ')}`);
-                }
-                
-                // Warn about stderr but don't fail the test (might be debug info)
+                // Only log errors - suppress success output for cleaner test runs
                 if (stderr && stderr.trim()) {
                     console.warn(`⚠️  ${filename} had stderr output: ${stderr.trim()}`);
                 }
@@ -126,7 +118,7 @@ describe('Examples Integration Tests', () => {
     // Summary test that ensures we actually found example files
     it('should have found example files to test', () => {
         expect(exampleFiles.length).toBeGreaterThan(0);
-        console.log(`📁 Found ${exampleFiles.length} example files: ${exampleFiles.join(', ')}`);
+        // Suppress console output for cleaner test runs
     });
 
     // Verify that all documented examples in README actually exist
@@ -147,11 +139,7 @@ describe('Examples Integration Tests', () => {
             );
         }
         
-        console.log(`✅ All ${readmeArgs.size} README-documented examples exist as files`);
-        
-        // Also log which examples are documented
-        const documentedExamples = Array.from(readmeArgs.keys()).sort();
-        console.log(`📖 Documented examples: ${documentedExamples.join(', ')}`);
+        // All examples exist - suppress success output for cleaner test runs
     });
 
     // Test that all examples are using the current API (no deprecated methods)
@@ -185,6 +173,6 @@ describe('Examples Integration Tests', () => {
             );
         }
         
-        console.log('✅ All examples use current API patterns');
+        // All examples use current API patterns - suppress success output
     });
 });
