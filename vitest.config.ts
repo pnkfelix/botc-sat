@@ -12,6 +12,19 @@ export default defineConfig({
     // Enable watch mode by default
     watch: true,
     // Fast file watching
-    watchExclude: ['**/node_modules/**', '**/dist/**']
+    watchExclude: ['**/node_modules/**', '**/dist/**'],
+    
+    // Optimize parallelism for 10-core system  
+    pool: 'forks', // Use forks for true parallelism with CPU-intensive SAT solving
+    poolOptions: {
+      forks: {
+        maxForks: 10,      // Use all available cores
+        minForks: 4,       // Keep minimum pool for fast startup
+      }
+    },
+    fileParallelism: true,  // Ensure test files run in parallel
+    // Alternative: could try maxWorkers/minWorkers directly
+    // maxWorkers: 10,
+    // minWorkers: 4
   }
 });
