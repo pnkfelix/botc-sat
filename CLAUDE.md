@@ -316,6 +316,35 @@ This project maintains multiple documentation files for different audiences:
 7. Partial observation inference system
 8. Validation and testing
 
+## Testing Philosophy
+**CRITICAL**: Test your work as you go - this is now embedded as a core development philosophy.
+
+**Testing Requirements**:
+- **Test early and often** - Don't implement large features without testing individual components
+- **Test assumptions explicitly** - If you think something should work, write a test to verify it
+- **Incremental testing** - Test each step of complex implementations before moving to the next
+- **Real functionality verification** - Tests should actually test the claimed functionality, not just placeholders
+
+**When to Test**:
+- After completing any non-trivial function or system component
+- Before building additional features on top of existing code
+- When encountering unexpected behavior or errors
+- Before marking any todo item as completed
+
+**Testing Patterns**:
+- Use the project's existing test framework and structure
+- Write tests that demonstrate the feature working, not just that it compiles
+- Include realistic test data and scenarios from the domain
+- Test error conditions and edge cases, not just happy paths
+
+**Integration with Development Workflow**:
+- Run tests before committing code changes
+- Address test failures immediately - don't accumulate technical debt
+- Use test-driven development for complex features when beneficial
+- Keep tests running and passing as the codebase evolves
+
+This philosophy ensures code quality, catches bugs early, and maintains confidence in the system's correctness.
+
 ## Notes for Future Development
 - This is a prototype/experimental project
 - Focus on modeling the logical structure of BOTC rules

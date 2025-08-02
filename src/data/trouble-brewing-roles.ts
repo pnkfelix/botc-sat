@@ -374,8 +374,8 @@ const simpleRoles: Role[] = [
                 ],
                 prerequisites: {
                     requiresSoberAndHealthy: true,
-                    requiresAlive: true,
-                    customCondition: 'target !== actor' // Cannot protect self
+                    requiresAlive: true
+                    // customCondition: 'target !== actor' // Cannot protect self // TODO: Not implemented - string conditions not evaluated by SAT compiler  
                 }
             }
         ],
@@ -427,7 +427,7 @@ const simpleRoles: Role[] = [
                     {
                         description: 'If nominator is Townsfolk, execute nominator immediately',
                         type: 'conditional',
-                        condition: 'nominator.role.type === "Townsfolk"',
+                        // condition: 'nominator.role.type === "Townsfolk"', // TODO: Not implemented - string conditions not evaluated by SAT compiler
                         executionTarget: 'nominator'
                     },
                     {
@@ -488,13 +488,13 @@ const simpleRoles: Role[] = [
                     {
                         description: 'If target is demon, target dies',
                         type: 'conditional',
-                        condition: 'target.role.type === "demon"',
+                        // condition: 'target.role.type === "demon"', // TODO: Not implemented - string conditions not evaluated by SAT compiler
                         targetDies: true
                     },
                     {
                         description: 'If target is not demon, slayer dies',
                         type: 'conditional', 
-                        condition: 'target.role.type !== "demon"',
+                        // condition: 'target.role.type !== "demon"', // TODO: Not implemented - string conditions not evaluated by SAT compiler
                         actorDies: true
                     },
                     {
@@ -708,7 +708,7 @@ const gossipExample: Role = {
                 {
                     description: 'If statement is true, storyteller chooses a player to die tonight',
                     type: 'conditional',
-                    condition: 'statement_is_true',
+                    // condition: 'statement_is_true', // TODO: Not implemented - string conditions not evaluated by SAT compiler
                     // This would trigger storyteller choice during night phase
                     targetDies: false // Storyteller chooses target later
                 }

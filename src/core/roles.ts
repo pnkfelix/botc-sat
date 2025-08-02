@@ -132,7 +132,7 @@ export interface ActionEffect {
     type: 'causes_death' | 'causes_execution' | 'places_token' | 'removes_token' | 'modifies_votes' | 'conditional' | 'learns_information' | 'game_end' | 'role_transformation' | 'redirect_attack';
     
     // For conditional effects
-    condition?: string; // DSL expression (e.g., "target.role.type === 'demon'")
+    condition?: string; // TODO: Not implemented - DSL expression (e.g., "target.role.type === 'demon'")
     
     // For death effects
     targetDies?: boolean;
@@ -150,7 +150,7 @@ export interface ActionEffect {
     voteModification?: {
         type: 'double_vote' | 'negative_vote' | 'no_vote' | 'conditional_vote';
         target: 'actor' | 'target';
-        condition?: string; // For butler: can only vote if master votes
+        condition?: string; // TODO: Not implemented - For butler: can only vote if master votes
     };
     
     // For information learning
@@ -162,14 +162,14 @@ export interface ActionEffect {
     // For game ending effects
     gameEnd?: {
         winningTeam: 'good' | 'evil';
-        condition: string;
+        condition: string; // TODO: Not implemented - string conditions not evaluated
     };
     
     // For role transformation (Scarlet Woman → Imp)
     roleTransformation?: {
         from: string; // Role ID
         to: string;   // Role ID
-        condition: string;
+        condition: string; // TODO: Not implemented - string conditions not evaluated
     };
     
     // For attack redirection (Mayor ability)
@@ -204,7 +204,7 @@ export interface RoleActionConstraint {
     prerequisites?: {
         requiresSoberAndHealthy?: boolean;
         requiresAlive?: boolean;
-        customCondition?: string; // DSL expression
+        customCondition?: string; // TODO: Not implemented - DSL expression
     };
 }
 

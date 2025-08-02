@@ -12,6 +12,50 @@ export { TemporalConstraintCompiler, TemporalContext } from './core/temporal-con
 export { GameTraceParser, TemporalContextValues, GameEvent } from './core/game-trace-parser';
 export { ReminderTokenCompiler } from './core/reminder-token-compiler';
 
+// Conversation tree system for transactional role interactions
+export { 
+    TransactionSchema, 
+    ConversationNode, 
+    RoleWithTransactions,
+    TemplateString,
+    VariableBinding,
+    VariableReference,
+    DomainConstraint,
+    TemplateParser,
+    CommonDomains
+} from './core/conversation-tree';
+export { 
+    ConversationEngine, 
+    ConversationState, 
+    ConversationStep,
+    ValidationResult,
+    TraversalOptions
+} from './core/conversation-engine';
+export { 
+    TemplateProcessor,
+    VariableContext,
+    ProcessedTemplate,
+    TemplateUtils
+} from './core/template-processor';
+export {
+    DomainType,
+    DomainValue,
+    YesNoValue,
+    NumberValue,
+    PlayerName,
+    RoleId,
+    TextValue,
+    GameContext,
+    YesNoDomain,
+    NumberDomain,
+    ChoiceOfPlayerDomain,
+    ChoiceOfRoleDomain,
+    TextDomain,
+    DomainFactory,
+    CommonDomainInstances
+} from './core/domain-types';
+export { exampleRoles, validateExampleRoles } from './data/conversation-examples';
+
 // Operational semantics system for step-by-step grimoire evolution
 export { 
     GrimoireState as OperationalGrimoireState, 
