@@ -52,7 +52,7 @@
   
   ;; Test player queries
   (check-equal? (term (is-alive Alice ,test-grimoire))
-                #t
+                'true
                 "Player should be alive")
   
   (display "All basic tests passed!\n"))

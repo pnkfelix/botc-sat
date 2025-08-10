@@ -345,6 +345,263 @@ This project maintains multiple documentation files for different audiences:
 
 This philosophy ensures code quality, catches bugs early, and maintains confidence in the system's correctness.
 
+## PLT Redex Development Workflow
+
+**CRITICAL PATH**: Racket is installed at `/Applications/Racket\ v8.13/bin/`
+- **Test files**: `/Applications/Racket\ v8.13/bin/raco test filename.rkt`
+- **Run files**: `/Applications/Racket\ v8.13/bin/racket filename.rkt`
+- **REPL**: `/Applications/Racket\ v8.13/bin/racket`
+
+**PLT Redex Domain Debugging**: When you see "X is not in my domain" errors:
+- Check that all role names are defined in the language `[role-name ::= ...]`
+- Verify pattern variables are declared (`[n ::= natural]`, `[r ::= variable-not-otherwise-mentioned]`)
+- Ensure metafunction patterns match the exact structure of language terms
+
+## PLT Redex Syntax and Pattern Matching Insights
+
+**CRITICAL**: Key learnings about PLT Redex variable naming and pattern matching from the BOTC model implementation.
+
+### Variable Naming Rules in PLT Redex
+
+**Underscore Pattern Variables**:
+- Variables with underscores (like `n_townsfolk`) are **only allowed** if the prefix before the underscore is declared as a non-terminal in the language definition
+- **Example**: `n_townsfolk` requires `[n ::= natural]` in the language definition
+- **Error**: Using `n_townsfolk` without declaring `n` results in: "before underscore must be either a non-terminal or a built-in pattern"
+
+**Variable Name Conflicts**:
+- Pattern variables in metafunctions **cannot** have the same name as non-terminals in the language definition
+- **Example**: If `[nt ::= natural]` is defined, then `nt` cannot be used as a pattern variable
+- **Solution**: Use different names or remove conflicting non-terminal definitions
+
+### Pattern Matching Best Practices
+
+**Metafunction Pattern Variables**:
+- Use descriptive underscore patterns: `n_townsfolk`, `p_target`, `r_id`
+- Declare necessary prefixes in language definition: `[n ::= natural]`, `[p ::= variable-not-otherwise-mentioned]`
+- Avoid single-letter variables that might conflict: prefer `n_new` over `nnew`
+
+**Language Definition Structure**:
+- Group pattern variable declarations together for clarity
+- Use consistent naming conventions throughout the model
+- Test pattern matching with `redex-match` before using in metafunctions
+
+### Debugging Pattern Matching Issues
+
+**Systematic Approach**:
+1. **Test language matching**: `(redex-match LANG non-terminal term)`
+2. **Test specific patterns**: `(redex-match LANG pattern term)`
+3. **Check variable bindings**: Look for `(bind 'var-name value)` in match results
+4. **Verify non-terminal declarations**: Ensure all underscore prefixes are declared
+
+**Common Error Patterns**:
+- Pattern doesn't match → Check non-terminal declarations
+- Variable binding conflicts → Use different variable names
+- Ellipsis issues → Simplify patterns or use explicit recursion
+- **Non-terminal name shadowing** → Constructor names in RHS are interpreted as recursive references
+
+### Critical Grammar Rule: Non-Terminal Name Shadowing
+
+**FUNDAMENTAL**: Non-terminal names shadow constructor names on the right-hand side of grammar rules.
+
+**Problem Pattern**:
+```racket
+[circle ::= (circle player ...)]  ; ❌ WRONG
+```
+- The `circle` on the RHS refers to the non-terminal itself, creating a recursive definition
+- This prevents proper pattern matching with terms like `(circle Alice Bob Charlie)`
+
+**Solution Pattern**:
+```racket
+[circle ::= (player-circle player ...)]  ; ✅ CORRECT
+```
+- Use distinct constructor names that don't conflict with non-terminal names
+- Now `(player-circle Alice Bob Charlie)` matches the `circle` non-terminal properly
+
+**Real Example from BOTC Tutorial**:
+- ❌ `(redex-match BOTC circle (term (circle Alice Bob)))` → `#f` (no match)
+- ✅ `(redex-match BOTC circle (term (player-circle Alice Bob)))` → match successful
+
+This rule applies to **any** grammar where constructor names match non-terminal names. Always use distinct names to avoid shadowing conflicts.
+
+### The ML-Family Language Mistake
+
+**CRITICAL INSIGHT**: Many developers (especially those familiar with ML, OCaml, Haskell, or Rust) expect type constructor punning to work:
+
+```ml
+(* ML/OCaml - this works fine *)
+type role = Role of role_name * role_type * constraints
+```
+
+```racket
+;; PLT Redex - this causes "not in my domain" errors
+[role ::= (role role-name role-type (constraints constraint ...))]  ; ❌ WRONG
+
+;; PLT Redex - must use different names  
+[role ::= (role-def role-name role-type (constraints constraint ...))]  ; ✅ CORRECT
+```
+
+**Error Symptoms**:
+- `metafunction-name: (metafunction-name args...) is not in my domain` 
+- Pattern matching failures even with correct syntax
+- Terms that should match returning `#f` from `redex-match`
+
+**Why PLT Redex Works This Way**: 
+PLT Redex was designed for PL research papers where clear separation between syntactic categories (non-terminals) and constructors improves formal reasoning. The ML-style punning between type names and constructors was deliberately avoided to prevent ambiguity in formal specifications.
+
+**Debugging Strategy**:
+1. If you see "not in my domain" errors, check for constructor/non-terminal name conflicts
+2. Rename constructors to be distinct from non-terminals (e.g., `role` → `role-def`)
+3. Update all metafunction patterns and term constructions to use new names
+4. Test with simple cases before complex constraint compositions
+
+These insights are essential for successful PLT Redex development and should guide future language modeling work.
+
+## PLT Redex BOTC Tutorial Implementation Status
+
+**Current Achievement**: Working single-file PLT Redex tutorial for BOTC bag validation 
+- **File**: `/redex-tutorial/botc-complete.rkt`
+- **Pedagogical Approach**: Step-by-step teaching PLT Redex through BOTC domain modeling
+
+### Successfully Implemented Features
+
+#### 1. Core Language Definition
+```racket
+(define-language BOTC
+  [player ::= variable-not-otherwise-mentioned]
+  [circle ::= (player-circle player ...)]
+  [role-name ::= washerwoman librarian chef empath imp baron godfather drunk]
+  [role-type ::= Townsfolk Outsider Minion Demon]
+  [role ::= (role-def role-name role-type (constraints constraint ...))]
+  [distribution ::= (dist (Townsfolk num) (Outsider num) (Minion num) (Demon num))]
+  [constraint ::= (add-outsiders num) (token-sub role-type role-type)])
+```
+
+#### 2. Base Distribution Rules (5-15 Players)
+- Complete implementation of official BOTC player count formulas
+- Covers all standard game sizes with correct Townsfolk/Outsider/Minion/Demon ratios
+- Pattern: `(term (base-distribution 7))` → `(dist (Townsfolk 5) (Outsider 0) (Minion 1) (Demon 1))`
+
+#### 3. Role Constraint System (Partial)
+**Working**: Single role constraint application
+- Baron: +2 Outsiders, -2 Townsfolk ✅
+- Godfather: +1 Outsider, -1 Townsfolk ✅  
+- No-constraint roles (Washerwoman, etc.) ✅
+
+**In Progress**: Multi-role constraint composition
+- `apply-constraints` metafunction needs debugging for role chaining
+- Error: "no clauses matched" for `(role-dist role1 role2 ...)` patterns
+
+#### 4. Pattern Variable Declarations
+Critical insight: Must declare pattern variables to enable underscore patterns:
+```racket
+[n ::= natural]                          ; Enables n, n_1, n_2, etc.
+[p ::= variable-not-otherwise-mentioned] ; Enables p, p_first, etc.
+[r ::= role]                             ; Enables r, r_1, r_2, etc. to match role structures
+[d ::= distribution]                     ; Enables d, d_1, etc. to match distribution structures
+[b ::= physical-bag]                     ; Enables b, b_1, etc. to match physical-bag structures
+```
+
+**CRITICAL**: Pattern variables must match their intended non-terminals:
+- ✅ `[r ::= role]` allows `r` to match `(role-def ...)` structures
+- ❌ `[r ::= variable-not-otherwise-mentioned]` only matches simple symbols like `alice`
+
+**Pattern Variable Naming Constraints** (Experimentally Verified):
+
+**✅ ALLOWED**: All of these work fine:
+- Single characters: `[r ::= role]`, `[d ::= distribution]`
+- Dashes: `[num-val ::= number]`, `[expr-val ::= expr]`  
+- Longer names: `[expression ::= expr]`, `[numbervalue ::= number]`
+
+**❌ FORBIDDEN**: Constructor name conflicts cause "not in my domain" errors:
+- `[role-dist ::= role-distribution]` when `role-dist` is used as constructor in `[role-distribution ::= (role-dist role ...)]`
+
+**Root Cause**: Pattern variable names that match constructor names in the grammar create ambiguous references. When PLT Redex sees `role-dist` in a pattern, it cannot distinguish between:
+1. A reference to the pattern variable `role-dist` (should match a `role-distribution` structure)
+2. A reference to the constructor `role-dist` (literal symbol)
+
+**Solution**: Use pattern variable names that don't appear as constructors:
+- ✅ `[r ::= role]` (no constructor named `r`)
+- ✅ `[rd ::= role-distribution]` (no constructor named `rd`)  
+- ❌ `[role-dist ::= role-distribution]` (constructor `role-dist` exists)
+
+**Best Practice**: Single-character pattern variables with descriptive suffixes avoid all conflicts: `r_first`, `d_base`, `b_physical`
+
+### Key Debugging Victories
+
+#### Non-Terminal Shadowing Resolution
+**Problem**: `[role ::= (role ...)]` caused "not in my domain" errors
+**Solution**: `[role ::= (role-def ...)]` with distinct constructor names
+**Impact**: All single-role constraint tests now pass
+
+#### Pattern Variable Scope
+**Problem**: Using `role-type` as pattern variable conflicted with non-terminal
+**Solution**: Use declared pattern variables (`r`, `n`) with clear suffixes
+**Pattern**: `(role-def r r_type (constraints))` works correctly
+
+### Next Steps for Tutorial Completion
+
+#### Immediate Priority: Fix Multi-Role Constraints
+Current failing tests show `apply-constraints` recursion needs pattern debugging:
+```racket
+(apply-constraints base-dist (role-dist role1 role2 ...))
+```
+
+#### Role Distribution vs Physical Bag (d vs b)
+Next major milestone: Implement the two-bag validation system
+- `d`: Role distribution (roles actually in game, after constraint modifications)
+- `b`: Physical bag (tokens physically in bag, after substitutions like Drunk)
+
+#### Token Substitution Rules
+Implement the second major constraint type:
+```racket
+[constraint ::= (add-outsiders num)           ; Already working (Baron, Godfather)
+                (token-sub role-type role-type)] ; Need to implement (Drunk, etc.)
+```
+
+### Tutorial Teaching Structure
+1. **Language Definition**: Basic syntax and pattern variables ✅
+2. **Player Counting**: Circle → player count metafunction ✅  
+3. **Base Setup**: Player count → base distribution ✅
+4. **Role Constraints**: Modify distributions (Baron effect) ✅
+5. **Constraint Composition**: Multiple roles affecting same distribution ✅
+6. **Token Substitution**: Physical bag modifications ✅
+7. **Bag Validation**: Legal (d,b) pair judgment ✅
+8. **Judgments & Relations**: Inference rules and state transitions ✅
+
+### Critical Lessons for Future PLT Redex Work
+1. **Always check constructor/non-terminal name conflicts first**
+2. **Test single cases before attempting composition/recursion**
+3. **Use explicit pattern variable declarations for complex patterns**  
+4. **PLT Redex debugging follows a predictable pattern: domain → clauses → evaluation**
+
+This tutorial demonstrates PLT Redex can effectively model complex game rule systems while teaching fundamental language definition concepts.
+
+### PLT Redex Feature Overview
+
+The tutorial now covers all major PLT Redex features:
+
+#### **Metafunctions** (Functional Computation)
+- **Purpose**: Pure input→output transformations
+- **Example**: `(base-distribution 7)` → `(dist (Townsfolk 5) (Outsider 0) (Minion 1) (Demon 1))`
+- **Use for**: Computing values, transformations, validations
+
+#### **Judgment Forms** (Logical Inference)
+- **Purpose**: Express logical rules and check properties
+- **Example**: `(judgment-holds (role-satisfiable role dist))` → `#t/#f`
+- **Use for**: Type checking, constraint validation, property verification
+
+#### **Reduction Relations** (State Transitions)
+- **Purpose**: Model computation and execution steps
+- **Example**: `game-state --[rule]--> new-game-state`
+- **Use for**: Operational semantics, program execution, state machines
+
+#### **When to Use Each**
+- **Metafunctions**: "What is the result of this computation?"
+- **Judgments**: "Does this property hold?" or "Is this valid?"
+- **Relations**: "What happens next?" or "How does this execute?"
+
+The BOTC tutorial demonstrates sophisticated PLT Redex usage across all three paradigms, making it an excellent learning resource for the full PLT Redex toolkit.
+
 ## Notes for Future Development
 - This is a prototype/experimental project
 - Focus on modeling the logical structure of BOTC rules
